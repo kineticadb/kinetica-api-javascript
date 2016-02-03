@@ -1,0 +1,13 @@
+========================
+|                      |
+| GPUdb JavaScript API |
+|                      |
+========================
+
+
+This repository contains the client-side API for GPUdb for JavaScript.  Using
+this API requires rpm packages 'nodejs' and 'npm', the nodejs package manager.
+
+The repository also contains an example project.  To see it in action, load
+example.html in any browswer and look at the console output in the developer
+tools.
