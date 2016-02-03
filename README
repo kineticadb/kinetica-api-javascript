@@ -11,3 +11,12 @@ this API requires rpm packages 'nodejs' and 'npm', the nodejs package manager.
 The repository also contains an example project.  To see it in action, load
 example.html in any browswer and look at the console output in the developer
 tools.
+
+
+
+The documentation can be found at http://www.gpudb.com/docs/index.html.  The
+JavaScript specific documentation can be found at:
+
+* http://www.gpudb.com/docs/user/js_guide.html
+* http://www.gpudb.com/docs/api/javascript/GPUdb.html
+
