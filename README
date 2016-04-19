@@ -20,3 +20,8 @@ JavaScript specific documentation can be found at:
 * http://www.gpudb.com/docs/user/js_guide.html
 * http://www.gpudb.com/docs/api/javascript/GPUdb.html
 
+
+For the Node.js module, the following rpm packages are required:
+
+* nodejs
+* npm (the nodejs package manager)

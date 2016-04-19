@@ -6,16 +6,6 @@
 "use strict";
 
 /**
- * Callback function used for asynchronous GPUdb calls.
- *
- * @callback GPUdbCallback
- * @param {Error} err Object containing error information returned from the
- *                call. Will be null if no error occurred.
- * @param {Object} response Object containing any data returned from the call.
- *                 Will be null if an error occurred.
- */
-
-/**
  * Creates a GPUdb API object for the specified URL using the given options.
  * Once created, all options are immutable; to use a different URL or change
  * options, create a new instance. (Creating a new instance does not
@@ -131,6 +121,115 @@ function GPUdb(url, options) {
 }
 
 /**
+ * Submits an arbitrary request to GPUdb.
+ *
+ * <p>If a callback function is provided, the request will be submitted
+ * asynchronously, and the result (either a response or an error) will be passed
+ * to the callback function upon completion.</p>
+ *
+ * <p>If a callback function is not provided, the request will be submitted
+ * synchronously and the response returned directly, and an exception will be
+ * thrown if an error occurs.</p>
+ *
+ * @param {String} endpoint The endpoint to which to submit the request.
+ * @param {Object} request The request object to submit.
+ * @param {GPUdbCallback} [callback] The callback function, if asynchronous
+ *                        operation is desired.
+ * @returns {Object} The response object, if no callback function is provided.
+ */
+GPUdb.prototype.submit_request = function(endpoint, request, callback) {
+    var requestString = JSON.stringify(request);
+    var async = callback !== undefined && callback !== null;
+    var http = new XMLHttpRequest();
+    http.open("POST", this.url + endpoint, async);
+    http.setRequestHeader("Content-type", "application/json");
+
+    if (this.user_auth !== "") {
+        http.setRequestHeader("GPUdb-User-Auth", this.user_auth);
+    }
+
+    var authorization = this.authorization;
+
+    if (authorization !== "") {
+        http.setRequestHeader("Authorization", authorization);
+    }
+
+    if (async) {
+        var timedOut = false;
+
+        http.onloadend = function() {
+            if (!timedOut) {
+                if (http.status === 200 || http.status === 400) {
+                    try {
+                        var response = JSON.parse(http.responseText);
+                    } catch (e) {
+                        callback(new Error("Unable to parse response: " + e), null);
+                        return;
+                    }
+
+                    if (response.status === "OK") {
+                        try {
+                            var data = JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                        } catch (e) {
+                            callback(new Error("Unable to parse response: " + e), null);
+                            return;
+                        }
+
+                        callback(null, data);
+                    } else {
+                        callback(new Error(response.message), null);
+                    }
+                } else {
+                    if (http.status === 0) {
+                        callback(new Error("Request failed"), null);
+                    } else {
+                        callback(new Error("Request failed with HTTP " + http.status + " (" + http.statusText + ")"), null);
+                    }
+                }
+            }
+        };
+
+        http.ontimeout = function() {
+            timedOut = true;
+            callback(new Error("Request timed out"), null);
+        }
+
+        http.timeout = this.timeout;
+    }
+
+    http.send(requestString);
+
+    if (!async) {
+        if (http.status === 200 || http.status === 400) {
+            try {
+                var response = JSON.parse(http.responseText);
+
+                if (response.status === "OK") {
+                    return JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                } else {
+                    var error = new Error(response.message);
+                }
+            } catch (e) {
+                throw new Error("Unable to parse response: " + e);
+            }
+
+            throw error;
+        } else {
+            throw new Error("Request failed with HTTP " + http.status + " (" + http.statusText + ")");
+        }
+    }
+};
+/**
+ * Callback function used for asynchronous GPUdb calls.
+ *
+ * @callback GPUdbCallback
+ * @param {Error} err Object containing error information returned from the
+ *                call. Will be null if no error occurred.
+ * @param {Object} response Object containing any data returned from the call.
+ *                 Will be null if an error occurred.
+ */
+
+/**
  * Creates a Type object containing metadata about a GPUdb type.
  *
  * @class
@@ -216,6 +315,108 @@ GPUdb.Type.Column = function(name, type, properties) {
     }
 };
 
+/**
+ * Creates a Type object using data returned from the GPUdb show_table or
+ * show_types endpoints.
+ *
+ * @param {String} label A user-defined description string which can be used to
+ *                 differentiate between data with otherwise identical schemas.
+ * @param {String|Object} type_schema The Avro record schema for the type.
+ * @param {Object.<String, String[]>} properties A map of column names to
+ *                                    lists of properties that apply to those
+ *                                    columns.
+ * @returns {GPUdb.Type} The Type object.
+ */
+GPUdb.Type.from_type_info = function(label, type_schema, properties) {
+    if (typeof type_schema === "string" || type_schema instanceof String) {
+        type_schema = JSON.parse(type_schema);
+    }
+
+    var columns = [];
+
+    for (var i = 0; i < type_schema.fields.length; i++) {
+        var field = type_schema.fields[i];
+        columns.push(new GPUdb.Type.Column(field.name, field.type, properties[field.name]));
+    }
+
+    return new GPUdb.Type(label, columns);
+};
+
+/**
+ * Generates an Avro record schema based on the metadata in the Type object.
+ *
+ * @returns {Object} The Avro record schema.
+ */
+GPUdb.Type.prototype.generate_schema = function() {
+    var schema = {
+        type: "record",
+        name: "type_name",
+        fields: []
+    };
+
+    for (var i = 0; i < this.columns.length; i++) {
+        var column = this.columns[i];
+
+        schema.fields.push({
+            name: column.name,
+            type: column.type
+        });
+    }
+
+    return schema;
+};
+
+/**
+ * The version number of the GPUdb JavaScript API.
+ *
+ * @name GPUdb#api_version
+ * @type String
+ * @readonly
+ * @static
+ */
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "4.2.0.0" });
+
+/**
+ * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
+ * JSON object(s).
+ *
+ * @param {String | String[]} o The JSON string(s) to decode.
+ * @returns {Object | Object[]} The decoded JSON object(s).
+ */
+GPUdb.decode = function(o) {
+    if (Array.isArray(o)) {
+        var result = [];
+
+        for (var i = 0; i < o.length; i++) {
+            result.push(GPUdb.decode(o[i]));
+        }
+
+        return result;
+    } else {
+        return JSON.parse(o);
+    }
+};
+
+/**
+ * Encodes a JSON object, or array of JSON objects, into JSON string(s) to be
+ * passed to GPUdb.
+ *
+ * @param {Object | Object[]} o The JSON object(s) to encode.
+ * @returns {String | String[]} The encoded JSON string(s).
+ */
+GPUdb.encode = function(o) {
+    if (Array.isArray(o)) {
+        var result = [];
+
+        for (var i = 0; i < o.length; i++) {
+            result.push(GPUdb.encode(o[i]));
+        }
+
+        return result;
+    } else {
+        return JSON.stringify(o);
+    }
+};
 /**
  * Creates a Type object containing metadata about the type stored in the
  * specified table in GPUdb.
@@ -326,57 +527,6 @@ GPUdb.Type.from_type = function(gpudb, type_id, callback) {
 };
 
 /**
- * Creates a Type object using data returned from the GPUdb show_table or
- * show_types endpoints.
- *
- * @param {String} label A user-defined description string which can be used to
- *                 differentiate between data with otherwise identical schemas.
- * @param {String|Object} type_schema The Avro record schema for the type.
- * @param {Object.<String, String[]>} properties A map of column names to
- *                                    lists of properties that apply to those
- *                                    columns.
- * @returns {GPUdb.Type} The Type object.
- */
-GPUdb.Type.from_type_info = function(label, type_schema, properties) {
-    if (typeof type_schema === "string" || type_schema instanceof String) {
-        type_schema = JSON.parse(type_schema);
-    }
-
-    var columns = [];
-
-    for (var i = 0; i < type_schema.fields.length; i++) {
-        var field = type_schema.fields[i];
-        columns.push(new GPUdb.Type.Column(field.name, field.type, properties[field.name]));
-    }
-
-    return new GPUdb.Type(label, columns);
-};
-
-/**
- * Generates an Avro record schema based on the metadata in the Type object.
- *
- * @returns {Object} The Avro record schema.
- */
-GPUdb.Type.prototype.generate_schema = function() {
-    var schema = {
-        type: "record",
-        name: "type_name",
-        fields: []
-    };
-
-    for (var i = 0; i < this.columns.length; i++) {
-        var column = this.columns[i];
-
-        schema.fields.push({
-            name: column.name,
-            type: column.type
-        });
-    }
-
-    return schema;
-};
-
-/**
  * Creates a new type in GPUdb based on the metadata in the Type object and
  * returns the GPUdb type ID for use in subsequent operations.
  *
@@ -418,154 +568,156 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
 };
 
 /**
- * The version number of the GPUdb JavaScript API.
  *
- * @name GPUdb#api_version
- * @type String
- * @readonly
- * @static
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "4.0.0" });
+GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback) {
+    var actual_request = {
+        dummy: (request.dummy !== undefined && request.dummy !== null) ? request.dummy : []
+    };
 
-/**
- * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
- * JSON object(s).
- *
- * @param {String | String[]} o The JSON string(s) to decode.
- * @returns {Object | Object[]} The decoded JSON object(s).
- */
-GPUdb.decode = function(o) {
-    if (Array.isArray(o)) {
-        var result = [];
-
-        for (var i = 0; i < o.length; i++) {
-            result.push(GPUdb.decode(o[i]));
-        }
-
-        return result;
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/getshardassignments", actual_request, callback);
     } else {
-        return JSON.parse(o);
+        var data = this.submit_request("/admin/getshardassignments", actual_request);
+        return data;
     }
 };
 
 /**
- * Encodes a JSON object, or array of JSON objects, into JSON string(s) to be
- * passed to GPUdb.
  *
- * @param {Object | Object[]} o The JSON object(s) to encode.
- * @returns {String | String[]} The encoded JSON string(s).
+ * @param {String} dummy
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
  */
-GPUdb.encode = function(o) {
-    if (Array.isArray(o)) {
-        var result = [];
+GPUdb.prototype.admin_get_shard_assignments = function(dummy, callback) {
+    var actual_request = {
+        dummy: (dummy !== undefined && dummy !== null) ? dummy : []
+    };
 
-        for (var i = 0; i < o.length; i++) {
-            result.push(GPUdb.encode(o[i]));
-        }
-
-        return result;
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/getshardassignments", actual_request, callback);
     } else {
-        return JSON.stringify(o);
+        var data = this.submit_request("/admin/getshardassignments", actual_request);
+        return data;
     }
 };
 
 /**
- * Submits an arbitrary request to GPUdb.
+ * Take the system offline. When the system is offline, no user operations can
+ * be performed with the exception of a system shutdown.
  *
- * <p>If a callback function is provided, the request will be submitted
- * asynchronously, and the result (either a response or an error) will be passed
- * to the callback function upon completion.</p>
- *
- * <p>If a callback function is not provided, the request will be submitted
- * synchronously and the response returned directly, and an exception will be
- * thrown if an error occurs.</p>
- *
- * @param {String} endpoint The endpoint to which to submit the request.
- * @param {Object} request The request object to submit.
- * @param {GPUdbCallback} [callback] The callback function, if asynchronous
- *                        operation is desired.
- * @returns {Object} The response object, if no callback function is provided.
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
  */
-GPUdb.prototype.submit_request = function(endpoint, request, callback) {
-    var requestString = JSON.stringify(request);
-    var async = callback !== undefined && callback !== null;
-    var http = new XMLHttpRequest();
-    http.open("POST", this.url + endpoint, async);
-    http.setRequestHeader("Content-type", "application/json");
+GPUdb.prototype.admin_offline_request = function(request, callback) {
+    var actual_request = {
+        offline: request.offline,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
 
-    if (this.user_auth !== "") {
-        http.setRequestHeader("GPUdb-User-Auth", this.user_auth);
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/offline", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/offline", actual_request);
+        return data;
     }
+};
 
-    var authorization = this.authorization;
+/**
+ * Take the system offline. When the system is offline, no user operations can
+ * be performed with the exception of a system shutdown.
+ *
+ * @param {Boolean} offline  desired offline state
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_offline = function(offline, options, callback) {
+    var actual_request = {
+        offline: offline,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
 
-    if (authorization !== "") {
-        http.setRequestHeader("Authorization", authorization);
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/offline", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/offline", actual_request);
+        return data;
     }
+};
 
-    if (async) {
-        var timedOut = false;
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback) {
+    var actual_request = {
+        version: request.version,
+        partial_reassignment: request.partial_reassignment,
+        shard_assignments_rank: request.shard_assignments_rank,
+        shard_assignments_tom: request.shard_assignments_tom,
+        assignment_index: request.assignment_index
+    };
 
-        http.onloadend = function() {
-            if (!timedOut) {
-                if (http.status === 200 || http.status === 400) {
-                    try {
-                        var response = JSON.parse(http.responseText);
-                    } catch (e) {
-                        callback(new Error("Unable to parse response: " + e), null);
-                        return;
-                    }
-
-                    if (response.status === "OK") {
-                        try {
-                            var data = JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
-                        } catch (e) {
-                            callback(new Error("Unable to parse response: " + e), null);
-                            return;
-                        }
-
-                        callback(null, data);
-                    } else {
-                        callback(new Error(response.message), null);
-                    }
-                } else {
-                    if (http.status === 0) {
-                        callback(new Error("Request failed"), null);
-                    } else {
-                        callback(new Error("Request failed with HTTP " + http.status + " (" + http.statusText + ")"), null);
-                    }
-                }
-            }
-        };
-
-        http.ontimeout = function() {
-            timedOut = true;
-            callback(new Error("Request timed out"), null);
-        }
-
-        http.timeout = this.timeout;
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/setshardassignments", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/setshardassignments", actual_request);
+        return data;
     }
+};
 
-    http.send(requestString);
+/**
+ *
+ * @param {Number} version
+ * @param {Boolean} partial_reassignment
+ * @param {Number[]} shard_assignments_rank
+ * @param {Number[]} shard_assignments_tom
+ * @param {Number[]} assignment_index
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, callback) {
+    var actual_request = {
+        version: version,
+        partial_reassignment: partial_reassignment,
+        shard_assignments_rank: shard_assignments_rank,
+        shard_assignments_tom: shard_assignments_tom,
+        assignment_index: assignment_index
+    };
 
-    if (!async) {
-        if (http.status === 200 || http.status === 400) {
-            try {
-                var response = JSON.parse(http.responseText);
-
-                if (response.status === "OK") {
-                    return JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
-                } else {
-                    var error = new Error(response.message);
-                }
-            } catch (e) {
-                throw new Error("Unable to parse response: " + e);
-            }
-
-            throw error;
-        } else {
-            throw new Error("Request failed with HTTP " + http.status + " (" + http.statusText + ")");
-        }
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/setshardassignments", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/setshardassignments", actual_request);
+        return data;
     }
 };
 
@@ -713,8 +865,9 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop' and
  * 'var_samp'.
  * <p>
- * The response is returned as a dynamic schema. For details see: {dynamic
- * schemas documentation}@{link ../../concepts/index.html#dynamic-schemas}.
+ * The response is returned as a dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -773,23 +926,25 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop' and
  * 'var_samp'.
  * <p>
- * The response is returned as a dynamic schema. For details see: {dynamic
- * schemas documentation}@{link ../../concepts/index.html#dynamic-schemas}.
+ * The response is returned as a dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table/view/collection
  *                             in GPUdb.
- * @param {String[]} column_names  List of two or more column names,
+ * @param {String[]} column_names  List of one or more column names,
  *                                 expressions, and aggregate expressions. Must
  *                                 include at least one 'grouping' column or
- *                                 expression and at least one aggregate
- * @param {Number} offset  An positive integer indicating the number of initial
+ *                                 expression.  If no aggregate is included,
+ *                                 count(*) will be computed as a default.
+ * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
  *                         through the results).
  * @param {Number} limit  A positive integer indicating the maximum number of
- *                        results to be returned (default is 10000) Or
- *                        END_OF_SET (-9999) to indicate that the max number of
- *                        results should be returned.
+ *                        results to be returned Or END_OF_SET (-9999) to
+ *                        indicate that the max number of results should be
+ *                        returned.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -1261,8 +1416,9 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * <p>
  * {"limit":"10","sort_order":"descending"}.
  * <p>
- * The response is returned as a dynamic schema. For details see: {dynamic
- * schemas documentation}@{link ../../concepts/index.html#dynamic-schemas}.
+ * The response is returned as a dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1311,8 +1467,9 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * <p>
  * {"limit":"10","sort_order":"descending"}.
  * <p>
- * The response is returned as a dynamic schema. For details see: {dynamic
- * schemas documentation}@{link ../../concepts/index.html#dynamic-schemas}.
+ * The response is returned as a dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table in GPUdb.
@@ -1890,9 +2047,11 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to be created. Must not be the
  *                             name of a currently existing GPUdb table of a
- *                             different type (requests with existing table of
- *                             the same name and type id are silently ignored).
- *                             Cannot be an empty string.
+ *                             different type.  Error for requests with
+ *                             existing table of the same name and type id may
+ *                             be suppressed by using the {@code
+ *                             no_error_if_exists} option.  Cannot be an empty
+ *                             string.
  * @param {String} type_id  ID of a currently registered type in GPUdb. All
  *                          objects added to the newly created table will be of
  *                          this type.  Must be an empty string if the
@@ -2173,31 +2332,12 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * type. Each field consists of a name and a data type. Supported data types
  * are: double, float, int, long, string, and bytes. In addition one or more
  * properties can be specified for each column which customize the memory usage
- * and query availability of that column.
+ * and query availability of that column.  Note that some properties are
+ * mutually exclusive--i.e. they cannot be specified for any given column
+ * simultaneously.  One example of mutually exclusive properties are {@code
+ * data} and {@code store_only}.
  * <p>
- *     Described below are some viable configurations of properties for various
- * types of columns:
- * <p>
- *     .. csv-table::
- *         :header: "column Type", "Permitted Properties Combination"
- *         :widths: 15, 60
- * <p>
- *         "Numeric", "'data' (default if no property is provided for a numeric
- * column)"
- *         "Numeric", "'store_only'"
- *         "String", "'data' (default if no property is provided for a string
- * column)"
- *         "String", "'text_search' (persists the data and disables all queries
- * except the filter by string query (with the 'search' mode); i.e. implied
- * 'store_only')"
- *         "String", "'store_only'"
- *         "String", "'data', 'text_search'"
- *         "String", "'text_search', 'store_only'"
- *         "String", "'data', 'disk_optimized'"
- *         "String", "'data', 'text_search', 'disk_optimized'"
- *         "bytes", "'store_only'"
- * <p>
- *     To set a *primary key* on one or more columns include the property
+ * To set a *primary key* on one or more columns include the property
  * 'primary_key' on the desired column_names. If a primary key is specified
  * then GPUdb enforces a uniqueness constraint in that only a single object can
  * exist with a given primary key. When /insert/records data into a table with
@@ -2205,9 +2345,7 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * with primary keys that match existing objects will either overwrite (i.e.
  * update) the existing object or will be skipped and not added into the set.
  * <p>
- *     Examples of a type definition with some of the parameters:
- * <p>
- *     Type definition::
+ * Example of a type definition with some of the parameters::
  * <p>
  *         {"type":"record",
  *         "name":"point",
@@ -2256,31 +2394,12 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * type. Each field consists of a name and a data type. Supported data types
  * are: double, float, int, long, string, and bytes. In addition one or more
  * properties can be specified for each column which customize the memory usage
- * and query availability of that column.
+ * and query availability of that column.  Note that some properties are
+ * mutually exclusive--i.e. they cannot be specified for any given column
+ * simultaneously.  One example of mutually exclusive properties are {@code
+ * data} and {@code store_only}.
  * <p>
- *     Described below are some viable configurations of properties for various
- * types of columns:
- * <p>
- *     .. csv-table::
- *         :header: "column Type", "Permitted Properties Combination"
- *         :widths: 15, 60
- * <p>
- *         "Numeric", "'data' (default if no property is provided for a numeric
- * column)"
- *         "Numeric", "'store_only'"
- *         "String", "'data' (default if no property is provided for a string
- * column)"
- *         "String", "'text_search' (persists the data and disables all queries
- * except the filter by string query (with the 'search' mode); i.e. implied
- * 'store_only')"
- *         "String", "'store_only'"
- *         "String", "'data', 'text_search'"
- *         "String", "'text_search', 'store_only'"
- *         "String", "'data', 'disk_optimized'"
- *         "String", "'data', 'text_search', 'disk_optimized'"
- *         "bytes", "'store_only'"
- * <p>
- *     To set a *primary key* on one or more columns include the property
+ * To set a *primary key* on one or more columns include the property
  * 'primary_key' on the desired column_names. If a primary key is specified
  * then GPUdb enforces a uniqueness constraint in that only a single object can
  * exist with a given primary key. When /insert/records data into a table with
@@ -2288,9 +2407,7 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * with primary keys that match existing objects will either overwrite (i.e.
  * update) the existing object or will be skipped and not added into the set.
  * <p>
- *     Examples of a type definition with some of the parameters:
- * <p>
- *     Type definition::
+ * Example of a type definition with some of the parameters::
  * <p>
  *         {"type":"record",
  *         "name":"point",
@@ -2408,6 +2525,66 @@ GPUdb.prototype.delete_records = function(table_name, expressions, options, call
         this.submit_request("/delete/records", actual_request, callback);
     } else {
         var data = this.submit_request("/delete/records", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Exectues a proc in the GPUdb Node.js proc server.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.execute_proc_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        params: request.params,
+        bin_params: request.bin_params,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/execute/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/execute/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Exectues a proc in the GPUdb Node.js proc server.
+ *
+ * @param {String} name  Name of the proc to execute.
+ * @param {Object} params  A map containing string parameters to pass to the
+ *                         proc. Each key/value pair specifies the name of a
+ *                         parameter and its value.
+ * @param {Object} bin_params  A map containing binary parameters to pass to
+ *                             the proc. Each key/value pair specifies the name
+ *                             of a parameter and its value.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.execute_proc = function(name, params, bin_params, options, callback) {
+    var actual_request = {
+        name: name,
+        params: params,
+        bin_params: bin_params,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/execute/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/execute/proc", actual_request);
         return data;
     }
 };
@@ -2755,7 +2932,9 @@ GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name
  * For example, if a type definition has the columns 'x' and 'y', then a filter
  * by list query with the column map {"x":["10.1", "2.3"], "y":["0.0", "-31.5",
  * "42.0"]} will return the count of all data points whose x and y values match
- * one of the values in the respective x- and y-lists.
+ * one of the values in the respective x- and y-lists. If the filter_mode
+ * option is set to 'not_in_list' then the filter will match all items that are
+ * not in the provided list(s).
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2792,7 +2971,9 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  * For example, if a type definition has the columns 'x' and 'y', then a filter
  * by list query with the column map {"x":["10.1", "2.3"], "y":["0.0", "-31.5",
  * "42.0"]} will return the count of all data points whose x and y values match
- * one of the values in the respective x- and y-lists.
+ * one of the values in the respective x- and y-lists. If the filter_mode
+ * option is set to 'not_in_list' then the filter will match all items that are
+ * not in the provided list(s).
  *
  * @param {String} table_name  Name of the table to filter.  This may be the ID
  *                             of a collection, table or a result set (for
@@ -3496,8 +3677,9 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * modified) the records or values retrieved may differ between calls
  * (discontiguous or overlap) based on the type of the update.
  * <p>
- * The response is returned as a dynamic schema. For details see: {dynamic
- * schemas documentation}@{link ../../concepts/index.html#dynamic-schemas}.
+ * The response is returned as a dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3549,8 +3731,9 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * modified) the records or values retrieved may differ between calls
  * (discontiguous or overlap) based on the type of the update.
  * <p>
- * The response is returned as a dynamic schema. For details see: {dynamic
- * schemas documentation}@{link ../../concepts/index.html#dynamic-schemas}.
+ * The response is returned as a dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {String} table_name  Name of the table on which this operation will
  *                             be performed. The table cannot be a parent set.
@@ -4001,7 +4184,7 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
 
 /**
  * Generates a specified number of random records and adds them to the given
- * tble. There is an optional parameter that allows the user to customize the
+ * table. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -4035,7 +4218,7 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
 
 /**
  * Generates a specified number of random records and adds them to the given
- * tble. There is an optional parameter that allows the user to customize the
+ * table. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -4160,6 +4343,74 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
         this.submit_request("/insert/symbol", actual_request, callback);
     } else {
         var data = this.submit_request("/insert/symbol", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Locks a table.  By default a table has no locks and all operations are
+ * permitted.  A user may request a read-only or a write-only lock, after which
+ * only read or write operations are permitted on the table until the next
+ * request.  When lock_type is disable then then no operations are permitted on
+ * the table.  The lock status can be queried by passing an empty string for
+ * {@code lock_type}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.lock_table_request = function(request, callback) {
+    var actual_request = {
+        table_name: request.table_name,
+        lock_type: (request.lock_type !== undefined && request.lock_type !== null) ? request.lock_type : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/lock/table", actual_request, callback);
+    } else {
+        var data = this.submit_request("/lock/table", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Locks a table.  By default a table has no locks and all operations are
+ * permitted.  A user may request a read-only or a write-only lock, after which
+ * only read or write operations are permitted on the table until the next
+ * request.  When lock_type is disable then then no operations are permitted on
+ * the table.  The lock status can be queried by passing an empty string for
+ * {@code lock_type}.
+ *
+ * @param {String} table_name  Name of the table to be locked. It must be a
+ *                             currently existing table and not a collection or
+ *                             a view.
+ * @param {String} lock_type  The type of lock being applied to the table or
+ *                            blank to query. Empty string returns the lock
+ *                            status without change the lock status of the
+ *                            table.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) {
+    var actual_request = {
+        table_name: table_name,
+        lock_type: (lock_type !== undefined && lock_type !== null) ? lock_type : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/lock/table", actual_request, callback);
+    } else {
+        var data = this.submit_request("/lock/table", actual_request);
         return data;
     }
 };
@@ -4885,24 +5136,7 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
         height: request.height,
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
         bg_color: request.bg_color,
-        do_points: (request.do_points !== undefined && request.do_points !== null) ? request.do_points : "true",
-        do_shapes: (request.do_shapes !== undefined && request.do_shapes !== null) ? request.do_shapes : "true",
-        do_tracks: (request.do_tracks !== undefined && request.do_tracks !== null) ? request.do_tracks : "true",
-        do_symbology: (request.do_symbology !== undefined && request.do_symbology !== null) ? request.do_symbology : "false",
-        pointcolors: request.pointcolors,
-        pointsizes: (request.pointsizes !== undefined && request.pointsizes !== null) ? request.pointsizes : "3",
-        pointshapes: request.pointshapes,
-        shapelinewidths: (request.shapelinewidths !== undefined && request.shapelinewidths !== null) ? request.shapelinewidths : "3",
-        shapelinecolors: (request.shapelinecolors !== undefined && request.shapelinecolors !== null) ? request.shapelinecolors : "FFFF00 ",
-        shapefillcolors: (request.shapefillcolors !== undefined && request.shapefillcolors !== null) ? request.shapefillcolors : "-1",
-        tracklinewidths: (request.tracklinewidths !== undefined && request.tracklinewidths !== null) ? request.tracklinewidths : "3",
-        tracklinecolors: (request.tracklinecolors !== undefined && request.tracklinecolors !== null) ? request.tracklinecolors : "green",
-        trackmarkersizes: (request.trackmarkersizes !== undefined && request.trackmarkersizes !== null) ? request.trackmarkersizes : "3",
-        trackmarkercolors: (request.trackmarkercolors !== undefined && request.trackmarkercolors !== null) ? request.trackmarkercolors : "0000FF",
-        trackmarkershapes: (request.trackmarkershapes !== undefined && request.trackmarkershapes !== null) ? request.trackmarkershapes : "none",
-        trackheadcolors: (request.trackheadcolors !== undefined && request.trackheadcolors !== null) ? request.trackheadcolors : "FFFFFF",
-        trackheadsizes: (request.trackheadsizes !== undefined && request.trackheadsizes !== null) ? request.trackheadsizes : "10",
-        trackheadshapes: (request.trackheadshapes !== undefined && request.trackheadshapes !== null) ? request.trackheadshapes : "circle",
+        style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -4942,27 +5176,7 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  * @param {Number} height  Height of the generated image.
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
  * @param {Number} bg_color  Background color of the generated image
- * @param {Boolean[]} do_points  Rasterize point data toggle.
- * @param {Boolean[]} do_shapes  Rasterize shapes toggle.
- * @param {Boolean[]} do_tracks  Rasterize tracks toggle.
- * @param {Boolean[]} do_symbology  Rasterize symbols toggle.
- * @param {Number[]} pointcolors  RGB color value in hex for the points.
- * @param {Number[]} pointsizes  Size of points.
- * @param {String[]} pointshapes  Shape of the point.
- * @param {Number[]} shapelinewidths  Width of the lines.
- * @param {Number[]} shapelinecolors  RGB color values in hex for the line.
- * @param {Number[]} shapefillcolors  RGB color values in hex for the fill
- *                                    color of the shapes. Use '-1' for no
- *                                    fill.
- * @param {Number[]} tracklinewidths  Width of the track lines. '0' implies do
- *                                    not draw track lines.
- * @param {Number[]} tracklinecolors  RGB color values for the track lines.
- * @param {Number[]} trackmarkersizes  Size of the track point markers.
- * @param {Number[]} trackmarkercolors  Color of the track point markers.
- * @param {String[]} trackmarkershapes  Shape of track point markers.
- * @param {Number[]} trackheadcolors  Color of track head markers.
- * @param {Number[]} trackheadsizes  Size of track head markers.
- * @param {String[]} trackheadshapes  Shape of track head markers.
+ * @param {Object} style_options  Styling options for the image.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -4970,7 +5184,7 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, min_x, max_x, min_y, max_y, width, height, projection, bg_color, do_points, do_shapes, do_tracks, do_symbology, pointcolors, pointsizes, pointshapes, shapelinewidths, shapelinecolors, shapefillcolors, tracklinewidths, tracklinecolors, trackmarkersizes, trackmarkercolors, trackmarkershapes, trackheadcolors, trackheadsizes, trackheadshapes, options, callback) {
+GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -4985,24 +5199,7 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
         height: height,
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
         bg_color: bg_color,
-        do_points: (do_points !== undefined && do_points !== null) ? do_points : "true",
-        do_shapes: (do_shapes !== undefined && do_shapes !== null) ? do_shapes : "true",
-        do_tracks: (do_tracks !== undefined && do_tracks !== null) ? do_tracks : "true",
-        do_symbology: (do_symbology !== undefined && do_symbology !== null) ? do_symbology : "false",
-        pointcolors: pointcolors,
-        pointsizes: (pointsizes !== undefined && pointsizes !== null) ? pointsizes : "3",
-        pointshapes: pointshapes,
-        shapelinewidths: (shapelinewidths !== undefined && shapelinewidths !== null) ? shapelinewidths : "3",
-        shapelinecolors: (shapelinecolors !== undefined && shapelinecolors !== null) ? shapelinecolors : "FFFF00 ",
-        shapefillcolors: (shapefillcolors !== undefined && shapefillcolors !== null) ? shapefillcolors : "-1",
-        tracklinewidths: (tracklinewidths !== undefined && tracklinewidths !== null) ? tracklinewidths : "3",
-        tracklinecolors: (tracklinecolors !== undefined && tracklinecolors !== null) ? tracklinecolors : "green",
-        trackmarkersizes: (trackmarkersizes !== undefined && trackmarkersizes !== null) ? trackmarkersizes : "3",
-        trackmarkercolors: (trackmarkercolors !== undefined && trackmarkercolors !== null) ? trackmarkercolors : "0000FF",
-        trackmarkershapes: (trackmarkershapes !== undefined && trackmarkershapes !== null) ? trackmarkershapes : "none",
-        trackheadcolors: (trackheadcolors !== undefined && trackheadcolors !== null) ? trackheadcolors : "FFFFFF",
-        trackheadsizes: (trackheadsizes !== undefined && trackheadsizes !== null) ? trackheadsizes : "10",
-        trackheadshapes: (trackheadshapes !== undefined && trackheadshapes !== null) ? trackheadshapes : "circle",
+        style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -5058,24 +5255,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         height: request.height,
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
         bg_color: request.bg_color,
-        do_points: (request.do_points !== undefined && request.do_points !== null) ? request.do_points : "true",
-        do_shapes: (request.do_shapes !== undefined && request.do_shapes !== null) ? request.do_shapes : "true",
-        do_tracks: (request.do_tracks !== undefined && request.do_tracks !== null) ? request.do_tracks : "true",
-        do_symbology: (request.do_symbology !== undefined && request.do_symbology !== null) ? request.do_symbology : "false",
-        pointcolors: (request.pointcolors !== undefined && request.pointcolors !== null) ? request.pointcolors : "FF0000",
-        pointsizes: (request.pointsizes !== undefined && request.pointsizes !== null) ? request.pointsizes : "3",
-        pointshapes: request.pointshapes,
-        shapelinewidths: (request.shapelinewidths !== undefined && request.shapelinewidths !== null) ? request.shapelinewidths : "3",
-        shapelinecolors: (request.shapelinecolors !== undefined && request.shapelinecolors !== null) ? request.shapelinecolors : "FFFF00 ",
-        shapefillcolors: (request.shapefillcolors !== undefined && request.shapefillcolors !== null) ? request.shapefillcolors : "-1",
-        tracklinewidths: (request.tracklinewidths !== undefined && request.tracklinewidths !== null) ? request.tracklinewidths : "3",
-        tracklinecolors: (request.tracklinecolors !== undefined && request.tracklinecolors !== null) ? request.tracklinecolors : "green",
-        trackmarkersizes: (request.trackmarkersizes !== undefined && request.trackmarkersizes !== null) ? request.trackmarkersizes : "3",
-        trackmarkercolors: (request.trackmarkercolors !== undefined && request.trackmarkercolors !== null) ? request.trackmarkercolors : "blue",
-        trackmarkershapes: (request.trackmarkershapes !== undefined && request.trackmarkershapes !== null) ? request.trackmarkershapes : "none",
-        trackheadcolors: (request.trackheadcolors !== undefined && request.trackheadcolors !== null) ? request.trackheadcolors : "FFFFFF",
-        trackheadsizes: (request.trackheadsizes !== undefined && request.trackheadsizes !== null) ? request.trackheadsizes : "10",
-        trackheadshapes: (request.trackheadshapes !== undefined && request.trackheadshapes !== null) ? request.trackheadshapes : "circle",
+        style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -5150,28 +5330,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {Number} height  Height of the generated image.
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
  * @param {Number} bg_color  Background color of the generated image.
- * @param {Boolean[]} do_points  Rasterize point data toggle.
- * @param {Boolean[]} do_shapes  Rasterize shapes toggle.
- * @param {Boolean[]} do_tracks  Rasterize tracks toggle.
- * @param {Boolean[]} do_symbology  Rasterize symbols toggle.
- * @param {Number[]} pointcolors  RGB color value in hex for the points.
- * @param {Number[]} pointsizes  Size of points.
- * @param {String[]} pointshapes  Shape of the point.
- * @param {Number[]} shapelinewidths  Width of the lines.
- * @param {Number[]} shapelinecolors  RGB color values in hex for the line.
- *                                    Default is yellow.
- * @param {Number[]} shapefillcolors  RGB color values in hex for the fill
- *                                    color of the shapes. Use '-1' for no
- *                                    fill.
- * @param {Number[]} tracklinewidths  Width of the track lines. '0' implies do
- *                                    not draw track lines.
- * @param {Number[]} tracklinecolors  RGB color values for the track lines.
- * @param {Number[]} trackmarkersizes  Size of the track point markers.
- * @param {Number[]} trackmarkercolors  Color of the track point markers.
- * @param {String[]} trackmarkershapes  Shape of track point markers.
- * @param {Number[]} trackheadcolors  Color of track head markers.
- * @param {Number[]} trackheadsizes  Size of track head markers.
- * @param {String[]} trackheadshapes  Shape of track head markers.
+ * @param {Object} style_options  Styling options for the image.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5179,7 +5338,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                   operation.
  * 
  */
-GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, do_points, do_shapes, do_tracks, do_symbology, pointcolors, pointsizes, pointshapes, shapelinewidths, shapelinecolors, shapefillcolors, tracklinewidths, tracklinecolors, trackmarkersizes, trackmarkercolors, trackmarkershapes, trackheadcolors, trackheadsizes, trackheadshapes, options, callback) {
+GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -5198,24 +5357,7 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
         height: height,
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
         bg_color: bg_color,
-        do_points: (do_points !== undefined && do_points !== null) ? do_points : "true",
-        do_shapes: (do_shapes !== undefined && do_shapes !== null) ? do_shapes : "true",
-        do_tracks: (do_tracks !== undefined && do_tracks !== null) ? do_tracks : "true",
-        do_symbology: (do_symbology !== undefined && do_symbology !== null) ? do_symbology : "false",
-        pointcolors: (pointcolors !== undefined && pointcolors !== null) ? pointcolors : "FF0000",
-        pointsizes: (pointsizes !== undefined && pointsizes !== null) ? pointsizes : "3",
-        pointshapes: pointshapes,
-        shapelinewidths: (shapelinewidths !== undefined && shapelinewidths !== null) ? shapelinewidths : "3",
-        shapelinecolors: (shapelinecolors !== undefined && shapelinecolors !== null) ? shapelinecolors : "FFFF00 ",
-        shapefillcolors: (shapefillcolors !== undefined && shapefillcolors !== null) ? shapefillcolors : "-1",
-        tracklinewidths: (tracklinewidths !== undefined && tracklinewidths !== null) ? tracklinewidths : "3",
-        tracklinecolors: (tracklinecolors !== undefined && tracklinecolors !== null) ? tracklinecolors : "green",
-        trackmarkersizes: (trackmarkersizes !== undefined && trackmarkersizes !== null) ? trackmarkersizes : "3",
-        trackmarkercolors: (trackmarkercolors !== undefined && trackmarkercolors !== null) ? trackmarkercolors : "blue",
-        trackmarkershapes: (trackmarkershapes !== undefined && trackmarkershapes !== null) ? trackmarkershapes : "none",
-        trackheadcolors: (trackheadcolors !== undefined && trackheadcolors !== null) ? trackheadcolors : "FFFFFF",
-        trackheadsizes: (trackheadsizes !== undefined && trackheadsizes !== null) ? trackheadsizes : "10",
-        trackheadshapes: (trackheadshapes !== undefined && trackheadshapes !== null) ? trackheadshapes : "circle",
+        style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -5233,8 +5375,6 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
- * <p>
-
  * The heatmap image is contained in the {@code image_data} field.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -5258,11 +5398,7 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
         width: request.width,
         height: request.height,
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
-        colormap: (request.colormap !== undefined && request.colormap !== null) ? request.colormap : "none",
-        blur_radius: (request.blur_radius !== undefined && request.blur_radius !== null) ? request.blur_radius : "5",
-        bg_color: request.bg_color,
-        gradient_start_color: (request.gradient_start_color !== undefined && request.gradient_start_color !== null) ? request.gradient_start_color : "FFFFFF",
-        gradient_end_color: (request.gradient_end_color !== undefined && request.gradient_end_color !== null) ? request.gradient_end_color : "FF0000",
+        style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -5280,8 +5416,6 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
- * <p>
-
  * The heatmap image is contained in the {@code image_data} field.
  *
  * @param {String[]} table_names  Name of the table containing the data for the
@@ -5298,13 +5432,7 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  * @param {Number} width  Width of the generated image.
  * @param {Number} height  Height of the generated image.
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {String} colormap  Colormap for the heat map.
- * @param {Number} blur_radius  Blurring radius for the heat map.
- * @param {Number} bg_color  Background color of the generated image.
- * @param {Number} gradient_start_color  User defined gradient start color for
- *                                       the heat map.
- * @param {Number} gradient_end_color  User defined gradient end color for the
- *                                     heat map.
+ * @param {Object} style_options  Various style related options.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5312,7 +5440,7 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, colormap, blur_radius, bg_color, gradient_start_color, gradient_end_color, options, callback) {
+GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         x_column_name: x_column_name,
@@ -5325,11 +5453,7 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
         width: width,
         height: height,
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
-        colormap: (colormap !== undefined && colormap !== null) ? colormap : "none",
-        blur_radius: (blur_radius !== undefined && blur_radius !== null) ? blur_radius : "5",
-        bg_color: bg_color,
-        gradient_start_color: (gradient_start_color !== undefined && gradient_start_color !== null) ? gradient_start_color : "FFFFFF",
-        gradient_end_color: (gradient_end_color !== undefined && gradient_end_color !== null) ? gradient_end_color : "FF0000",
+        style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -5337,136 +5461,6 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
         this.submit_request("/visualize/image/heatmap", actual_request, callback);
     } else {
         var data = this.submit_request("/visualize/image/heatmap", actual_request);
-        return data;
-    }
-};
-
-/**
- * Generates 'class break' rasterized heatmap image tiles for an area of
- * interest using the given tables and the provided parameters.
- * <p>
- * A class break rendering is where data from one or more GPUdb tables is
- * rasterized with styling applied on a per-class basis. GPUdb supports class
- * breaks based on one or more data columns. Distinct values (for strings) or
- * ranges (for numeric attributes) must be provided in the
- * cb_column_name1/cb_vals1 and cb_column_name2/cb_vals2 parameters. The
- * styling parameters must be specified for each class.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.visualize_image_heatmap_classbreak_request = function(request, callback) {
-    var actual_request = {
-        table_names: request.table_names,
-        x_column_name: request.x_column_name,
-        y_column_name: request.y_column_name,
-        cb_column_name: request.cb_column_name,
-        cb_vals: request.cb_vals,
-        cb_ranges: request.cb_ranges,
-        min_x: request.min_x,
-        max_x: request.max_x,
-        min_y: request.min_y,
-        max_y: request.max_y,
-        width: request.width,
-        height: request.height,
-        projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
-        colormaps: (request.colormaps !== undefined && request.colormaps !== null) ? request.colormaps : "none",
-        blur_radii: (request.blur_radii !== undefined && request.blur_radii !== null) ? request.blur_radii : "5",
-        bg_color: request.bg_color,
-        gradient_start_colors: (request.gradient_start_colors !== undefined && request.gradient_start_colors !== null) ? request.gradient_start_colors : "FFFFFF",
-        gradient_end_colors: (request.gradient_end_colors !== undefined && request.gradient_end_colors !== null) ? request.gradient_end_colors : "FF0000",
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/visualize/image/heatmap/classbreak", actual_request, callback);
-    } else {
-        var data = this.submit_request("/visualize/image/heatmap/classbreak", actual_request);
-        return data;
-    }
-};
-
-/**
- * Generates 'class break' rasterized heatmap image tiles for an area of
- * interest using the given tables and the provided parameters.
- * <p>
- * A class break rendering is where data from one or more GPUdb tables is
- * rasterized with styling applied on a per-class basis. GPUdb supports class
- * breaks based on one or more data columns. Distinct values (for strings) or
- * ranges (for numeric attributes) must be provided in the
- * cb_column_name1/cb_vals1 and cb_column_name2/cb_vals2 parameters. The
- * styling parameters must be specified for each class.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
- *
- * @param {String[]} table_names  Name of the table containing the data for the
- *                                various layers to be rendered.
- * @param {String} x_column_name  Name of the column containing the x
- *                                coordinates.
- * @param {String} y_column_name  Name of the column containing the y
- *                                coordinates.
- * @param {String} cb_column_name  Name of the column for the class break.
- * @param {String[]} cb_vals  Comma separated list of values (e.g.
- *                            '0,5,10,15,30').
- * @param {String[]} cb_ranges  Comma separated list of ranges (e.g.
- *                              '0:5,5:10,15:30').
- * @param {Number} min_x  Lower bound for the x values.
- * @param {Number} max_x  Upper bound for the x values.
- * @param {Number} min_y  Lower bound for the y values.
- * @param {Number} max_y  Upper bound for the y values.
- * @param {Number} width  Width of the generated image.
- * @param {Number} height  Height of the generated image.
- * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {String[]} colormaps  Colormap for the heat map.
- * @param {Number[]} blur_radii  Blurring radius for the heat map.
- * @param {Number} bg_color  Background color of the generated image.
- * @param {Number[]} gradient_start_colors  User defined gradient start color
- *                                          for the heat map.
- * @param {Number[]} gradient_end_colors  User defined gradient end color for
- *                                        the heat map.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.visualize_image_heatmap_classbreak = function(table_names, x_column_name, y_column_name, cb_column_name, cb_vals, cb_ranges, min_x, max_x, min_y, max_y, width, height, projection, colormaps, blur_radii, bg_color, gradient_start_colors, gradient_end_colors, options, callback) {
-    var actual_request = {
-        table_names: table_names,
-        x_column_name: x_column_name,
-        y_column_name: y_column_name,
-        cb_column_name: cb_column_name,
-        cb_vals: cb_vals,
-        cb_ranges: cb_ranges,
-        min_x: min_x,
-        max_x: max_x,
-        min_y: min_y,
-        max_y: max_y,
-        width: width,
-        height: height,
-        projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
-        colormaps: (colormaps !== undefined && colormaps !== null) ? colormaps : "none",
-        blur_radii: (blur_radii !== undefined && blur_radii !== null) ? blur_radii : "5",
-        bg_color: bg_color,
-        gradient_start_colors: (gradient_start_colors !== undefined && gradient_start_colors !== null) ? gradient_start_colors : "FFFFFF",
-        gradient_end_colors: (gradient_end_colors !== undefined && gradient_end_colors !== null) ? gradient_end_colors : "FF0000",
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/visualize/image/heatmap/classbreak", actual_request, callback);
-    } else {
-        var data = this.submit_request("/visualize/image/heatmap/classbreak", actual_request);
         return data;
     }
 };
@@ -5739,26 +5733,10 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
         height: request.height,
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
         bg_color: request.bg_color,
-        do_points: (request.do_points !== undefined && request.do_points !== null) ? request.do_points : "true",
-        do_shapes: (request.do_shapes !== undefined && request.do_shapes !== null) ? request.do_shapes : "true",
-        do_tracks: (request.do_tracks !== undefined && request.do_tracks !== null) ? request.do_tracks : "true",
-        pointcolors: (request.pointcolors !== undefined && request.pointcolors !== null) ? request.pointcolors : "FF0000",
-        pointsizes: (request.pointsizes !== undefined && request.pointsizes !== null) ? request.pointsizes : "3",
-        pointshapes: request.pointshapes,
-        shapelinewidths: (request.shapelinewidths !== undefined && request.shapelinewidths !== null) ? request.shapelinewidths : "3",
-        shapelinecolors: (request.shapelinecolors !== undefined && request.shapelinecolors !== null) ? request.shapelinecolors : "FFFF00 ",
-        shapefillcolors: (request.shapefillcolors !== undefined && request.shapefillcolors !== null) ? request.shapefillcolors : "-1",
-        tracklinewidths: (request.tracklinewidths !== undefined && request.tracklinewidths !== null) ? request.tracklinewidths : "3",
-        tracklinecolors: (request.tracklinecolors !== undefined && request.tracklinecolors !== null) ? request.tracklinecolors : "green",
-        trackmarkersizes: (request.trackmarkersizes !== undefined && request.trackmarkersizes !== null) ? request.trackmarkersizes : "3",
-        trackmarkercolors: (request.trackmarkercolors !== undefined && request.trackmarkercolors !== null) ? request.trackmarkercolors : "0000FF",
-        trackmarkershapes: (request.trackmarkershapes !== undefined && request.trackmarkershapes !== null) ? request.trackmarkershapes : "none",
-        trackheadcolors: (request.trackheadcolors !== undefined && request.trackheadcolors !== null) ? request.trackheadcolors : "FFFFFF",
-        trackheadsizes: (request.trackheadsizes !== undefined && request.trackheadsizes !== null) ? request.trackheadsizes : "10",
-        trackheadshapes: (request.trackheadshapes !== undefined && request.trackheadshapes !== null) ? request.trackheadshapes : "circle",
         time_intervals: request.time_intervals,
         video_style: request.video_style,
         session_key: request.session_key,
+        style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -5829,31 +5807,11 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * @param {Number} height  Height of the generated image.
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
  * @param {Number} bg_color  Background color of the generated image.
- * @param {Boolean[]} do_points  Rasterize point data toggle.
- * @param {Boolean[]} do_shapes  Rasterize shapes toggle.
- * @param {Boolean[]} do_tracks  Rasterize tracks toggle.
- * @param {Number[]} pointcolors  RGB color value in hex for the points.
- * @param {Number[]} pointsizes  Size of points.
- * @param {String[]} pointshapes  Shape of the point.
- * @param {Number[]} shapelinewidths  Width of the lines.
- * @param {Number[]} shapelinecolors  RGB color values in hex for the line.
- *                                    Default is yellow.
- * @param {Number[]} shapefillcolors  RGB color values in hex for the fill
- *                                    color of the shapes. Use '-1' for no
- *                                    fill.
- * @param {Number[]} tracklinewidths  Width of the track lines. '0' implies do
- *                                    not draw track lines.
- * @param {Number[]} tracklinecolors  RGB color values for the track lines.
- * @param {Number[]} trackmarkersizes  Size of the track point markers.
- * @param {Number[]} trackmarkercolors  Color of the track point markers.
- * @param {String[]} trackmarkershapes  Shape of track point markers.
- * @param {Number[]} trackheadcolors  Color of track head markers.
- * @param {Number[]} trackheadsizes  Size of track head markers.
- * @param {String[]} trackheadshapes  Shape of track head markers.
  * @param {Number[][]} time_intervals
  * @param {String} video_style
  * @param {String} session_key  User Provided session key that is later used to
  *                              retrieve the generated video from the WMS.
+ * @param {Object} style_options  Styling options for the image.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5861,7 +5819,7 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.visualize_video = function(table_names, world_table_names, track_ids, x_column_name, y_column_name, min_x, max_x, min_y, max_y, width, height, projection, bg_color, do_points, do_shapes, do_tracks, pointcolors, pointsizes, pointshapes, shapelinewidths, shapelinecolors, shapefillcolors, tracklinewidths, tracklinecolors, trackmarkersizes, trackmarkercolors, trackmarkershapes, trackheadcolors, trackheadsizes, trackheadshapes, time_intervals, video_style, session_key, options, callback) {
+GPUdb.prototype.visualize_video = function(table_names, world_table_names, track_ids, x_column_name, y_column_name, min_x, max_x, min_y, max_y, width, height, projection, bg_color, time_intervals, video_style, session_key, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -5876,26 +5834,10 @@ GPUdb.prototype.visualize_video = function(table_names, world_table_names, track
         height: height,
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
         bg_color: bg_color,
-        do_points: (do_points !== undefined && do_points !== null) ? do_points : "true",
-        do_shapes: (do_shapes !== undefined && do_shapes !== null) ? do_shapes : "true",
-        do_tracks: (do_tracks !== undefined && do_tracks !== null) ? do_tracks : "true",
-        pointcolors: (pointcolors !== undefined && pointcolors !== null) ? pointcolors : "FF0000",
-        pointsizes: (pointsizes !== undefined && pointsizes !== null) ? pointsizes : "3",
-        pointshapes: pointshapes,
-        shapelinewidths: (shapelinewidths !== undefined && shapelinewidths !== null) ? shapelinewidths : "3",
-        shapelinecolors: (shapelinecolors !== undefined && shapelinecolors !== null) ? shapelinecolors : "FFFF00 ",
-        shapefillcolors: (shapefillcolors !== undefined && shapefillcolors !== null) ? shapefillcolors : "-1",
-        tracklinewidths: (tracklinewidths !== undefined && tracklinewidths !== null) ? tracklinewidths : "3",
-        tracklinecolors: (tracklinecolors !== undefined && tracklinecolors !== null) ? tracklinecolors : "green",
-        trackmarkersizes: (trackmarkersizes !== undefined && trackmarkersizes !== null) ? trackmarkersizes : "3",
-        trackmarkercolors: (trackmarkercolors !== undefined && trackmarkercolors !== null) ? trackmarkercolors : "0000FF",
-        trackmarkershapes: (trackmarkershapes !== undefined && trackmarkershapes !== null) ? trackmarkershapes : "none",
-        trackheadcolors: (trackheadcolors !== undefined && trackheadcolors !== null) ? trackheadcolors : "FFFFFF",
-        trackheadsizes: (trackheadsizes !== undefined && trackheadsizes !== null) ? trackheadsizes : "10",
-        trackheadshapes: (trackheadshapes !== undefined && trackheadshapes !== null) ? trackheadshapes : "circle",
         time_intervals: time_intervals,
         video_style: video_style,
         session_key: session_key,
+        style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -5962,13 +5904,9 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
         width: request.width,
         height: request.height,
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
-        bg_color: request.bg_color,
-        colormap: (request.colormap !== undefined && request.colormap !== null) ? request.colormap : "none",
-        blur_radius: (request.blur_radius !== undefined && request.blur_radius !== null) ? request.blur_radius : "5",
-        gradient_start_color: (request.gradient_start_color !== undefined && request.gradient_start_color !== null) ? request.gradient_start_color : "FFFFFF",
-        gradient_end_color: (request.gradient_end_color !== undefined && request.gradient_end_color !== null) ? request.gradient_end_color : "FF0000",
         video_style: request.video_style,
         session_key: request.session_key,
+        style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -6028,16 +5966,10 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
  * @param {Number} width  Width of the generated video.
  * @param {Number} height  Height of the generated video.
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {Number} bg_color  Background color of the generated frames.
- * @param {String} colormap  Colormap for the heat map.
- * @param {Number} blur_radius  Blurring radius for the heat map.
- * @param {Number} gradient_start_color  User defined gradient start color for
- *                                       the heat map.
- * @param {Number} gradient_end_color  User defined gradient end color for the
- *                                     heat map.
  * @param {String} video_style
  * @param {String} session_key  User Provided session key that is later used to
  *                              retrieve the generated video from the WMS.
+ * @param {Object} style_options  Various style related options.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6045,7 +5977,7 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, bg_color, colormap, blur_radius, gradient_start_color, gradient_end_color, video_style, session_key, options, callback) {
+GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, video_style, session_key, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         x_column_name: x_column_name,
@@ -6058,13 +5990,9 @@ GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y
         width: width,
         height: height,
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
-        bg_color: bg_color,
-        colormap: (colormap !== undefined && colormap !== null) ? colormap : "none",
-        blur_radius: (blur_radius !== undefined && blur_radius !== null) ? blur_radius : "5",
-        gradient_start_color: (gradient_start_color !== undefined && gradient_start_color !== null) ? gradient_start_color : "FFFFFF",
-        gradient_end_color: (gradient_end_color !== undefined && gradient_end_color !== null) ? gradient_end_color : "FF0000",
         video_style: video_style,
         session_key: session_key,
+        style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
