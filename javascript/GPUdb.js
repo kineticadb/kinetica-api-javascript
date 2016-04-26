@@ -374,7 +374,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "4.2.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.0.0.0" });
 
 /**
  * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
@@ -451,7 +451,7 @@ GPUdb.Type.from_table = function(gpudb, table_name, callback) {
             }
         }
 
-        callback(null, GPUdb.Type.from_type_info(response.type_labels[0], response.type_schemas[0], response.annotations[0]));
+        callback(null, GPUdb.Type.from_type_info(response.type_labels[0], response.type_schemas[0], response.properties[0]));
     };
 
     if (callback !== undefined && callback !== null) {
@@ -500,7 +500,7 @@ GPUdb.Type.from_type = function(gpudb, type_id, callback) {
             callback(Error("Type " + type_id + " does not exist."), null);
         }
 
-        callback(null, GPUdb.Type.from_type_info(response.labels[0], response.type_schemas[0], response.annotations[0]));
+        callback(null, GPUdb.Type.from_type_info(response.labels[0], response.type_schemas[0], response.properties[0]));
     };
 
     if (callback !== undefined && callback !== null) {
@@ -568,6 +568,68 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
 };
 
 /**
+ * Delete a node from the system.  To delete a node, the data is first
+ * distributed from the deleted node to all the other nodes.  Then the node is
+ * taken out of service.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_delete_node_request = function(request, callback) {
+    var actual_request = {
+        rank: request.rank,
+        authorization: request.authorization,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/delete/node", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/delete/node", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Delete a node from the system.  To delete a node, the data is first
+ * distributed from the deleted node to all the other nodes.  Then the node is
+ * taken out of service.
+ *
+ * @param {Number} rank  Rank number of the node being removed from the system.
+ * @param {String} authorization  The password that GPUdb is configured with
+ *                                during startup. Incorrect or missing
+ *                                authorization code will result in an error.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_delete_node = function(rank, authorization, options, callback) {
+    var actual_request = {
+        rank: rank,
+        authorization: authorization,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/delete/node", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/delete/node", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Returns the list of shards and the corresponding rank and tom containing the
+ * shard.  The response message contains arrays of 16384 (total number of
+ * shards in the system) rank and tom numbers corresponding to each shard.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -579,7 +641,7 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
  */
 GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback) {
     var actual_request = {
-        dummy: (request.dummy !== undefined && request.dummy !== null) ? request.dummy : []
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -591,17 +653,20 @@ GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback
 };
 
 /**
+ * Returns the list of shards and the corresponding rank and tom containing the
+ * shard.  The response message contains arrays of 16384 (total number of
+ * shards in the system) rank and tom numbers corresponding to each shard.
  *
- * @param {String} dummy
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
  */
-GPUdb.prototype.admin_get_shard_assignments = function(dummy, callback) {
+GPUdb.prototype.admin_get_shard_assignments = function(options, callback) {
     var actual_request = {
-        dummy: (dummy !== undefined && dummy !== null) ? dummy : []
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -642,7 +707,7 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  * Take the system offline. When the system is offline, no user operations can
  * be performed with the exception of a system shutdown.
  *
- * @param {Boolean} offline  desired offline state
+ * @param {Boolean} offline  Set to true if desired state is offline.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -665,6 +730,60 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
 };
 
 /**
+ * Rebalance the database such that all the nodes contain approximately equal
+ * number of records.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_rebalance_request = function(request, callback) {
+    var actual_request = {
+        table_names: request.table_names,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/rebalance", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/rebalance", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Rebalance the database such that all the nodes contain approximately equal
+ * number of records.
+ *
+ * @param {String[]} table_names  Names of the tables to be rebalanced.  If
+ *                                array is empty, all tables will be
+ *                                rebalanced.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_rebalance = function(table_names, options, callback) {
+    var actual_request = {
+        table_names: table_names,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/rebalance", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/rebalance", actual_request);
+        return data;
+    }
+};
+
+/**
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -680,7 +799,8 @@ GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback
         partial_reassignment: request.partial_reassignment,
         shard_assignments_rank: request.shard_assignments_rank,
         shard_assignments_tom: request.shard_assignments_tom,
-        assignment_index: request.assignment_index
+        assignment_index: request.assignment_index,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -698,19 +818,21 @@ GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback
  * @param {Number[]} shard_assignments_rank
  * @param {Number[]} shard_assignments_tom
  * @param {Number[]} assignment_index
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
  */
-GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, callback) {
+GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, options, callback) {
     var actual_request = {
         version: version,
         partial_reassignment: partial_reassignment,
         shard_assignments_rank: shard_assignments_rank,
         shard_assignments_tom: shard_assignments_tom,
-        assignment_index: assignment_index
+        assignment_index: assignment_index,
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -775,6 +897,57 @@ GPUdb.prototype.admin_shutdown = function(exit_type, authorization, options, cal
         this.submit_request("/admin/shutdown", actual_request, callback);
     } else {
         var data = this.submit_request("/admin/shutdown", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Verify database is in a consistent state.  When inconsistencies or errors
+ * are found, the verified_ok flag in the response is set to false and the list
+ * of errors found is provided in the error_list.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_verify_db_request = function(request, callback) {
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/verifydb", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/verifydb", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Verify database is in a consistent state.  When inconsistencies or errors
+ * are found, the verified_ok flag in the response is set to false and the list
+ * of errors found is provided in the error_list.
+ *
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.admin_verify_db = function(options, callback) {
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/verifydb", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/verifydb", actual_request);
         return data;
     }
 };
@@ -2431,7 +2604,13 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * @param {String} label  A user-defined description string which can be used
  *                        to differentiate between tables and types with
  *                        otherwise identical schemas.
- * @param {Object} properties
+ * @param {Object} properties  Each key-value pair specifies the properties to
+ *                             use for a given column where the key is the
+ *                             column name.  All keys used must be relevant
+ *                             column names for the given table.  Specifying
+ *                             any property overrides the default properties
+ *                             for that column (which is based on the column's
+ *                             data type).
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -4184,7 +4363,7 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
 
 /**
  * Generates a specified number of random records and adds them to the given
- * table. There is an optional parameter that allows the user to customize the
+ * tble. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -4218,7 +4397,7 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
 
 /**
  * Generates a specified number of random records and adds them to the given
- * table. There is an optional parameter that allows the user to customize the
+ * tble. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -5224,8 +5403,6 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
- * <p>
-
  * The image is contained in the {@code image_data} field.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -5280,8 +5457,6 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
- * <p>
-
  * The image is contained in the {@code image_data} field.
  *
  * @param {String[]} table_names  Name of the table containing the data for the
@@ -5678,7 +5853,7 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * Creates raster images of data in the given table based on provided input
  * parameters. Numerous parameters are required to call this function. Some of
  * the important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, @{input height{), the collection of GPUdb table
+ * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
  * names on which this function is to be applied, for which shapes (point,
  * polygon, tracks) the images are to be created and a user specified session
  * key. This session key is later used to fetch the generated images stored by
@@ -5703,10 +5878,6 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * <p>
  *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
  * SESSION-KEY&FRAME=19
- * <p>
-
- * <p>
-
  * The response payload provides, among other things, the number of frames
  * which were created by GPUdb.
  *
@@ -5752,7 +5923,7 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * Creates raster images of data in the given table based on provided input
  * parameters. Numerous parameters are required to call this function. Some of
  * the important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, @{input height{), the collection of GPUdb table
+ * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
  * names on which this function is to be applied, for which shapes (point,
  * polygon, tracks) the images are to be created and a user specified session
  * key. This session key is later used to fetch the generated images stored by
@@ -5777,10 +5948,6 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * <p>
  *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
  * SESSION-KEY&FRAME=19
- * <p>
-
- * <p>
-
  * The response payload provides, among other things, the number of frames
  * which were created by GPUdb.
  *

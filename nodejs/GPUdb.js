@@ -132,15 +132,29 @@ function GPUdb(url, options) {
 module.exports = GPUdb;
 
 /**
- * Submits an arbitrary request to GPUdb.
+ * Submits an arbitrary request to GPUdb. The response will be returned via the
+ * specified callback function, or via a promise if no callback function is
+ * provided.
  *
  * @param {String} endpoint The endpoint to which to submit the request.
  * @param {Object} request The request object to submit.
  * @param {GPUdbCallback} [callback] The callback function.
+ * @returns {Promise} A promise that will be fulfilled with the response object,
+ *                    if no callback function is provided.
  */
 GPUdb.prototype.submit_request = function(endpoint, request, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise(function(resolve, reject) {
+            self.submit_request(endpoint, request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
 
     var requestString = JSON.stringify(request);
@@ -224,14 +238,27 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
 
 /**
  * Request a WMS (Web Map Service) rasterized image. The image will be returned
- * via the specified callback function as a Node.js Buffer object.
+ * as a Node.js Buffer object via the specified callback function, or via a
+ * promise if no callback function is provided.
  *
  * @param {Object} request Object containing WMS parameters.
  * @param {GPUdbCallback} [callback] The callback function.
+ * @returns {Promise} A promise that will be fulfilled with the image, if no
+ *                    callback function is provided.
  */
 GPUdb.prototype.wms_request = function(request, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise(function(resolve, reject) {
+            self.wms_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
 
     var queryString = require("querystring").stringify(request);
@@ -447,7 +474,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "4.2.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.0.0.0" });
 
 /**
  * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
@@ -492,15 +519,28 @@ GPUdb.encode = function(o) {
 };
 /**
  * Creates a Type object containing metadata about the type stored in the
- * specified table in GPUdb.
+ * specified table in GPUdb and returns it via the specified callback function,
+ * or via a promise if no callback function is provided.
  *
  * @param {GPUdb} gpudb GPUdb API object.
  * @param {String} table_name The table from which to obtain type metadata.
  * @param {GPUdbCallback} [callback] The callback function.
+ * @returns {Promise} A promise that will be fulfilled with the type object, if
+ *                    no callback function is provided.
  */
 GPUdb.Type.from_table = function(gpudb, table_name, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise(function(resolve, reject) {
+            self.from_table(gpudb, table_name, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
 
     var process_response = function(response, callback) {
@@ -518,7 +558,7 @@ GPUdb.Type.from_table = function(gpudb, table_name, callback) {
             }
         }
 
-        callback(null, GPUdb.Type.from_type_info(response.type_labels[0], response.type_schemas[0], response.annotations[0]));
+        callback(null, GPUdb.Type.from_type_info(response.type_labels[0], response.type_schemas[0], response.properties[0]));
     };
 
     gpudb.show_table(table_name, {}, function(err, data) {
@@ -531,15 +571,29 @@ GPUdb.Type.from_table = function(gpudb, table_name, callback) {
 };
 
 /**
- * Creates a Type object containing metadata about the specified type in GPUdb.
+ * Creates a Type object containing metadata about the specified type in GPUdb
+ * and returns it via the specified callback function, or via a promise if no
+ * callback function is provided.
  *
  * @param {GPUdb} gpudb GPUdb API object.
  * @param {String} type_id The type for which to obtain metadata.
  * @param {GPUdbCallback} [callback] The callback function.
+ * @returns {Promise} A promise that will be fulfilled with the type object, if
+ *                    no callback function is provided.
  */
 GPUdb.Type.from_type = function(gpudb, type_id, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise(function(resolve, reject) {
+            self.from_type(gpudb, type_id, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
 
     var process_response = function(response, callback) {
@@ -547,7 +601,7 @@ GPUdb.Type.from_type = function(gpudb, type_id, callback) {
             callback(Error("Type " + type_id + " does not exist."), null);
         }
 
-        callback(null, GPUdb.Type.from_type_info(response.labels[0], response.type_schemas[0], response.annotations[0]));
+        callback(null, GPUdb.Type.from_type_info(response.labels[0], response.type_schemas[0], response.properties[0]));
     };
 
     gpudb.show_types(type_id, "", {}, function(err, data) {
@@ -561,14 +615,28 @@ GPUdb.Type.from_type = function(gpudb, type_id, callback) {
 
 /**
  * Creates a new type in GPUdb based on the metadata in the Type object and
- * returns the GPUdb type ID for use in subsequent operations.
+ * returns the GPUdb type ID via the specified callback function, or via a
+ * promise if no callback function is provided, for use in subsequent
+ * operations.
  *
  * @param {GPUdb} gpudb GPUdb API object.
  * @param {GPUdbCallback} [callback] The callback function.
+ * @returns {Promise} A promise that will be fulfilled with the type ID, if no
+ *                    callback function is provided.
  */
 GPUdb.Type.prototype.create = function(gpudb, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise(function(resolve, reject) {
+            self.create(gpudb, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
 
     var properties = {};
@@ -591,36 +659,143 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
 };
 
 /**
+ * Delete a node from the system.  To delete a node, the data is first
+ * distributed from the deleted node to all the other nodes.  Then the node is
+ * taken out of service.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
-GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback) {
+GPUdb.prototype.admin_delete_node_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_delete_node_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
-        dummy: (request.dummy !== undefined && request.dummy !== null) ? request.dummy : []
+        rank: request.rank,
+        authorization: request.authorization,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    this.submit_request("/admin/delete/node", actual_request, callback);
+};
+
+/**
+ * Delete a node from the system.  To delete a node, the data is first
+ * distributed from the deleted node to all the other nodes.  Then the node is
+ * taken out of service.
+ *
+ * @param {Number} rank  Rank number of the node being removed from the system.
+ * @param {String} authorization  The password that GPUdb is configured with
+ *                                during startup. Incorrect or missing
+ *                                authorization code will result in an error.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_delete_node = function(rank, authorization, options, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_delete_node(rank, authorization, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
     }
+
+    var actual_request = {
+        rank: rank,
+        authorization: authorization,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/delete/node", actual_request, callback);
+};
+
+/**
+ * Returns the list of shards and the corresponding rank and tom containing the
+ * shard.  The response message contains arrays of 16384 (total number of
+ * shards in the system) rank and tom numbers corresponding to each shard.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_get_shard_assignments_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
 
     this.submit_request("/admin/getshardassignments", actual_request, callback);
 };
 
 /**
+ * Returns the list of shards and the corresponding rank and tom containing the
+ * shard.  The response message contains arrays of 16384 (total number of
+ * shards in the system) rank and tom numbers corresponding to each shard.
  *
- * @param {String} dummy
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
-GPUdb.prototype.admin_get_shard_assignments = function(dummy, callback) {
-    var actual_request = {
-        dummy: (dummy !== undefined && dummy !== null) ? dummy : []
-    };
-
+GPUdb.prototype.admin_get_shard_assignments = function(options, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_get_shard_assignments(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
     }
+
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
 
     this.submit_request("/admin/getshardassignments", actual_request, callback);
 };
@@ -632,17 +807,30 @@ GPUdb.prototype.admin_get_shard_assignments = function(dummy, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.admin_offline_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_offline_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         offline: request.offline,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/admin/offline", actual_request, callback);
 };
 
@@ -650,21 +838,104 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  * Take the system offline. When the system is offline, no user operations can
  * be performed with the exception of a system shutdown.
  *
- * @param {Boolean} offline  desired offline state
+ * @param {Boolean} offline  Set to true if desired state is offline.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.admin_offline = function(offline, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_offline(offline, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         offline: offline,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    this.submit_request("/admin/offline", actual_request, callback);
+};
+
+/**
+ * Rebalance the database such that all the nodes contain approximately equal
+ * number of records.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_rebalance_request = function(request, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_rebalance_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
     }
 
-    this.submit_request("/admin/offline", actual_request, callback);
+    var actual_request = {
+        table_names: request.table_names,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/rebalance", actual_request, callback);
+};
+
+/**
+ * Rebalance the database such that all the nodes contain approximately equal
+ * number of records.
+ *
+ * @param {String[]} table_names  Names of the tables to be rebalanced.  If
+ *                                array is empty, all tables will be
+ *                                rebalanced.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_rebalance = function(table_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_rebalance(table_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_names: table_names,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/rebalance", actual_request, callback);
 };
 
 /**
@@ -672,19 +943,33 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_set_shard_assignments_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         version: request.version,
         partial_reassignment: request.partial_reassignment,
         shard_assignments_rank: request.shard_assignments_rank,
         shard_assignments_tom: request.shard_assignments_tom,
-        assignment_index: request.assignment_index
+        assignment_index: request.assignment_index,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/admin/setshardassignments", actual_request, callback);
 };
@@ -696,20 +981,35 @@ GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback
  * @param {Number[]} shard_assignments_rank
  * @param {Number[]} shard_assignments_tom
  * @param {Number[]} assignment_index
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
-GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, callback) {
+GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_set_shard_assignments(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         version: version,
         partial_reassignment: partial_reassignment,
         shard_assignments_rank: shard_assignments_rank,
         shard_assignments_tom: shard_assignments_tom,
-        assignment_index: assignment_index
+        assignment_index: assignment_index,
+        options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/admin/setshardassignments", actual_request, callback);
 };
@@ -721,17 +1021,30 @@ GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassign
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.admin_shutdown_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_shutdown_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         exit_type: request.exit_type,
         authorization: request.authorization,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/admin/shutdown", actual_request, callback);
 };
@@ -747,19 +1060,99 @@ GPUdb.prototype.admin_shutdown_request = function(request, callback) {
  *                                authorization code will result in an error.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.admin_shutdown = function(exit_type, authorization, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_shutdown(exit_type, authorization, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         exit_type: exit_type,
         authorization: authorization,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    this.submit_request("/admin/shutdown", actual_request, callback);
+};
+
+/**
+ * Verify database is in a consistent state.  When inconsistencies or errors
+ * are found, the verified_ok flag in the response is set to false and the list
+ * of errors found is provided in the error_list.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_verify_db_request = function(request, callback) {
     if (callback === undefined || callback === null) {
-        callback = function() {};
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_verify_db_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
     }
 
-    this.submit_request("/admin/shutdown", actual_request, callback);
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/verifydb", actual_request, callback);
+};
+
+/**
+ * Verify database is in a consistent state.  When inconsistencies or errors
+ * are found, the verified_ok flag in the response is set to false and the list
+ * of errors found is provided in the error_list.
+ *
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_verify_db = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_verify_db(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/verifydb", actual_request, callback);
 };
 
 /**
@@ -769,18 +1162,31 @@ GPUdb.prototype.admin_shutdown = function(exit_type, authorization, options, cal
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_convex_hull_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         x_column_name: request.x_column_name,
         y_column_name: request.y_column_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/convexhull", actual_request, callback);
 };
@@ -800,18 +1206,31 @@ GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
  *                                being performed.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_column_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_convex_hull(table_name, x_column_name, y_column_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         x_column_name: x_column_name,
         y_column_name: y_column_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/convexhull", actual_request, callback);
 };
@@ -845,8 +1264,25 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_group_by_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_names: request.column_names,
@@ -855,10 +1291,6 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/groupby", actual_request, function(err, data) {
         if (err === null) {
@@ -913,8 +1345,25 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                        returned.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_group_by(table_name, column_names, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_names: column_names,
@@ -923,10 +1372,6 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/groupby", actual_request, function(err, data) {
         if (err === null) {
@@ -952,8 +1397,25 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_histogram_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_name: request.column_name,
@@ -962,10 +1424,6 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
         interval: request.interval,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/histogram", actual_request, callback);
 };
@@ -993,8 +1451,25 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  *                           parameters.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_histogram = function(table_name, column_name, start, end, interval, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_histogram(table_name, column_name, start, end, interval, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_name: column_name,
@@ -1003,10 +1478,6 @@ GPUdb.prototype.aggregate_histogram = function(table_name, column_name, start, e
         interval: interval,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/histogram", actual_request, callback);
 };
@@ -1024,8 +1495,25 @@ GPUdb.prototype.aggregate_histogram = function(table_name, column_name, start, e
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_k_means_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_names: request.column_names,
@@ -1033,10 +1521,6 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
         tolerance: request.tolerance,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/kmeans", actual_request, callback);
 };
@@ -1066,8 +1550,25 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  *                            tolerance.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_k_means = function(table_name, column_names, k, tolerance, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_k_means(table_name, column_names, k, tolerance, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_names: column_names,
@@ -1075,10 +1576,6 @@ GPUdb.prototype.aggregate_k_means = function(table_name, column_names, k, tolera
         tolerance: tolerance,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/kmeans", actual_request, callback);
 };
@@ -1090,17 +1587,30 @@ GPUdb.prototype.aggregate_k_means = function(table_name, column_names, k, tolera
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_min_max_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_min_max_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_name: request.column_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/minmax", actual_request, callback);
 };
@@ -1116,17 +1626,30 @@ GPUdb.prototype.aggregate_min_max_request = function(request, callback) {
  *                              calculated.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_min_max(table_name, column_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_name: column_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/minmax", actual_request, callback);
 };
@@ -1147,18 +1670,31 @@ GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, c
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_statistics_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_name: request.column_name,
         stats: request.stats,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/statistics", actual_request, callback);
 };
@@ -1184,18 +1720,31 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                        e.g. "sum,mean".
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_statistics(table_name, column_name, stats, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_name: column_name,
         stats: stats,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/statistics", actual_request, callback);
 };
@@ -1227,8 +1776,25 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_statistics_by_range_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         select_expression: (request.select_expression !== undefined && request.select_expression !== null) ? request.select_expression : "",
@@ -1240,10 +1806,6 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
         interval: request.interval,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/statistics/byrange", actual_request, callback);
 };
@@ -1292,8 +1854,25 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                           [start+interval``*``i, start+interval``*``(i+1)).
  * @param {Object} options  Map of optional parameters:
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expression, column_name, value_column_name, stats, start, end, interval, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_statistics_by_range(table_name, select_expression, column_name, value_column_name, stats, start, end, interval, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         select_expression: (select_expression !== undefined && select_expression !== null) ? select_expression : "",
@@ -1305,10 +1884,6 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
         interval: interval,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/statistics/byrange", actual_request, callback);
 };
@@ -1332,8 +1907,25 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_unique_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_unique_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_name: request.column_name,
@@ -1342,10 +1934,6 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/unique", actual_request, function(err, data) {
         if (err === null) {
@@ -1387,8 +1975,25 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                        returned.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.aggregate_unique(table_name, column_name, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_name: column_name,
@@ -1397,10 +2002,6 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/aggregate/unique", actual_request, function(err, data) {
         if (err === null) {
@@ -1422,16 +2023,29 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_system_properties_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_system_properties_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         property_updates_map: request.property_updates_map,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/system/properties", actual_request, callback);
 };
@@ -1447,16 +2061,29 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       system to be updated. Error if empty.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_system_properties = function(property_updates_map, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_system_properties(property_updates_map, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         property_updates_map: property_updates_map,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/system/properties", actual_request, callback);
 };
@@ -1470,18 +2097,31 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_name: request.column_name,
         action: request.action,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/table", actual_request, callback);
 };
@@ -1501,18 +2141,31 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * @param {String} action  Kind of index operation being performed on the table
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_table = function(table_name, column_name, action, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_table(table_name, column_name, action, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_name: column_name,
         action: action,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/table", actual_request, callback);
 };
@@ -1526,17 +2179,30 @@ GPUdb.prototype.alter_table = function(table_name, column_name, action, options,
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_table_metadata_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_table_metadata_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         metadata_map: request.metadata_map,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/table/metadata", actual_request, callback);
 };
@@ -1558,17 +2224,30 @@ GPUdb.prototype.alter_table_metadata_request = function(request, callback) {
  *                               metadata for the table(s) will be cleared.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_table_metadata(table_names, metadata_map, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         metadata_map: metadata_map,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/table/metadata", actual_request, callback);
 };
@@ -1581,17 +2260,30 @@ GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, optio
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_table_properties_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_table_properties_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         properties_map: (request.properties_map !== undefined && request.properties_map !== null) ? request.properties_map : {},
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/table/properties", actual_request, callback);
 };
@@ -1610,17 +2302,30 @@ GPUdb.prototype.alter_table_properties_request = function(request, callback) {
  *                                 tables will be identical.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.alter_table_properties = function(table_names, properties_map, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_table_properties(table_names, properties_map, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         properties_map: (properties_map !== undefined && properties_map !== null) ? properties_map : {},
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/alter/table/properties", actual_request, callback);
 };
@@ -1635,17 +2340,30 @@ GPUdb.prototype.alter_table_properties = function(table_names, properties_map, o
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.clear_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: (request.table_name !== undefined && request.table_name !== null) ? request.table_name : "",
         authorization: (request.authorization !== undefined && request.authorization !== null) ? request.authorization : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/clear/table", actual_request, callback);
 };
@@ -1665,17 +2383,30 @@ GPUdb.prototype.clear_table_request = function(request, callback) {
  *                                string can be left blank.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.clear_table = function(table_name, authorization, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_table(table_name, authorization, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: (table_name !== undefined && table_name !== null) ? table_name : "",
         authorization: (authorization !== undefined && authorization !== null) ? authorization : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/clear/table", actual_request, callback);
 };
@@ -1686,16 +2417,29 @@ GPUdb.prototype.clear_table = function(table_name, authorization, options, callb
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_table_monitor_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         topic_id: request.topic_id,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/clear/tablemonitor", actual_request, callback);
 };
@@ -1706,16 +2450,29 @@ GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
  * @param {String} topic_id  The topic ID returned by /create/tablemonitor.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.clear_table_monitor = function(topic_id, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_table_monitor(topic_id, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         topic_id: topic_id,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/clear/tablemonitor", actual_request, callback);
 };
@@ -1728,16 +2485,29 @@ GPUdb.prototype.clear_table_monitor = function(topic_id, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.clear_trigger_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_trigger_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         trigger_id: request.trigger_id,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/clear/trigger", actual_request, callback);
 };
@@ -1750,16 +2520,29 @@ GPUdb.prototype.clear_trigger_request = function(request, callback) {
  * @param {String} trigger_id  ID for the trigger to be deactivated.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_trigger(trigger_id, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         trigger_id: trigger_id,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/clear/trigger", actual_request, callback);
 };
@@ -1771,18 +2554,31 @@ GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_join_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_join_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         join_table_name: request.join_table_name,
         table_names: request.table_names,
         aliases: request.aliases,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/jointable", actual_request, callback);
 };
@@ -1801,18 +2597,31 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                            tables.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_join_table = function(join_table_name, table_names, aliases, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_join_table(join_table_name, table_names, aliases, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         join_table_name: join_table_name,
         table_names: table_names,
         aliases: aliases,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/jointable", actual_request, callback);
 };
@@ -1830,17 +2639,30 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, alias
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         type_id: request.type_id,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/table", actual_request, callback);
 };
@@ -1868,17 +2690,30 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          *is_collection* is 'true'.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_table = function(table_name, type_id, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_table(table_name, type_id, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         type_id: type_id,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/table", actual_request, callback);
 };
@@ -1897,16 +2732,29 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_table_monitor_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_table_monitor_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/tablemonitor", actual_request, callback);
 };
@@ -1926,16 +2774,29 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                             a collection.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_table_monitor(table_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/tablemonitor", actual_request, callback);
 };
@@ -1957,8 +2818,25 @@ GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_trigger_by_area_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         request_id: request.request_id,
         table_names: request.table_names,
@@ -1968,10 +2846,6 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
         y_vector: request.y_vector,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/trigger/byarea", actual_request, callback);
 };
@@ -2009,8 +2883,25 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
  *                             region. Must be the same length as xvals.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_column_name, x_vector, y_column_name, y_vector, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_trigger_by_area(request_id, table_names, x_column_name, x_vector, y_column_name, y_vector, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         request_id: request_id,
         table_names: table_names,
@@ -2020,10 +2911,6 @@ GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_col
         y_vector: y_vector,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/trigger/byarea", actual_request, callback);
 };
@@ -2044,8 +2931,25 @@ GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_col
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_trigger_by_range_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         request_id: request.request_id,
         table_names: request.table_names,
@@ -2054,10 +2958,6 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
         max: request.max,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/trigger/byrange", actual_request, callback);
 };
@@ -2083,8 +2983,25 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
  * @param {Number} max  The upper bound (inclusive) for the trigger range.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, column_name, min, max, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_trigger_by_range(request_id, table_names, column_name, min, max, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         request_id: request_id,
         table_names: table_names,
@@ -2093,10 +3010,6 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
         max: max,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/trigger/byrange", actual_request, callback);
 };
@@ -2142,18 +3055,31 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_type_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_type_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_definition: request.type_definition,
         label: request.label,
         properties: (request.properties !== undefined && request.properties !== null) ? request.properties : {},
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/type", actual_request, callback);
 };
@@ -2201,21 +3127,40 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * @param {String} label  A user-defined description string which can be used
  *                        to differentiate between tables and types with
  *                        otherwise identical schemas.
- * @param {Object} properties
+ * @param {Object} properties  Each key-value pair specifies the properties to
+ *                             use for a given column where the key is the
+ *                             column name.  All keys used must be relevant
+ *                             column names for the given table.  Specifying
+ *                             any property overrides the default properties
+ *                             for that column (which is based on the column's
+ *                             data type).
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.create_type = function(type_definition, label, properties, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_type(type_definition, label, properties, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_definition: type_definition,
         label: label,
         properties: (properties !== undefined && properties !== null) ? properties : {},
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/create/type", actual_request, callback);
 };
@@ -2233,17 +3178,30 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.delete_records_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.delete_records_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         expressions: request.expressions,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/delete/records", actual_request, callback);
 };
@@ -2269,17 +3227,30 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                                options}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.delete_records = function(table_name, expressions, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.delete_records(table_name, expressions, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         expressions: expressions,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/delete/records", actual_request, callback);
 };
@@ -2290,18 +3261,31 @@ GPUdb.prototype.delete_records = function(table_name, expressions, options, call
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.execute_proc_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.execute_proc_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         name: request.name,
         params: request.params,
         bin_params: request.bin_params,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/execute/proc", actual_request, callback);
 };
@@ -2318,18 +3302,31 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                             of a parameter and its value.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.execute_proc = function(name, params, bin_params, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.execute_proc(name, params, bin_params, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         name: name,
         params: params,
         bin_params: bin_params,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/execute/proc", actual_request, callback);
 };
@@ -2347,18 +3344,31 @@ GPUdb.prototype.execute_proc = function(name, params, bin_params, options, callb
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
         expression: request.expression,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter", actual_request, callback);
 };
@@ -2387,18 +3397,31 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                             target="_top">concepts</a>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter = function(table_name, view_name, expression, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter(table_name, view_name, expression, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
         expression: expression,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter", actual_request, callback);
 };
@@ -2414,8 +3437,25 @@ GPUdb.prototype.filter = function(table_name, view_name, expression, options, ca
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_area_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_area_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2425,10 +3465,6 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
         y_vector: request.y_vector,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byarea", actual_request, callback);
 };
@@ -2459,8 +3495,25 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  *                             polygon representing the area to be filtered.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_area = function(table_name, view_name, x_column_name, x_vector, y_column_name, y_vector, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_area(table_name, view_name, x_column_name, x_vector, y_column_name, y_vector, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -2470,10 +3523,6 @@ GPUdb.prototype.filter_by_area = function(table_name, view_name, x_column_name, 
         y_vector: y_vector,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byarea", actual_request, callback);
 };
@@ -2489,8 +3538,25 @@ GPUdb.prototype.filter_by_area = function(table_name, view_name, x_column_name, 
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_box_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_box_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2502,10 +3568,6 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
         max_y: request.max_y,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bybox", actual_request, callback);
 };
@@ -2544,8 +3606,25 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                        greater than or equal to {@code min_y}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, min_x, max_x, y_column_name, min_y, max_y, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_box(table_name, view_name, x_column_name, min_x, max_x, y_column_name, min_y, max_y, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -2558,10 +3637,6 @@ GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, m
         options: (options !== undefined && options !== null) ? options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/filter/bybox", actual_request, callback);
 };
 
@@ -2572,8 +3647,25 @@ GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, m
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_geometry_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2582,10 +3674,6 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
         operation: request.operation,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bygeometry", actual_request, callback);
 };
@@ -2608,8 +3696,25 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  * @param {String} operation  The geometric filtering operation to perform
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name, input_wkt, operation, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_geometry(table_name, view_name, column_name, input_wkt, operation, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -2618,10 +3723,6 @@ GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name
         operation: operation,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bygeometry", actual_request, callback);
 };
@@ -2644,18 +3745,31 @@ GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_list_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_list_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
         column_values_map: request.column_values_map,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bylist", actual_request, callback);
 };
@@ -2687,18 +3801,31 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *                                    column in the table
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_list = function(table_name, view_name, column_values_map, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_list(table_name, view_name, column_values_map, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
         column_values_map: column_values_map,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bylist", actual_request, callback);
 };
@@ -2721,8 +3848,25 @@ GPUdb.prototype.filter_by_list = function(table_name, view_name, column_values_m
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_radius_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_radius_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2733,10 +3877,6 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
         radius: request.radius,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byradius", actual_request, callback);
 };
@@ -2776,8 +3916,25 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                         '42000' means 42 km.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name, x_center, y_column_name, y_center, radius, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_radius(table_name, view_name, x_column_name, x_center, y_column_name, y_center, radius, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -2788,10 +3945,6 @@ GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name
         radius: radius,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byradius", actual_request, callback);
 };
@@ -2809,8 +3962,25 @@ GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_range_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_range_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2819,10 +3989,6 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
         upper_bound: request.upper_bound,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byrange", actual_request, callback);
 };
@@ -2850,8 +4016,25 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  * @param {Number} upper_bound  Value of the upper bound (inclusive).
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_range = function(table_name, view_name, column_name, lower_bound, upper_bound, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_range(table_name, view_name, column_name, lower_bound, upper_bound, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -2860,10 +4043,6 @@ GPUdb.prototype.filter_by_range = function(table_name, view_name, column_name, l
         upper_bound: upper_bound,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byrange", actual_request, callback);
 };
@@ -2887,8 +4066,25 @@ GPUdb.prototype.filter_by_range = function(table_name, view_name, column_name, l
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_series_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_series_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2896,10 +4092,6 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
         target_track_ids: request.target_track_ids,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byseries", actual_request, callback);
 };
@@ -2935,8 +4127,25 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                     set.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, target_track_ids, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_series(table_name, view_name, track_id, target_track_ids, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -2944,10 +4153,6 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
         target_track_ids: target_track_ids,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byseries", actual_request, callback);
 };
@@ -2974,8 +4179,25 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_string_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_string_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -2984,10 +4206,6 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
         column_names: request.column_names,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bystring", actual_request, callback);
 };
@@ -3024,8 +4242,25 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                                 filter. Ignored for 'search' mode.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_string = function(table_name, view_name, expression, mode, column_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_string(table_name, view_name, expression, mode, column_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -3034,10 +4269,6 @@ GPUdb.prototype.filter_by_string = function(table_name, view_name, expression, m
         column_names: column_names,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bystring", actual_request, callback);
 };
@@ -3055,8 +4286,25 @@ GPUdb.prototype.filter_by_string = function(table_name, view_name, expression, m
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -3065,10 +4313,6 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
         source_table_column_name: request.source_table_column_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bytable", actual_request, callback);
 };
@@ -3103,8 +4347,25 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                           column_name}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_table = function(table_name, view_name, column_name, source_table_name, source_table_column_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_table(table_name, view_name, column_name, source_table_name, source_table_column_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -3113,10 +4374,6 @@ GPUdb.prototype.filter_by_table = function(table_name, view_name, column_name, s
         source_table_column_name: source_table_column_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/bytable", actual_request, callback);
 };
@@ -3134,8 +4391,25 @@ GPUdb.prototype.filter_by_table = function(table_name, view_name, column_name, s
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_value_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_value_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         view_name: (request.view_name !== undefined && request.view_name !== null) ? request.view_name : "",
@@ -3145,10 +4419,6 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
         column_name: request.column_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byvalue", actual_request, callback);
 };
@@ -3177,8 +4447,25 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  *                              be applied.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, value, value_str, column_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.filter_by_value(table_name, view_name, is_string, value, value_str, column_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         view_name: (view_name !== undefined && view_name !== null) ? view_name : "",
@@ -3188,10 +4475,6 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
         column_name: column_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/filter/byvalue", actual_request, callback);
 };
@@ -3211,8 +4494,25 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
@@ -3220,10 +4520,6 @@ GPUdb.prototype.get_records_request = function(request, callback) {
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records", actual_request, function(err, data) {
         if (err === null) {
@@ -3259,8 +4555,25 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                        returned.
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records = function(table_name, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records(table_name, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         offset: (offset !== undefined && offset !== null) ? offset : 0,
@@ -3268,10 +4581,6 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records", actual_request, function(err, data) {
         if (err === null) {
@@ -3305,8 +4614,25 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_by_column_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_by_column_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         column_names: request.column_names,
@@ -3315,10 +4641,6 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records/bycolumn", actual_request, function(err, data) {
         if (err === null) {
@@ -3363,8 +4685,25 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                        the max number of results should be returned.
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_by_column = function(table_name, column_names, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_by_column(table_name, column_names, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         column_names: column_names,
@@ -3373,10 +4712,6 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records/bycolumn", actual_request, function(err, data) {
         if (err === null) {
@@ -3404,8 +4739,25 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_by_series_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_by_series_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         world_table_name: request.world_table_name,
@@ -3414,10 +4766,6 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records/byseries", actual_request, function(err, data) {
         if (err === null) {
@@ -3461,8 +4809,25 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
  *                        returned.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_by_series(table_name, world_table_name, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         world_table_name: world_table_name,
@@ -3471,10 +4836,6 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records/byseries", actual_request, function(err, data) {
         if (err === null) {
@@ -3496,8 +4857,25 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_from_collection_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_from_collection_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
@@ -3505,10 +4883,6 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records/fromcollection", actual_request, function(err, data) {
         if (err === null) {
@@ -3539,8 +4913,25 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                        returned.
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_records_from_collection(table_name, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         offset: (offset !== undefined && offset !== null) ? offset : 0,
@@ -3548,10 +4939,6 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/get/records/fromcollection", actual_request, function(err, data) {
         if (err === null) {
@@ -3569,16 +4956,29 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.has_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.has_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/has/table", actual_request, callback);
 };
@@ -3589,16 +4989,29 @@ GPUdb.prototype.has_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table to check for existance.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.has_table = function(table_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.has_table(table_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/has/table", actual_request, callback);
 };
@@ -3609,16 +5022,29 @@ GPUdb.prototype.has_table = function(table_name, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.has_type_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.has_type_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_id: request.type_id,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/has/type", actual_request, callback);
 };
@@ -3630,16 +5056,29 @@ GPUdb.prototype.has_type_request = function(request, callback) {
  *                          /create/type request.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.has_type = function(type_id, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.has_type(type_id, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_id: type_id,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/has/type", actual_request, callback);
 };
@@ -3668,8 +5107,25 @@ GPUdb.prototype.has_type = function(type_id, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.insert_records_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         list: (request.list !== undefined && request.list !== null) ? request.list : [],
@@ -3677,10 +5133,6 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
         list_encoding: (request.list_encoding !== undefined && request.list_encoding !== null) ? request.list_encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/insert/records", actual_request, callback);
 };
@@ -3714,8 +5166,25 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                         is {@code binary}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records(table_name, data, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         list: [],
@@ -3724,16 +5193,12 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
         options: (options !== undefined && options !== null) ? options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/insert/records", actual_request, callback);
 };
 
 /**
  * Generates a specified number of random records and adds them to the given
- * table. There is an optional parameter that allows the user to customize the
+ * tble. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -3745,24 +5210,37 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.insert_records_random_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records_random_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         count: request.count,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/insert/records/random", actual_request, callback);
 };
 
 /**
  * Generates a specified number of random records and adds them to the given
- * table. There is an optional parameter that allows the user to customize the
+ * tble. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -3791,17 +5269,30 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          Below follows a more detailed description of the
  *                          map:
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.insert_records_random = function(table_name, count, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records_random(table_name, count, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         count: count,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/insert/records/random", actual_request, callback);
 };
@@ -3820,18 +5311,31 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.insert_symbol_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_symbol_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         symbol_id: request.symbol_id,
         symbol_format: request.symbol_format,
         symbol_data: request.symbol_data,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/insert/symbol", actual_request, callback);
 };
@@ -3860,18 +5364,31 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  *                              6,5.979,12.896,5.979,19.562,25.979,19.562z'
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_symbol(symbol_id, symbol_format, symbol_data, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         symbol_id: symbol_id,
         symbol_format: symbol_format,
         symbol_data: symbol_data,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/insert/symbol", actual_request, callback);
 };
@@ -3887,17 +5404,30 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.lock_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.lock_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         lock_type: (request.lock_type !== undefined && request.lock_type !== null) ? request.lock_type : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/lock/table", actual_request, callback);
 };
@@ -3919,17 +5449,30 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
  *                            table.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.lock_table(table_name, lock_type, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         lock_type: (lock_type !== undefined && lock_type !== null) ? lock_type : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/lock/table", actual_request, callback);
 };
@@ -3942,15 +5485,28 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_system_properties_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_system_properties_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/system/properties", actual_request, callback);
 };
@@ -3962,15 +5518,28 @@ GPUdb.prototype.show_system_properties_request = function(request, callback) {
  *
  * @param {Object} options  Optional parameters, currently unused.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_system_properties = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_system_properties(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/system/properties", actual_request, callback);
 };
@@ -3982,15 +5551,28 @@ GPUdb.prototype.show_system_properties = function(options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_system_status_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_system_status_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/system/status", actual_request, callback);
 };
@@ -4001,15 +5583,28 @@ GPUdb.prototype.show_system_status_request = function(request, callback) {
  *
  * @param {Object} options  Optional parameters, currently unused.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_system_status = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_system_status(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/system/status", actual_request, callback);
 };
@@ -4022,15 +5617,28 @@ GPUdb.prototype.show_system_status = function(options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_system_timing_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_system_timing_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/system/timing", actual_request, callback);
 };
@@ -4042,15 +5650,28 @@ GPUdb.prototype.show_system_timing_request = function(request, callback) {
  *
  * @param {Object} options  Optional parameters, currently unused.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_system_timing = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_system_timing(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/system/timing", actual_request, callback);
 };
@@ -4072,16 +5693,29 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/table", actual_request, callback);
 };
@@ -4105,16 +5739,29 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                             collections and top-level tables is returned.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_table = function(table_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table(table_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/table", actual_request, callback);
 };
@@ -4125,16 +5772,29 @@ GPUdb.prototype.show_table = function(table_name, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_table_metadata_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_metadata_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/table/metadata", actual_request, callback);
 };
@@ -4147,16 +5807,29 @@ GPUdb.prototype.show_table_metadata_request = function(request, callback) {
  *                                returns an error.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_metadata(table_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/table/metadata", actual_request, callback);
 };
@@ -4169,16 +5842,29 @@ GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_table_properties_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_properties_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/table/properties", actual_request, callback);
 };
@@ -4193,16 +5879,29 @@ GPUdb.prototype.show_table_properties_request = function(request, callback) {
  *                                returns an error.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_table_properties = function(table_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_properties(table_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/table/properties", actual_request, callback);
 };
@@ -4217,17 +5916,30 @@ GPUdb.prototype.show_table_properties = function(table_names, options, callback)
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_tables_by_type_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_id: request.type_id,
         label: request.label,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/tables/bytype", actual_request, callback);
 };
@@ -4245,17 +5957,30 @@ GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
  *                        the given label.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_tables_by_type = function(type_id, label, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_tables_by_type(type_id, label, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_id: type_id,
         label: label,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/tables/bytype", actual_request, callback);
 };
@@ -4267,16 +5992,29 @@ GPUdb.prototype.show_tables_by_type = function(type_id, label, options, callback
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_triggers_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_triggers_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         trigger_ids: request.trigger_ids,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/triggers", actual_request, callback);
 };
@@ -4290,16 +6028,29 @@ GPUdb.prototype.show_triggers_request = function(request, callback) {
  *                                information on all active triggers.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_triggers = function(trigger_ids, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_triggers(trigger_ids, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         trigger_ids: trigger_ids,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/triggers", actual_request, callback);
 };
@@ -4314,17 +6065,30 @@ GPUdb.prototype.show_triggers = function(trigger_ids, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_types_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_types_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_id: request.type_id,
         label: request.label,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/types", actual_request, callback);
 };
@@ -4342,17 +6106,30 @@ GPUdb.prototype.show_types_request = function(request, callback) {
  *                        /create/type.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.show_types = function(type_id, label, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_types(type_id, label, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         type_id: type_id,
         label: label,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/show/types", actual_request, callback);
 };
@@ -4381,8 +6158,25 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.update_records_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.update_records_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         expressions: request.expressions,
@@ -4392,10 +6186,6 @@ GPUdb.prototype.update_records_request = function(request, callback) {
         record_encoding: (request.record_encoding !== undefined && request.record_encoding !== null) ? request.record_encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/update/records", actual_request, callback);
 };
@@ -4439,8 +6229,25 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                         if the particular update did not affect any objects.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.update_records = function(table_name, expressions, new_values_maps, data, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.update_records(table_name, expressions, new_values_maps, data, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         expressions: expressions,
@@ -4450,10 +6257,6 @@ GPUdb.prototype.update_records = function(table_name, expressions, new_values_ma
         record_encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/update/records", actual_request, callback);
 };
@@ -4466,8 +6269,25 @@ GPUdb.prototype.update_records = function(table_name, expressions, new_values_ma
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.update_records_by_series_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.update_records_by_series_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         world_table_name: request.world_table_name,
@@ -4475,10 +6295,6 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
         reserved: (request.reserved !== undefined && request.reserved !== null) ? request.reserved : [],
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/update/records/byseries", actual_request, callback);
 };
@@ -4498,8 +6314,25 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
  * @param {String[]} reserved
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.update_records_by_series = function(table_name, world_table_name, view_name, reserved, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.update_records_by_series(table_name, world_table_name, view_name, reserved, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         world_table_name: world_table_name,
@@ -4507,10 +6340,6 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
         reserved: (reserved !== undefined && reserved !== null) ? reserved : [],
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/update/records/byseries", actual_request, callback);
 };
@@ -4525,8 +6354,25 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         world_table_names: request.world_table_names,
@@ -4544,10 +6390,6 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
         style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/image", actual_request, callback);
 };
@@ -4583,8 +6425,25 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  * @param {Object} style_options  Styling options for the image.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image(table_names, world_table_names, x_column_name, y_column_name, track_ids, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -4603,10 +6462,6 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
         options: (options !== undefined && options !== null) ? options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/visualize/image", actual_request, callback);
 };
 
@@ -4623,15 +6478,30 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
- * <p>
-
  * The image is contained in the {@code image_data} field.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_classbreak_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_classbreak_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         world_table_names: request.world_table_names,
@@ -4654,10 +6524,6 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/visualize/image/classbreak", actual_request, callback);
 };
 
@@ -4674,8 +6540,6 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
- * <p>
-
  * The image is contained in the {@code image_data} field.
  *
  * @param {String[]} table_names  Name of the table containing the data for the
@@ -4727,8 +6591,25 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {Object} style_options  Styling options for the image.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -4751,10 +6632,6 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
         options: (options !== undefined && options !== null) ? options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/visualize/image/classbreak", actual_request, callback);
 };
 
@@ -4769,8 +6646,25 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_heatmap_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         x_column_name: request.x_column_name,
@@ -4786,10 +6680,6 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
         style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/image/heatmap", actual_request, callback);
 };
@@ -4819,8 +6709,25 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  * @param {Object} style_options  Various style related options.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_heatmap(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         x_column_name: x_column_name,
@@ -4836,10 +6743,6 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
         style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/image/heatmap", actual_request, callback);
 };
@@ -4866,8 +6769,25 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_labels_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: request.table_name,
         x_column_name: request.x_column_name,
@@ -4895,10 +6815,6 @@ GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/image/labels", actual_request, callback);
 };
@@ -5006,8 +6922,25 @@ GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_column_name, x_offset, y_offset, text_string, font, text_color, text_angle, text_scale, draw_box, draw_leader, line_width, line_color, fill_color, leader_x_column_name, leader_y_column_name, min_x, max_x, min_y, max_y, width, height, projection, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_labels(table_name, x_column_name, y_column_name, x_offset, y_offset, text_string, font, text_color, text_angle, text_scale, draw_box, draw_leader, line_width, line_color, fill_color, leader_x_column_name, leader_y_column_name, min_x, max_x, min_y, max_y, width, height, projection, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_name: table_name,
         x_column_name: x_column_name,
@@ -5036,10 +6969,6 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
         options: (options !== undefined && options !== null) ? options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/visualize/image/labels", actual_request, callback);
 };
 
@@ -5047,7 +6976,7 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * Creates raster images of data in the given table based on provided input
  * parameters. Numerous parameters are required to call this function. Some of
  * the important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, @{input height{), the collection of GPUdb table
+ * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
  * names on which this function is to be applied, for which shapes (point,
  * polygon, tracks) the images are to be created and a user specified session
  * key. This session key is later used to fetch the generated images stored by
@@ -5072,18 +7001,31 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * <p>
  *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
  * SESSION-KEY&FRAME=19
- * <p>
-
- * <p>
-
  * The response payload provides, among other things, the number of frames
  * which were created by GPUdb.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_video_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_video_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         world_table_names: request.world_table_names,
@@ -5105,10 +7047,6 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
-
     this.submit_request("/visualize/video", actual_request, callback);
 };
 
@@ -5116,7 +7054,7 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * Creates raster images of data in the given table based on provided input
  * parameters. Numerous parameters are required to call this function. Some of
  * the important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, @{input height{), the collection of GPUdb table
+ * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
  * names on which this function is to be applied, for which shapes (point,
  * polygon, tracks) the images are to be created and a user specified session
  * key. This session key is later used to fetch the generated images stored by
@@ -5141,10 +7079,6 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * <p>
  *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
  * SESSION-KEY&FRAME=19
- * <p>
-
- * <p>
-
  * The response payload provides, among other things, the number of frames
  * which were created by GPUdb.
  *
@@ -5178,8 +7112,25 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * @param {Object} style_options  Styling options for the image.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_video = function(table_names, world_table_names, track_ids, x_column_name, y_column_name, min_x, max_x, min_y, max_y, width, height, projection, bg_color, time_intervals, video_style, session_key, style_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_video(table_names, world_table_names, track_ids, x_column_name, y_column_name, min_x, max_x, min_y, max_y, width, height, projection, bg_color, time_intervals, video_style, session_key, style_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -5200,10 +7151,6 @@ GPUdb.prototype.visualize_video = function(table_names, world_table_names, track
         style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/video", actual_request, callback);
 };
@@ -5245,8 +7192,25 @@ GPUdb.prototype.visualize_video = function(table_names, world_table_names, track
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_video_heatmap_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: request.table_names,
         x_column_name: request.x_column_name,
@@ -5264,10 +7228,6 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
         style_options: request.style_options,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/video/heatmap", actual_request, callback);
 };
@@ -5326,8 +7286,25 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
  * @param {Object} style_options  Various style related options.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
  */
 GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, video_style, session_key, style_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_video_heatmap(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, video_style, session_key, style_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
     var actual_request = {
         table_names: table_names,
         x_column_name: x_column_name,
@@ -5345,10 +7322,6 @@ GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y
         style_options: style_options,
         options: (options !== undefined && options !== null) ? options : {}
     };
-
-    if (callback === undefined || callback === null) {
-        callback = function() {};
-    }
 
     this.submit_request("/visualize/video/heatmap", actual_request, callback);
 };
