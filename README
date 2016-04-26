@@ -14,11 +14,16 @@ tools.
 
 
 
-The documentation can be found at http://www.gpudb.com/docs/index.html.  The
+The documentation can be found at http://www.gpudb.com/docs/5/index.html.  The
 JavaScript specific documentation can be found at:
 
-* http://www.gpudb.com/docs/user/js_guide.html
-* http://www.gpudb.com/docs/api/javascript/GPUdb.html
+* http://www.gpudb.com/docs/5/user/js_guide.html
+* http://www.gpudb.com/docs/5/api/javascript/GPUdb.html
+
+The Node.js mdoule specific documentation can be found at:
+
+* http://www.gpudb.com/docs/5/api/nodejs-mod/GPUdb.html
+* http://www.gpudb.com/docs/5/user/nodejs_guide.html
 
 
 For the Node.js module, the following rpm packages are required:
