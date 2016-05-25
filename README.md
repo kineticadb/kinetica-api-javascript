@@ -35,3 +35,4 @@ For the Node.js module, the following rpm packages are required:
 For changes made to the client-side API, please read CHANGELOG.md.  For
 changes made to the functions available in the database, please refer to
 CHANGELOG-FUNCTIONS.md.
+
