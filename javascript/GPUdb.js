@@ -374,7 +374,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.0.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.2.0.0" });
 
 /**
  * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
@@ -1376,17 +1376,29 @@ GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, c
 };
 
 /**
- * Calculates the requested statistics of a given column in a given table. The
- * available statistics are count (number of total objects), mean, stdv
+ * Calculates the requested statistics of a given column in a given table.
+ * <p>
+ * The available statistics are count (number of total objects), mean, stdv
  * (standard deviation), variance, skew, kurtosis, sum, min, max,
- * weighted_average, cardinality (unique count) and estimated cardinality.
+ * weighted_average, cardinality (unique count), estimated cardinality,
+ * percentile and percentile_rank.
+ * <p>
  * Estimated cardinality is calculated by using the hyperloglog approximation
- * technique. The weighted average statistic requires a weight_attribute to be
- * specified in {@code options}. The weighted average is then defined as the
- * sum of the products of {@code column_name} times the weight attribute
- * divided by the sum of the weight attribute. The response includes a list of
- * the statistics requested along with the count of the number of items in the
- * given set.
+ * technique.
+ * <p>
+ * Percentiles and percentile_ranks are approximate and are calculated using
+ * the t-digest algorithm. They must include the desired
+ * percentile/percentile_rank. To compute multiple percentiles each value must
+ * be specified separately (i.e. 'percentile(75.0),percentile(99.0),percentile_
+ * rank(1234.56),percentile_rank(-5)').
+ * <p>
+ * The weighted average statistic requires a weight_attribute to be specified
+ * in {@code options}. The weighted average is then defined as the sum of the
+ * products of {@code column_name} times the weight attribute divided by the
+ * sum of the weight attribute.
+ * <p>
+ * The response includes a list of the statistics requested along with the
+ * count of the number of items in the given set.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1413,17 +1425,29 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
 };
 
 /**
- * Calculates the requested statistics of a given column in a given table. The
- * available statistics are count (number of total objects), mean, stdv
+ * Calculates the requested statistics of a given column in a given table.
+ * <p>
+ * The available statistics are count (number of total objects), mean, stdv
  * (standard deviation), variance, skew, kurtosis, sum, min, max,
- * weighted_average, cardinality (unique count) and estimated cardinality.
+ * weighted_average, cardinality (unique count), estimated cardinality,
+ * percentile and percentile_rank.
+ * <p>
  * Estimated cardinality is calculated by using the hyperloglog approximation
- * technique. The weighted average statistic requires a weight_attribute to be
- * specified in {@code options}. The weighted average is then defined as the
- * sum of the products of {@code column_name} times the weight attribute
- * divided by the sum of the weight attribute. The response includes a list of
- * the statistics requested along with the count of the number of items in the
- * given set.
+ * technique.
+ * <p>
+ * Percentiles and percentile_ranks are approximate and are calculated using
+ * the t-digest algorithm. They must include the desired
+ * percentile/percentile_rank. To compute multiple percentiles each value must
+ * be specified separately (i.e. 'percentile(75.0),percentile(99.0),percentile_
+ * rank(1234.56),percentile_rank(-5)').
+ * <p>
+ * The weighted average statistic requires a weight_attribute to be specified
+ * in {@code options}. The weighted average is then defined as the sum of the
+ * products of {@code column_name} times the weight attribute divided by the
+ * sum of the weight attribute.
+ * <p>
+ * The response includes a list of the statistics requested along with the
+ * count of the number of items in the given set.
  *
  * @param {String} table_name  Name of the table on which the statistics
  *                             operation will be performed.
@@ -1538,7 +1562,7 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                                    the expression is true.
  * @param {String} column_name  Name of the binning-column used to divide the
  *                              set samples into bins.
- * @param {String} value_column_name  Optional Name of the column for which
+ * @param {String} value_column_name  Name of the value-column for which
  *                                    statistics are to be computed.
  * @param {String} stats  A string of comma separated list of the statistics to
  *                        calculate, e.g. 'sum,mean'. Available statistics:
@@ -1750,10 +1774,22 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
 };
 
 /**
- * Creates or deletes an index on a particular column in a given table.
- * Creating an index can speed up certain search queries (such as /get/records,
- * /delete/records, /update/records) when using expressions containing equality
- * or relational operators on indexed columns.
+ * Apply various modifications to a table or collection. Available
+ * modifications include:
+ * <p>
+ *      Cereating or deleting an index on a particular column. This can speed
+ * up certain search queries (such as /get/records, /delete/records,
+ * /update/records) when using expressions containing equality or relational
+ * operators on indexed columns. This only applies to child tables.
+ * <p>
+ *      Making a table protected or not. Protected tables need the admin
+ * password to be sent in a /clear/table to delete the table. This can be
+ * applied to child tables or collections or views.
+ * <p>
+ *      Setting the ttl (time-to-live). This can be applied to child tables or
+ * collections or views.
+ * <p>
+ *      Allowing homogeneous child tables. This only applies to collections.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1766,8 +1802,8 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
 GPUdb.prototype.alter_table_request = function(request, callback) {
     var actual_request = {
         table_name: request.table_name,
-        column_name: request.column_name,
         action: request.action,
+        value: request.value,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -1780,18 +1816,30 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
 };
 
 /**
- * Creates or deletes an index on a particular column in a given table.
- * Creating an index can speed up certain search queries (such as /get/records,
- * /delete/records, /update/records) when using expressions containing equality
- * or relational operators on indexed columns.
+ * Apply various modifications to a table or collection. Available
+ * modifications include:
+ * <p>
+ *      Cereating or deleting an index on a particular column. This can speed
+ * up certain search queries (such as /get/records, /delete/records,
+ * /update/records) when using expressions containing equality or relational
+ * operators on indexed columns. This only applies to child tables.
+ * <p>
+ *      Making a table protected or not. Protected tables need the admin
+ * password to be sent in a /clear/table to delete the table. This can be
+ * applied to child tables or collections or views.
+ * <p>
+ *      Setting the ttl (time-to-live). This can be applied to child tables or
+ * collections or views.
+ * <p>
+ *      Allowing homogeneous child tables. This only applies to collections.
  *
  * @param {String} table_name  Table on which the operation will be performed.
- *                             Must be a valid table in GPUdb.  This can not be
- *                             a collection.
- * @param {String} column_name  Name of the column on which the index will be
- *                              created or deleted (can be empty when {@code
- *                              action} = {@code list}).
- * @param {String} action  Kind of index operation being performed on the table
+ *                             Must be a valid table or collection in GPUdb.
+ * @param {String} action  Modification operation to be applied to the table or
+ *                         collection
+ * @param {String} value  The value of the modification. May be a column name,
+ *                        'true' or 'false', or a time-to-live depending on
+ *                        {@code action}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -1799,11 +1847,11 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.alter_table = function(table_name, column_name, action, options, callback) {
+GPUdb.prototype.alter_table = function(table_name, action, value, options, callback) {
     var actual_request = {
         table_name: table_name,
-        column_name: column_name,
         action: action,
+        value: value,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -1877,68 +1925,6 @@ GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, optio
         this.submit_request("/alter/table/metadata", actual_request, callback);
     } else {
         var data = this.submit_request("/alter/table/metadata", actual_request);
-        return data;
-    }
-};
-
-/**
- * Updates properties for a group of specified tables. The user can change the
- * protected-ness of the tables and allow or disallow duplicate child tables if
- * they are all collections.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.alter_table_properties_request = function(request, callback) {
-    var actual_request = {
-        table_names: request.table_names,
-        properties_map: (request.properties_map !== undefined && request.properties_map !== null) ? request.properties_map : {},
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/alter/table/properties", actual_request, callback);
-    } else {
-        var data = this.submit_request("/alter/table/properties", actual_request);
-        return data;
-    }
-};
-
-/**
- * Updates properties for a group of specified tables. The user can change the
- * protected-ness of the tables and allow or disallow duplicate child tables if
- * they are all collections.
- *
- * @param {String[]} table_names  Names of the tables whose properties will be
- *                                updated. All provided must exist in GPUdb or
- *                                an error will be returned.
- * @param {Object} properties_map  Map containing the properties of the tables
- *                                 to be updated. Only one map can be specified
- *                                 per function call so the changes to the
- *                                 tables will be identical.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.alter_table_properties = function(table_names, properties_map, options, callback) {
-    var actual_request = {
-        table_names: table_names,
-        properties_map: (properties_map !== undefined && properties_map !== null) ? properties_map : {},
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/alter/table/properties", actual_request, callback);
-    } else {
-        var data = this.submit_request("/alter/table/properties", actual_request);
         return data;
     }
 };
@@ -2129,6 +2115,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
         join_table_name: request.join_table_name,
         table_names: request.table_names,
         aliases: request.aliases,
+        expression: (request.expression !== undefined && request.expression !== null) ? request.expression : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -2149,9 +2136,15 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  GPUdb table or join_table. Cannot be an
  *                                  empty string.
  * @param {String[]} table_names  The list of table names making up the joined
- *                                set
+ *                                set.  Corresponds to SQL statement from
+ *                                clause
  * @param {String[]} aliases  The list of aliases for each of the corresponding
  *                            tables.
+ * @param {String} expression  An optional expression GPUdb uses to filter the
+ *                             join-table being created.  Corresponds to SQL
+ *                             select statement where clause. For details see
+ *                             <a href="../../concepts/index.html#expressions"
+ *                             target="_top">concepts</a>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -2159,11 +2152,12 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.create_join_table = function(join_table_name, table_names, aliases, options, callback) {
+GPUdb.prototype.create_join_table = function(join_table_name, table_names, aliases, expression, options, callback) {
     var actual_request = {
         join_table_name: join_table_name,
         table_names: table_names,
         aliases: aliases,
+        expression: (expression !== undefined && expression !== null) ? expression : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -2224,7 +2218,10 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                             existing table of the same name and type id may
  *                             be suppressed by using the {@code
  *                             no_error_if_exists} option.  Cannot be an empty
- *                             string.
+ *                             string.  Valid characters are 'A-Za-z0-9_-(){}[]
+ *                             .:' (excluding the single quote), with the first
+ *                             character being one of 'A-Za-z0-9_'.  The
+ *                             maximum length is 256 characters.
  * @param {String} type_id  ID of a currently registered type in GPUdb. All
  *                          objects added to the newly created table will be of
  *                          this type.  Must be an empty string if the
@@ -2319,7 +2316,7 @@ GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
 };
 
 /**
- * Sets up an area  trigger mechanism for two column_names for one or more
+ * Sets up an area trigger mechanism for two column_names for one or more
  * tables. (This function is essentially the two-dimensional version of
  * /create/trigger/byrange.) Once the trigger has been activated, any record
  * added to the listed tables(s) via /insert/records with the chosen columns'
@@ -2360,7 +2357,7 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
 };
 
 /**
- * Sets up an area  trigger mechanism for two column_names for one or more
+ * Sets up an area trigger mechanism for two column_names for one or more
  * tables. (This function is essentially the two-dimensional version of
  * /create/trigger/byrange.) Once the trigger has been activated, any record
  * added to the listed tables(s) via /insert/records with the chosen columns'
@@ -2709,7 +2706,7 @@ GPUdb.prototype.delete_records = function(table_name, expressions, options, call
 };
 
 /**
- * Exectues a proc in the GPUdb Node.js proc server.
+ * Executes a proc in the GPUdb Node.js proc server.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2736,7 +2733,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
 };
 
 /**
- * Exectues a proc in the GPUdb Node.js proc server.
+ * Executes a proc in the GPUdb Node.js proc server.
  *
  * @param {String} name  Name of the proc to execute.
  * @param {Object} params  A map containing string parameters to pass to the
@@ -3751,6 +3748,9 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
  * table (or the underlying table in case of a view) is updated (records are
  * inserted, deleted or modified) the records retrieved may differ between
  * calls based on the updates applied.
+ * <p>
+ * Note that when using the Java API, it is not possible to retrieve records
+ * from join tables using this operation.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3797,6 +3797,9 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  * table (or the underlying table in case of a view) is updated (records are
  * inserted, deleted or modified) the records retrieved may differ between
  * calls based on the updates applied.
+ * <p>
+ * Note that when using the Java API, it is not possible to retrieve records
+ * from join tables using this operation.
  *
  * @param {String} table_name  Name of the table from which the records will be
  *                             fetched. Must be a table, view or homogeneous
@@ -4078,6 +4081,9 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
  * <p>
  * This operation supports paging through the data via the {@code offset} and
  * {@code limit} parameters.
+ * <p>
+ * Note that when using the Java API, it is not possible to retrieve records
+ * from join tables using this operation.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4119,6 +4125,9 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  * <p>
  * This operation supports paging through the data via the {@code offset} and
  * {@code limit} parameters.
+ * <p>
+ * Note that when using the Java API, it is not possible to retrieve records
+ * from join tables using this operation.
  *
  * @param {String} table_name  Name of the collection or table from which
  *                             records are to be retrieved. Must be an existing
@@ -4164,7 +4173,7 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
 };
 
 /**
- * Checks the existance of a table with the given name in GPUdb.
+ * Checks the existence of a table with the given name in GPUdb.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4189,9 +4198,9 @@ GPUdb.prototype.has_table_request = function(request, callback) {
 };
 
 /**
- * Checks the existance of a table with the given name in GPUdb.
+ * Checks the existence of a table with the given name in GPUdb.
  *
- * @param {String} table_name  Name of the table to check for existance.
+ * @param {String} table_name  Name of the table to check for existence.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -4214,7 +4223,7 @@ GPUdb.prototype.has_table = function(table_name, options, callback) {
 };
 
 /**
- * Check the existance of a type in GPUdb.
+ * Check the existence of a type in GPUdb.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4239,7 +4248,7 @@ GPUdb.prototype.has_type_request = function(request, callback) {
 };
 
 /**
- * Check the existance of a type in GPUdb.
+ * Check the existence of a type in GPUdb.
  *
  * @param {String} type_id  Id of the type returned by GPUdb in response to
  *                          /create/type request.
@@ -4363,7 +4372,7 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
 
 /**
  * Generates a specified number of random records and adds them to the given
- * tble. There is an optional parameter that allows the user to customize the
+ * table. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -4397,7 +4406,7 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
 
 /**
  * Generates a specified number of random records and adds them to the given
- * tble. There is an optional parameter that allows the user to customize the
+ * table. There is an optional parameter that allows the user to customize the
  * ranges of the column values. It also allows the user to specify linear
  * profiles for some or all columns in which case linear values are generated
  * rather than random ones. Only individual tables are supported for this
@@ -4625,7 +4634,7 @@ GPUdb.prototype.show_system_properties_request = function(request, callback) {
  * The GPUdb Admin tool uses it to present server related information to the
  * user.
  *
- * @param {Object} options  Optional parameters, currently unused.
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4749,15 +4758,29 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  * Retrieves detailed information about a particular GPUdb table, specified in
  * {@code table_name}. If the supplied {@code table_name} is a collection, the
  * call returns a list of tables contained in the collection, and for each
- * table it returns the type ids, type schemas, type labels, semantic types,
- * and ttls. If the option 'get_sizes' is set to 'true' then  the sizes
- * (objects and elements) of each table are returned (in {@code sizes} and
- * {@code full_sizes}), along with the total number of objects in the requested
- * table (in {@code total_size} and {@code total_full_size}).
+ * table it returns the description, type id, schema, type label, type
+ * propertiess, and additional information including TTL. If {@code table_name}
+ * is empty it will return all top-level tables including all collections and
+ * top-level child tables (i.e. tables with no parent).
+ * <p>
+ *     If the option 'get_sizes' is set to 'true' then the sizes (objects and
+ * elements) of each table are returned (in {@code sizes} and {@code
+ * full_sizes}), along with the total number of objects in the requested table
+ * (in {@code total_size} and {@code total_full_size}).
+ * <p>
+ *     If the option 'show_children' is set to 'false' then for a collection it
+ * only returns information about the collection itself, not about the child
+ * tables. If 'show_children' is set to 'true' then it will return information
+ * about each of the children.
+ * <p>
+ *     Running with 'show_children' = 'true' on a child table will return an
+ * error.
+ * <p>
+ *     Running with 'show_children' = 'false' with {@code table_name} empty
+ * will return an error.
  * <p>
  * If the requested table is blank, then information is returned about all top-
- * level tables including collections. In this case {@code is_collection}
- * indicates which of the returned table names are collections.
+ * level tables including collections.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4785,15 +4808,29 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  * Retrieves detailed information about a particular GPUdb table, specified in
  * {@code table_name}. If the supplied {@code table_name} is a collection, the
  * call returns a list of tables contained in the collection, and for each
- * table it returns the type ids, type schemas, type labels, semantic types,
- * and ttls. If the option 'get_sizes' is set to 'true' then  the sizes
- * (objects and elements) of each table are returned (in {@code sizes} and
- * {@code full_sizes}), along with the total number of objects in the requested
- * table (in {@code total_size} and {@code total_full_size}).
+ * table it returns the description, type id, schema, type label, type
+ * propertiess, and additional information including TTL. If {@code table_name}
+ * is empty it will return all top-level tables including all collections and
+ * top-level child tables (i.e. tables with no parent).
+ * <p>
+ *     If the option 'get_sizes' is set to 'true' then the sizes (objects and
+ * elements) of each table are returned (in {@code sizes} and {@code
+ * full_sizes}), along with the total number of objects in the requested table
+ * (in {@code total_size} and {@code total_full_size}).
+ * <p>
+ *     If the option 'show_children' is set to 'false' then for a collection it
+ * only returns information about the collection itself, not about the child
+ * tables. If 'show_children' is set to 'true' then it will return information
+ * about each of the children.
+ * <p>
+ *     Running with 'show_children' = 'true' on a child table will return an
+ * error.
+ * <p>
+ *     Running with 'show_children' = 'false' with {@code table_name} empty
+ * will return an error.
  * <p>
  * If the requested table is blank, then information is returned about all top-
- * level tables including collections. In this case {@code is_collection}
- * indicates which of the returned table names are collections.
+ * level tables including collections.
  *
  * @param {String} table_name  Name of the table for which to retrieve the
  *                             information. If blank then information about all
@@ -4867,62 +4904,6 @@ GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
         this.submit_request("/show/table/metadata", actual_request, callback);
     } else {
         var data = this.submit_request("/show/table/metadata", actual_request);
-        return data;
-    }
-};
-
-/**
- * Retrieves some table properties for each of the specified tables. For each
- * valid table, it returns whether it is a protected table and also if it
- * allows duplicate child tables if it happens to be a collection.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.show_table_properties_request = function(request, callback) {
-    var actual_request = {
-        table_names: request.table_names,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/show/table/properties", actual_request, callback);
-    } else {
-        var data = this.submit_request("/show/table/properties", actual_request);
-        return data;
-    }
-};
-
-/**
- * Retrieves some table properties for each of the specified tables. For each
- * valid table, it returns whether it is a protected table and also if it
- * allows duplicate child tables if it happens to be a collection.
- *
- * @param {String[]} table_names  Tables whose properties will be fetched. All
- *                                provided tables must exist in GPUdb, or GPUdb
- *                                returns an error.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.show_table_properties = function(table_names, options, callback) {
-    var actual_request = {
-        table_names: table_names,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/show/table/properties", actual_request, callback);
-    } else {
-        var data = this.submit_request("/show/table/properties", actual_request);
         return data;
     }
 };
@@ -5286,8 +5267,8 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
 };
 
 /**
- * Generates 'class break' rasterized image tiles for an area of interest using
- * the given tables and the provided parameters.
+ * Generates rasterized image tiles for an area of interest using the given
+ * tables and the provided parameters.
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
@@ -5328,8 +5309,8 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
 };
 
 /**
- * Generates 'class break' rasterized image tiles for an area of interest using
- * the given tables and the provided parameters.
+ * Generates rasterized image tiles for an area of interest using the given
+ * tables and the provided parameters.
  * <p>
  * All color values must be in the format RRGGBB or AARRGGBB (to specify the
  * alpha value).
