@@ -1017,29 +1017,22 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
 };
 
 /**
- * Calculates unique combinations (i.e. groups) of values for the given columns
- * in a given table/view/collection and computes aggregates on each unique
+ * Calculates unique combinations (groups) of values for the given columns in a
+ * given table/view/collection and computes aggregates on each unique
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * Any column(s) can be grouped on, but only non-string (i.e. numeric) columns
- * may be used for computing aggregates.
- * <p>
- * The results can be paged via the {@code offset} and {@code limit}
- * parameters. For example, to get 10 groups with the largest counts the inputs
- * would be: limit=10, options={"sort_order":"descending", "sort_by":"value"}.
- * <p>
- * {@code options} can be used to customize behavior of this call e.g.
- * filtering or sorting the results.
- * <p>
- * To group by 'x' and 'y' and compute the number of objects within each group,
- * use column_names=['x','y','count(*)'].  To also compute the sum of 'z' over
- * each group, use column_names=['x','y','count(*)','sum(z)'].
- * <p>
+ * may be used for computing aggregates. The results can be paged via the
+ * {@code offset} and {@code limit} parameters. For example, to get 10 groups
+ * with the largest counts the inputs would be: limit=10,
+ * options={"sort_order":"descending", "sort_by":"value"}. {@code options} can
+ * be used to customize behavior of this call e.g. filtering or sorting the
+ * results. To group by 'x' and 'y' and compute the number of objects within
+ * each group, use column_names=['x','y','count(*)'].  To also compute the sum
+ * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop' and
- * 'var_samp'.
- * <p>
- * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * 'var_samp'. The response is returned as a dynamic schema. For details see:
+ * <a href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
  * schemas documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -1078,29 +1071,22 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
 };
 
 /**
- * Calculates unique combinations (i.e. groups) of values for the given columns
- * in a given table/view/collection and computes aggregates on each unique
+ * Calculates unique combinations (groups) of values for the given columns in a
+ * given table/view/collection and computes aggregates on each unique
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * Any column(s) can be grouped on, but only non-string (i.e. numeric) columns
- * may be used for computing aggregates.
- * <p>
- * The results can be paged via the {@code offset} and {@code limit}
- * parameters. For example, to get 10 groups with the largest counts the inputs
- * would be: limit=10, options={"sort_order":"descending", "sort_by":"value"}.
- * <p>
- * {@code options} can be used to customize behavior of this call e.g.
- * filtering or sorting the results.
- * <p>
- * To group by 'x' and 'y' and compute the number of objects within each group,
- * use column_names=['x','y','count(*)'].  To also compute the sum of 'z' over
- * each group, use column_names=['x','y','count(*)','sum(z)'].
- * <p>
+ * may be used for computing aggregates. The results can be paged via the
+ * {@code offset} and {@code limit} parameters. For example, to get 10 groups
+ * with the largest counts the inputs would be: limit=10,
+ * options={"sort_order":"descending", "sort_by":"value"}. {@code options} can
+ * be used to customize behavior of this call e.g. filtering or sorting the
+ * results. To group by 'x' and 'y' and compute the number of objects within
+ * each group, use column_names=['x','y','count(*)'].  To also compute the sum
+ * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop' and
- * 'var_samp'.
- * <p>
- * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * 'var_samp'. The response is returned as a dynamic schema. For details see:
+ * <a href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
  * schemas documentation</a>.
  *
  * @param {String} table_name  Name of the table on which the operation will be
@@ -1716,7 +1702,7 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
 
 /**
  * The alter_system_properties endpoint is primarily used to simplify the
- * testing of gpudb and is not expected to be used during normal execution.
+ * testing of GPUdb and is not expected to be used during normal execution.
  * Commands are given through the properties_update_map whose keys are commands
  * and values are strings representing integer values (for example '8000') or
  * boolean values ('true' or 'false').
@@ -1745,7 +1731,7 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
 
 /**
  * The alter_system_properties endpoint is primarily used to simplify the
- * testing of gpudb and is not expected to be used during normal execution.
+ * testing of GPUdb and is not expected to be used during normal execution.
  * Commands are given through the properties_update_map whose keys are commands
  * and values are strings representing integer values (for example '8000') or
  * boolean values ('true' or 'false').
@@ -1777,8 +1763,8 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * Apply various modifications to a table or collection. Available
  * modifications include:
  * <p>
- *      Cereating or deleting an index on a particular column. This can speed
- * up certain search queries (such as /get/records, /delete/records,
+ *      Creating or deleting an index on a particular column. This can speed up
+ * certain search queries (such as /get/records, /delete/records,
  * /update/records) when using expressions containing equality or relational
  * operators on indexed columns. This only applies to child tables.
  * <p>
@@ -1819,8 +1805,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * Apply various modifications to a table or collection. Available
  * modifications include:
  * <p>
- *      Cereating or deleting an index on a particular column. This can speed
- * up certain search queries (such as /get/records, /delete/records,
+ *      Creating or deleting an index on a particular column. This can speed up
+ * certain search queries (such as /get/records, /delete/records,
  * /update/records) when using expressions containing equality or relational
  * operators on indexed columns. This only applies to child tables.
  * <p>
@@ -2116,6 +2102,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
         table_names: request.table_names,
         aliases: request.aliases,
         expression: (request.expression !== undefined && request.expression !== null) ? request.expression : "",
+        expressions: (request.expressions !== undefined && request.expressions !== null) ? request.expressions : [],
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -2145,6 +2132,12 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                             select statement where clause. For details see
  *                             <a href="../../concepts/index.html#expressions"
  *                             target="_top">concepts</a>.
+ * @param {String[]} expressions  An optional list of expression GPUdb uses to
+ *                                filter the join-table being created.
+ *                                Corresponds to SQL select statement where
+ *                                clause. For details see <a
+ *                                href="../../concepts/index.html#expressions"
+ *                                target="_top">concepts</a>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -2152,12 +2145,13 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.create_join_table = function(join_table_name, table_names, aliases, expression, options, callback) {
+GPUdb.prototype.create_join_table = function(join_table_name, table_names, aliases, expression, expressions, options, callback) {
     var actual_request = {
         join_table_name: join_table_name,
         table_names: table_names,
         aliases: aliases,
         expression: (expression !== undefined && expression !== null) ? expression : "",
+        expressions: (expressions !== undefined && expressions !== null) ? expressions : [],
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -2635,7 +2629,7 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
  * Deletes record(s) matching the provided criteria from the given table. The
  * record selection criteria can either be one or more  {@code expressions}
  * (matching multiple records) or a single record identified by {@code
- * record_id} optiona.  Note that the two selection criteria are mutually
+ * record_id} options.  Note that the two selection criteria are mutually
  * exclusive.  This operation cannot be run on a collection or a view.  The
  * operation is synchronous meaning that a response will not be available until
  * the request is completely processed and all the matching records are
@@ -2668,7 +2662,7 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  * Deletes record(s) matching the provided criteria from the given table. The
  * record selection criteria can either be one or more  {@code expressions}
  * (matching multiple records) or a single record identified by {@code
- * record_id} optiona.  Note that the two selection criteria are mutually
+ * record_id} options.  Note that the two selection criteria are mutually
  * exclusive.  This operation cannot be run on a collection or a view.  The
  * operation is synchronous meaning that a response will not be available until
  * the request is completely processed and all the matching records are
@@ -3965,7 +3959,7 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
 
 /**
  * Retrieves the complete series/track records from the given {@code
- * world_table_name} based on the partial track informaton contained in the
+ * world_table_name} based on the partial track information contained in the
  * {@code table_name}.
  * <p>
  * This operation supports paging through the data via the {@code offset} and
@@ -4013,7 +4007,7 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
 
 /**
  * Retrieves the complete series/track records from the given {@code
- * world_table_name} based on the partial track informaton contained in the
+ * world_table_name} based on the partial track information contained in the
  * {@code table_name}.
  * <p>
  * This operation supports paging through the data via the {@code offset} and
@@ -4759,7 +4753,7 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  * {@code table_name}. If the supplied {@code table_name} is a collection, the
  * call returns a list of tables contained in the collection, and for each
  * table it returns the description, type id, schema, type label, type
- * propertiess, and additional information including TTL. If {@code table_name}
+ * properties, and additional information including TTL. If {@code table_name}
  * is empty it will return all top-level tables including all collections and
  * top-level child tables (i.e. tables with no parent).
  * <p>
@@ -4809,7 +4803,7 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  * {@code table_name}. If the supplied {@code table_name} is a collection, the
  * call returns a list of tables contained in the collection, and for each
  * table it returns the description, type id, schema, type label, type
- * propertiess, and additional information including TTL. If {@code table_name}
+ * properties, and additional information including TTL. If {@code table_name}
  * is empty it will return all top-level tables including all collections and
  * top-level child tables (i.e. tables with no parent).
  * <p>
@@ -5457,7 +5451,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                  break.
  * @param {String[]} cb_vals1  Comma separated list of values or ranges (e.g.
  *                             '0:5,5:10,15:30').
- * @param {String[]} cb_column_name2  Optional comma seperated list of valid
+ * @param {String[]} cb_column_name2  Optional comma separated list of valid
  *                                    column names. An empty string implies not
  *                                    using more than one column for the class
  *                                    break. For a non-empty list, there needs
