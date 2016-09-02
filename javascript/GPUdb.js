@@ -568,9 +568,6 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
 };
 
 /**
- * Delete a node from the system.  To delete a node, the data is first
- * distributed from the deleted node to all the other nodes.  Then the node is
- * taken out of service.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -579,6 +576,7 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_delete_node_request = function(request, callback) {
     var actual_request = {
@@ -596,20 +594,16 @@ GPUdb.prototype.admin_delete_node_request = function(request, callback) {
 };
 
 /**
- * Delete a node from the system.  To delete a node, the data is first
- * distributed from the deleted node to all the other nodes.  Then the node is
- * taken out of service.
  *
- * @param {Number} rank  Rank number of the node being removed from the system.
- * @param {String} authorization  The password that GPUdb is configured with
- *                                during startup. Incorrect or missing
- *                                authorization code will result in an error.
- * @param {Object} options  Optional parameters.
+ * @param {Number} rank
+ * @param {String} authorization
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_delete_node = function(rank, authorization, options, callback) {
     var actual_request = {
@@ -627,9 +621,6 @@ GPUdb.prototype.admin_delete_node = function(rank, authorization, options, callb
 };
 
 /**
- * Returns the list of shards and the corresponding rank and tom containing the
- * shard.  The response message contains arrays of 16384 (total number of
- * shards in the system) rank and tom numbers corresponding to each shard.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -638,6 +629,7 @@ GPUdb.prototype.admin_delete_node = function(rank, authorization, options, callb
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback) {
     var actual_request = {
@@ -653,16 +645,14 @@ GPUdb.prototype.admin_get_shard_assignments_request = function(request, callback
 };
 
 /**
- * Returns the list of shards and the corresponding rank and tom containing the
- * shard.  The response message contains arrays of 16384 (total number of
- * shards in the system) rank and tom numbers corresponding to each shard.
  *
- * @param {Object} options  Optional parameters.
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_get_shard_assignments = function(options, callback) {
     var actual_request = {
@@ -730,8 +720,6 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
 };
 
 /**
- * Rebalance the database such that all the nodes contain approximately equal
- * number of records.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -740,6 +728,7 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_rebalance_request = function(request, callback) {
     var actual_request = {
@@ -756,18 +745,15 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
 };
 
 /**
- * Rebalance the database such that all the nodes contain approximately equal
- * number of records.
  *
- * @param {String[]} table_names  Names of the tables to be rebalanced.  If
- *                                array is empty, all tables will be
- *                                rebalanced.
- * @param {Object} options  Optional parameters.
+ * @param {String[]} table_names
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_rebalance = function(table_names, options, callback) {
     var actual_request = {
@@ -792,6 +778,7 @@ GPUdb.prototype.admin_rebalance = function(table_names, options, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback) {
     var actual_request = {
@@ -818,12 +805,13 @@ GPUdb.prototype.admin_set_shard_assignments_request = function(request, callback
  * @param {Number[]} shard_assignments_rank
  * @param {Number[]} shard_assignments_tom
  * @param {Number[]} assignment_index
- * @param {Object} options  Optional parameters.
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassignment, shard_assignments_rank, shard_assignments_tom, assignment_index, options, callback) {
     var actual_request = {
@@ -1030,10 +1018,13 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * each group, use column_names=['x','y','count(*)'].  To also compute the sum
  * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
- * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop' and
- * 'var_samp'. The response is returned as a dynamic schema. For details see:
- * <a href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>.
+ * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp'
+ * and 'count_distinct'. Note that 'count_distinct' can only be used if there
+ * are no provided grouping columns. The response is returned as a dynamic
+ * schema. For details see: <a href="../../concepts/index.html#dynamic-schemas"
+ * target="_top">dynamic schemas documentation</a>. If the 'result_table'
+ * option is provided then the results are stored in a table with the name
+ * given in the option and the results are not returned in the response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1084,10 +1075,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * each group, use column_names=['x','y','count(*)'].  To also compute the sum
  * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
- * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop' and
- * 'var_samp'. The response is returned as a dynamic schema. For details see:
- * <a href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>.
+ * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp'
+ * and 'count_distinct'. Note that 'count_distinct' can only be used if there
+ * are no provided grouping columns. The response is returned as a dynamic
+ * schema. For details see: <a href="../../concepts/index.html#dynamic-schemas"
+ * target="_top">dynamic schemas documentation</a>. If the 'result_table'
+ * option is provided then the results are stored in a table with the name
+ * given in the option and the results are not returned in the response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table/view/collection
@@ -1105,6 +1099,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>expression: Filter expression to apply to the table prior to computing the aggregate group by.
+ *     <li>having: Filter expression to apply to the aggregated results.
+ *     <li>sort_order: String indicating how the returned values should be sorted - ascending or descending.values:ascending, descending
+ *     <li>sort_by: String determining how the results are sorted.values:key, value
+ *     <li>result_table: The name of the table used to store the results. If present no results are returned in the response.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -1197,6 +1198,9 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  * @param {Number} interval  The size of each bin within the start and end
  *                           parameters.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>value_column: The name of the column GPUdb will use when calculating the bin values (values are summed).  The column must be a numerical type (int, double, long, float).
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -1280,6 +1284,11 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  *                            successive points is less than the given
  *                            tolerance.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>whiten: When set to 1 each of the columns is first normalized by its stdv - default is not to whiten.
+ *     <li>max_iters: Number of times to try to hit the tolerance limit before giving up - default is 10.
+ *     <li>num_tries: Number of times to run the k-means algorithm with a different randomly selected starting points - helps avoid local minimum. Default is 1.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -1442,6 +1451,10 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  * @param {String} stats  Comma separated list of the statistics to calculate,
  *                        e.g. "sum,mean".
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>additional_column_names: A list of comma separated column names over which statistics can be accumulated along with the primary column.
+ *     <li>weight_column_name: Name of column used as weighting attribute for the weighted average statistic.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -1560,6 +1573,12 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                           if the binning-column falls in the range
  *                           [start+interval``*``i, start+interval``*``(i+1)).
  * @param {Object} options  Map of optional parameters:
+ * <ul>
+ *     <li>additional_column_names: A list of comma separated value-column names over which statistics can be accumulated along with the primary value_column.
+ *     <li>bin_values: A list of comma separated binning-column values. Values that match the nth bin_values value are placed in the nth bin.
+ *     <li>weight_column_name: Name of the column used as weighting column for the weighted_average statistic.
+ *     <li>order_column_name: Name of the column used for candlestick charting techniques.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -1601,7 +1620,9 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>.
+ * schemas documentation</a>. If the 'result_table' option is provided then the
+ * results are stored in a table with the name given in the option and the
+ * results are not returned in the response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1652,7 +1673,9 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>.
+ * schemas documentation</a>. If the 'result_table' option is provided then the
+ * results are stored in a table with the name given in the option and the
+ * results are not returned in the response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table in GPUdb.
@@ -1667,6 +1690,11 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>expression: Optional filter expression to apply to the table.
+ *     <li>sort_order: String indicating how the returned values should be sorted.
+ *     <li>result_table: The name of the table used to store the results. If present no results are returned in the response.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -1916,6 +1944,64 @@ GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, optio
 };
 
 /**
+ * Alters a user.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.alter_user_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        action: request.action,
+        value: request.value,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/user", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/user", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Alters a user.
+ *
+ * @param {String} name  Name of the user to be altered. Must be an existing
+ *                       user.
+ * @param {String} action  Modification operation to be applied to the user.
+ * @param {String} value  The value of the modification, depending on {@code
+ *                        action}.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.alter_user = function(name, action, value, options, callback) {
+    var actual_request = {
+        name: name,
+        action: action,
+        value: value,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/user", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/user", actual_request);
+        return data;
+    }
+};
+
+/**
  * Clears (drops) one or all tables in the GPUdb cluster. The operation is
  * synchronous meaning that the table will be cleared before the function
  * returns. The response payload returns the status of the operation along with
@@ -2085,8 +2171,9 @@ GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
 };
 
 /**
- * Creates a joint_table which is a list of tables and aliases for those
- * tables.
+ * Creates a table that is the result of a SQL JOIN.  For details see: <a
+ * href="../../concepts/index.html#joins" target="_top">join concept
+ * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2115,30 +2202,38 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
 };
 
 /**
- * Creates a joint_table which is a list of tables and aliases for those
- * tables.
+ * Creates a table that is the result of a SQL JOIN.  For details see: <a
+ * href="../../concepts/index.html#joins" target="_top">join concept
+ * documentation</a>.
  *
- * @param {String} join_table_name  Name of the join_table to be created. Must
+ * @param {String} join_table_name  Name of the join table to be created. Must
  *                                  not be the name of a currently existing
- *                                  GPUdb table or join_table. Cannot be an
+ *                                  GPUdb table or join table. Cannot be an
  *                                  empty string.
  * @param {String[]} table_names  The list of table names making up the joined
- *                                set.  Corresponds to SQL statement from
+ *                                set.  Corresponds to a SQL statement FROM
  *                                clause
  * @param {String[]} aliases  The list of aliases for each of the corresponding
  *                            tables.
- * @param {String} expression  An optional expression GPUdb uses to filter the
- *                             join-table being created.  Corresponds to SQL
- *                             select statement where clause. For details see
- *                             <a href="../../concepts/index.html#expressions"
- *                             target="_top">concepts</a>.
- * @param {String[]} expressions  An optional list of expression GPUdb uses to
- *                                filter the join-table being created.
- *                                Corresponds to SQL select statement where
- *                                clause. For details see <a
+ * @param {String} expression  An optional expression GPUdb uses to combine and
+ *                             filter the joined set.  Corresponds to a SQL
+ *                             statement WHERE clause. For details see: <a
+ *                             href="../../concepts/index.html#expressions"
+ *                             target="_top">expressions</a>.
+ * @param {String[]} expressions  An optional list of expressions GPUdb uses to
+ *                                combine and filter the joined set.
+ *                                Corresponds to a SQL statement WHERE clause.
+ *                                For details see: <a
  *                                href="../../concepts/index.html#expressions"
- *                                target="_top">concepts</a>.
+ *                                target="_top">expressions</a>.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>collection_name: Name of a collection in GPUdb to which the join table is to be assigned as a child table. If empty, then the join table will be a top level table.
+ *     <li>max_query_dimensions: The maximum number of tables in a joined table that can be accessed by a query and are not equated by a foreign-key to primary-key equality predicate
+ *     <li>optimize_lookups: Use the applied filters to precalculate the lookup table to get data from the primary key sets
+ *     <li>refresh_method: Method by which the join table can be refreshed when underlying member tables have changed.
+ *     <li>refresh: Do a manual refresh of the join table if it exists - throws an error otherwise
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -2159,6 +2254,59 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, alias
         this.submit_request("/create/jointable", actual_request, callback);
     } else {
         var data = this.submit_request("/create/jointable", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_role_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new role.
+ *
+ * @param {String} name  Name of the role to be created. Must contain only
+ *                       lowercase letters, digits, and underscores, and cannot
+ *                       begin with a digit. Must not be the same name as an
+ *                       existing user or role in GPUdb.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_role = function(name, options, callback) {
+    var actual_request = {
+        name: name,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/role", actual_request);
         return data;
     }
 };
@@ -2221,6 +2369,14 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          this type.  Must be an empty string if the
  *                          *is_collection* is 'true'.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>no_error_if_exists: If {true}@{choice of key options.no_error_if_exists}, prevents an error from occurring if the table already exists and is of the given type.  If a table with the same ID but a different type exists, it is still an error.values:true, false
+ *     <li>collection_name: Name of a collection in GPUdb to which the newly created table is to be assigned as a child table. If empty, then the newly created table will be a top level table. If the collection does not allow duplicate children, then this table creation request will fail if there is an existing child table with the same type id specified in this request.
+ *     <li>is_collection: Indicates whether the new table to be created will be a collection. If false, the created table will be a top level table.values:true, false
+ *     <li>disallow_homogeneous_tables: For a collection, indicates whether multiple children of exactly the same data type will be allowed.values:true, false
+ *     <li>is_replicated: For a Table, this is an indication to GPUdb to replicate the table to all the ranks. This is only required when the table will be used to join with other tables in a query.values:true, false
+ *     <li>foreign_keys: Semicolon-separated list of foreign key constraints, of the format 'my_field references primary_table(primary_key_field)'.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -2626,6 +2782,186 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
 };
 
 /**
+ * Creates a table that is the union of one or more existing tables.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_union_request = function(request, callback) {
+    var actual_request = {
+        table_name: request.table_name,
+        table_names: request.table_names,
+        input_column_names: request.input_column_names,
+        output_column_names: request.output_column_names,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/union", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/union", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a table that is the union of one or more existing tables.
+ *
+ * @param {String} table_name  Name of the table to be created. Must not be the
+ *                             name of a currently existing GPUdb table. Cannot
+ *                             be an empty string.
+ * @param {String[]} table_names  The list of table names making up the union.
+ *                                Must contain the names of one or more
+ *                                existing tables.
+ * @param {String[][]} input_column_names  The list of columns from each of the
+ *                                         corresponding input tables.
+ * @param {String[]} output_column_names  The list of names of the columns to
+ *                                        be stored in the union.
+ * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>collection_name: Name of a collection in GPUdb to which the union is to be assigned as a child table. If empty, then the union will be a top level table.
+ * </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_union = function(table_name, table_names, input_column_names, output_column_names, options, callback) {
+    var actual_request = {
+        table_name: table_name,
+        table_names: table_names,
+        input_column_names: input_column_names,
+        output_column_names: output_column_names,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/union", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/union", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new external user (a user whose credentials are managed by an
+ * external LDAP).
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_user_external_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/user/external", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/user/external", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new external user (a user whose credentials are managed by an
+ * external LDAP).
+ *
+ * @param {String} name  Name of the user to be created. Must exactly match the
+ *                       user's name in the external LDAP, prefixed with a @.
+ *                       Must not be the same name as an existing user in
+ *                       GPUdb.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_user_external = function(name, options, callback) {
+    var actual_request = {
+        name: name,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/user/external", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/user/external", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new internal user (a user whose credentials are managed by GPUdb).
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_user_internal_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        password: request.password,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/user/internal", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/user/internal", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new internal user (a user whose credentials are managed by GPUdb).
+ *
+ * @param {String} name  Name of the user to be created. Must contain only
+ *                       lowercase letters, digits, and underscores, and cannot
+ *                       begin with a digit. Must not be the same name as an
+ *                       existing user or role in GPUdb.
+ * @param {String} password  Initial password of the user to be created. May be
+ *                           an empty string for no password.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.create_user_internal = function(name, password, options, callback) {
+    var actual_request = {
+        name: name,
+        password: password,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/user/internal", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/user/internal", actual_request);
+        return data;
+    }
+};
+
+/**
  * Deletes record(s) matching the provided criteria from the given table. The
  * record selection criteria can either be one or more  {@code expressions}
  * (matching multiple records) or a single record identified by {@code
@@ -2678,6 +3014,10 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                                specifying {@code record_id} in the {@code
  *                                options}.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>global_expression: An optional global expression to reduce the search space of the @{input expressions}.
+ *     <li>record_id: A record id identifying a single record, obtained at the time of {insertion of the record}@{endpoint /insert/records} or by calling @{endpoint /get/records/fromcollection} with the *return_record_ids* option.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -2695,6 +3035,108 @@ GPUdb.prototype.delete_records = function(table_name, expressions, options, call
         this.submit_request("/delete/records", actual_request, callback);
     } else {
         var data = this.submit_request("/delete/records", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes an existing role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.delete_role_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes an existing role.
+ *
+ * @param {String} name  Name of the role to be deleted. Must be an existing
+ *                       role.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.delete_role = function(name, options, callback) {
+    var actual_request = {
+        name: name,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes an existing user.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.delete_user_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/user", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/user", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes an existing user.
+ *
+ * @param {String} name  Name of the user to be deleted. Must be an existing
+ *                       user.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.delete_user = function(name, options, callback) {
+    var actual_request = {
+        name: name,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/user", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/user", actual_request);
         return data;
     }
 };
@@ -3156,6 +3598,9 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  * @param {Object} column_values_map  List of values for the corresponding
  *                                    column in the table
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>filter_mode: String indicating the filter mode, either 'in_list' or 'not_in_list'.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -3434,6 +3879,11 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                     be an valid track ID within the given
  *                                     set.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>spatial_radius: A positive number passed as a string representing the radius of the search area centered around each track point's geospatial coordinates. The value is interpreted in meters. Required parameter.
+ *     <li>time_radius: A positive number passed as a string representing the maximum allowable time difference between the timestamps of a filtered object and the given track's points. The value is interpreted in seconds. Required parameter.
+ *     <li>spatial_distance_metric: A string representing the coordinate system to use for the spatial search criteria. Acceptable values are 'euclidean' and 'great_circle'. Optional parameter; default is 'euclidean'.values:euclidean, great_circle
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -3533,6 +3983,9 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  * @param {String[]} column_names  List of columns on which to apply the
  *                                 filter. Ignored for 'search' mode.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>case_sensitive: If 'false' then string filtering will ignore case. Does not apply to 'search' mode.values:true, false
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -3806,6 +4259,11 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options
+ * <ul>
+ *     <li>expression: Optional filter expression to apply to the table.
+ *     <li>sort_by: Optional column that the data should be sorted by. Empty by default (i.e. no sorting is applied).
+ *     <li>sort_order: String indicating how the returned values should be sorted - ascending or descending. Ignored if 'sort_by' option is not specified.values:ascending, descending
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -3924,6 +4382,11 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                        is 10000). Or END_OF_column (-9999) to indicate that
  *                        the max number of results should be returned.
  * @param {Object} options
+ * <ul>
+ *     <li>expression: Optional filter expression to apply to the table.
+ *     <li>sort_by: Optional column that the data should be sorted by. Empty by default (i.e. no sorting is applied).
+ *     <li>sort_order: String indicating how the returned values should be sorted - ascending or descending. Default is 'ascending'. Ignored if 'sort_by' option is not specified.values:ascending, descending
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4134,6 +4597,9 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options
+ * <ul>
+ *     <li>return_record_ids: If 'true' then return GPUdb's internal record id along with each returned record. Default is 'false'.values:true, false
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4162,6 +4628,179 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
         var data = this.submit_request("/get/records/fromcollection", actual_request);
         data.data = GPUdb.decode(data.records_json);
         delete data.records_json;
+        return data;
+    }
+};
+
+/**
+ * Grants a system-level permission to a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.grant_permission_system_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/system", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/system", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants a system-level permission to a user or role.
+ *
+ * @param {String} name  Name of the user or role to which the permission will
+ *                       be granted. Must be an existing user or role.
+ * @param {String} permission  Permission to grant to the user or role.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.grant_permission_system = function(name, permission, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/system", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/system", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants a table-level permission to a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.grant_permission_table_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        table_name: request.table_name,
+        filter_expression: (request.filter_expression !== undefined && request.filter_expression !== null) ? request.filter_expression : "",
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/table", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/table", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants a table-level permission to a user or role.
+ *
+ * @param {String} name  Name of the user or role to which the permission will
+ *                       be granted. Must be an existing user or role.
+ * @param {String} permission  Permission to grant to the user or role.
+ * @param {String} table_name  Name of the table to which the permission grants
+ *                             access. Must be an existing table, collection,
+ *                             or view. If a collection, the permission also
+ *                             applies to tables and views in the collection.
+ * @param {String} filter_expression  Reserved for future use.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.grant_permission_table = function(name, permission, table_name, filter_expression, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        table_name: table_name,
+        filter_expression: (filter_expression !== undefined && filter_expression !== null) ? filter_expression : "",
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/table", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/table", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants membership in a role to a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.grant_role_request = function(request, callback) {
+    var actual_request = {
+        role: request.role,
+        member: request.member,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants membership in a role to a user or role.
+ *
+ * @param {String} role  Name of the role in which membership will be granted.
+ *                       Must be an existing role.
+ * @param {String} member  Name of the user or role that will be granted
+ *                         membership in {@code role}. Must be an existing user
+ *                         or role.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.grant_role = function(role, member, options, callback) {
+    var actual_request = {
+        role: role,
+        member: member,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/role", actual_request);
         return data;
     }
 };
@@ -4341,6 +4980,11 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                         of the table. Empty array if {@code list_encoding}
  *                         is {@code binary}.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>update_on_existing_pk: If the table has a {primary key}@{endpoint /create/type}, then if the value is 'true' then if any of the records being added have the same primary key as existing records, the existing records are replaced (i.e. *updated*) with the given records. If 'false' and if the records being added have the same primary key as existing records, the given records with existing primary keys are ignored (the existing records are left unchanged).  It is quite possible that in this case some of the given records will be inserted and some (those having existing primary keys) will be ignored (or updated). If the specified table does not have a primary key column then this optional parameter is ignored.values:true, false
+ *     <li>return_record_ids: If 'true' then return GPUdb's internal record id along for each inserted record. Default is 'false'.values:true, false
+ *     <li>route_to_address: Route to a specific rank/tom. Option not suitable for tables using primary/shard keys
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4428,6 +5072,11 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          meanings depending on the type of the column.
  *                          Below follows a more detailed description of the
  *                          map:
+ * <ul>
+ *     <li>all: This key indicates that the specifications relayed in the internal map are to be applied to all columns of the records.
+ *     <li>attr_name: Set the following parameters for the column specified by the key. This overrides any parameter set by {all}@{key of input options}.
+ *     <li>track_length: This key-map pair is only valid for track type data sets (GPUdb throws an error otherwise).
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4507,6 +5156,9 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  *                              an svg path string, for example: 'M25.979,12.89
  *                              6,5.979,12.896,5.979,19.562,25.979,19.562z'
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>color: If @{input symbol_format} is 'svg' this is ignored. If @{input symbol_format} is 'svg_path' then this option specifies the color (in RRGGBB hex format) of the path. For example, to have the path rendered in red, used 'FF0000'. If 'color' is not provided then '00FF00' (i.e. green) is used by default.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4598,6 +5250,228 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
 };
 
 /**
+ * Revokes a system-level permission from a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/system", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/system", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a system-level permission from a user or role.
+ *
+ * @param {String} name  Name of the user or role from which the permission
+ *                       will be revoked. Must be an existing user or role.
+ * @param {String} permission  Permission to revoke from the user or role.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.revoke_permission_system = function(name, permission, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/system", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/system", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a table-level permission from a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        table_name: request.table_name,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/table", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/table", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a table-level permission from a user or role.
+ *
+ * @param {String} name  Name of the user or role from which the permission
+ *                       will be revoked. Must be an existing user or role.
+ * @param {String} permission  Permission to revoke from the user or role.
+ * @param {String} table_name  Name of the table to which the permission grants
+ *                             access. Must be an existing table, collection,
+ *                             or view.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.revoke_permission_table = function(name, permission, table_name, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        table_name: table_name,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/table", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/table", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes membership in a role from a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.revoke_role_request = function(request, callback) {
+    var actual_request = {
+        role: request.role,
+        member: request.member,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes membership in a role from a user or role.
+ *
+ * @param {String} role  Name of the role in which membership will be revoked.
+ *                       Must be an existing role.
+ * @param {String} member  Name of the user or role that will be revoked
+ *                         membership in {@code role}. Must be an existing user
+ *                         or role.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.revoke_role = function(role, member, options, callback) {
+    var actual_request = {
+        role: role,
+        member: member,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/role", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows security information relating to users and/or roles.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.show_security_request = function(request, callback) {
+    var actual_request = {
+        names: request.names,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/security", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/security", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows security information relating to users and/or roles.
+ *
+ * @param {String[]} names  A list of names of users and/or roles about which
+ *                          security information is requested. If none are
+ *                          provided, information about all users and roles
+ *                          will be returned.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.show_security = function(names, options, callback) {
+    var actual_request = {
+        names: names,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/security", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/security", actual_request);
+        return data;
+    }
+};
+
+/**
  * Returns server configuration and version related information to the caller.
  * The GPUdb Admin tool uses it to present server related information to the
  * user.
@@ -4629,6 +5503,9 @@ GPUdb.prototype.show_system_properties_request = function(request, callback) {
  * user.
  *
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>properties: A list of comma separated names of properties requested. If not specified, all properties will be returned.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -4765,7 +5642,7 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  *     If the option 'show_children' is set to 'false' then for a collection it
  * only returns information about the collection itself, not about the child
  * tables. If 'show_children' is set to 'true' then it will return information
- * about each of the children.
+ * about each of the children, but not the collection.
  * <p>
  *     Running with 'show_children' = 'true' on a child table will return an
  * error.
@@ -4815,7 +5692,7 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *     If the option 'show_children' is set to 'false' then for a collection it
  * only returns information about the collection itself, not about the child
  * tables. If 'show_children' is set to 'true' then it will return information
- * about each of the children.
+ * about each of the children, but not the collection.
  * <p>
  *     Running with 'show_children' = 'true' on a child table will return an
  * error.
@@ -4830,6 +5707,10 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                             information. If blank then information about all
  *                             collections and top-level tables is returned.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>get_sizes: If 'true' then the table sizes will be returned; otherwise they will be returned blank.values:true, false
+ *     <li>show_children: If @{input table_name} is a collection, then 'true' will return information about the children of the collection, and 'false' will return information about the collection itself. If @{input table_name} is a child table, 'show_children' must be 'false'. If @{input table_name} is empty then 'show_children' must be 'true'.values:true, false
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -5168,6 +6049,12 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                         insert, one for each update, to be added to the set
  *                         if the particular update did not affect any objects.
  * @param {Object} options  Optional parameters.
+ * <ul>
+ *     <li>global_expression: An optional global expression to reduce the search space of the predicates listed in @{input expressions}.
+ *     <li>bypass_safety_checks: When set to 'true', all predicates are available for primary key updates.  Keep in mind that it is possible to destroy data in this case, since a single predicate may match multiple objects (potentially all of records of a table), and then updating all of those records to have the same primary key will, due to the primary key uniqueness constraints, effectively delete all but one of those updated records.values:true, false
+ *     <li>update_on_existing_pk: Can be used to customize behavior when the updated primary key value already exists, as described in @{endpoint /insert/records}.values:true, false
+ *     <li>record_id: ID of a single record to be updated (returned in the call to @{endpoint /insert/records} or @{endpoint /get/records/fromcollection}.
+ * </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -5261,11 +6148,6 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
 };
 
 /**
- * Generates rasterized image tiles for an area of interest using the given
- * tables and the provided parameters.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5274,6 +6156,7 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_request = function(request, callback) {
     var actual_request = {
@@ -5303,40 +6186,28 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
 };
 
 /**
- * Generates rasterized image tiles for an area of interest using the given
- * tables and the provided parameters.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
  *
- * @param {String[]} table_names  Name of the table containing the data for the
- *                                various layers to be rendered.
- * @param {String[]} world_table_names  Optional name of the tables containing
- *                                      the data for the entire track when the
- *                                      {@code table_names} contains only part
- *                                      of the track data, but the entire track
- *                                      has to be rendered.
- * @param {String} x_column_name  Name of the column containing the x
- *                                coordinates.
- * @param {String} y_column_name  Name of the column containing the y
- *                                coordinates.
- * @param {String[][]} track_ids  Tracks from the {@code table_names} to be
- *                                rendered.
- * @param {Number} min_x  Lower bound for the x values.
- * @param {Number} max_x  Upper bound for the x values.
- * @param {Number} min_y  Lower bound for the y values.
- * @param {Number} max_y  Upper bound for the y values.
- * @param {Number} width  Width of the generated image.
- * @param {Number} height  Height of the generated image.
- * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {Number} bg_color  Background color of the generated image
- * @param {Object} style_options  Styling options for the image.
- * @param {Object} options  Optional parameters.
+ * @param {String[]} table_names
+ * @param {String[]} world_table_names
+ * @param {String} x_column_name
+ * @param {String} y_column_name
+ * @param {String[][]} track_ids
+ * @param {Number} min_x
+ * @param {Number} max_x
+ * @param {Number} min_y
+ * @param {Number} max_y
+ * @param {Number} width
+ * @param {Number} height
+ * @param {String} projection
+ * @param {Number} bg_color
+ * @param {Object} style_options
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
     var actual_request = {
@@ -5366,19 +6237,6 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
 };
 
 /**
- * Generates 'class break' rasterized image tiles for an area of interest using
- * the given tables and the provided parameters.
- * <p>
- * A class break rendering is where data from one or more GPUdb tables is
- * rasterized with styling applied on a per-class basis. GPUdb supports class
- * breaks based on one or more data columns. Distinct values (for strings) or
- * ranges (for numeric attributes) must be provided in the
- * cb_column_name1/cb_vals1 and cb_column_name2/cb_vals2 parameters. The
- * styling parameters must be specified for each class.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
- * The image is contained in the {@code image_data} field.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5387,6 +6245,7 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_classbreak_request = function(request, callback) {
     var actual_request = {
@@ -5420,73 +6279,32 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
 };
 
 /**
- * Generates 'class break' rasterized image tiles for an area of interest using
- * the given tables and the provided parameters.
- * <p>
- * A class break rendering is where data from one or more GPUdb tables is
- * rasterized with styling applied on a per-class basis. GPUdb supports class
- * breaks based on one or more data columns. Distinct values (for strings) or
- * ranges (for numeric attributes) must be provided in the
- * cb_column_name1/cb_vals1 and cb_column_name2/cb_vals2 parameters. The
- * styling parameters must be specified for each class.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
- * The image is contained in the {@code image_data} field.
  *
- * @param {String[]} table_names  Name of the table containing the data for the
- *                                various layers to be rendered.
- * @param {String[]} world_table_names  Optional name of the tables containing
- *                                      the data for the entire track when the
- *                                      {@code table_names} contains only part
- *                                      of the track data, but the entire track
- *                                      has to be rendered.
- * @param {String} x_column_name  Name of the column containing the x
- *                                coordinates.
- * @param {String} y_column_name  Name of the column containing the y
- *                                coordinates.
- * @param {String[][]} track_ids  Tracks from the {@code table_names} to be
- *                                rendered.
- * @param {String} cb_column_name1  Name of the column for the first class
- *                                  break.
- * @param {String[]} cb_vals1  Comma separated list of values or ranges (e.g.
- *                             '0:5,5:10,15:30').
- * @param {String[]} cb_column_name2  Optional comma separated list of valid
- *                                    column names. An empty string implies not
- *                                    using more than one column for the class
- *                                    break. For a non-empty list, there needs
- *                                    to be as many entries in the list as
- *                                    there are classes for the first column
- *                                    ({@code cb_column_name1}). However, the
- *                                    column names can be empty to indicate
- *                                    that for the corresponding class of the
- *                                    first attribute, no secondary class break
- *                                    will be applied. All the column names in
- *                                    this list must be different from the
- *                                    first column {@code cb_column_name1}. For
- *                                    example, 'col2,col3,col2'.
- * @param {String[][]} cb_vals2  Comma separated list of []-enclosed lists of
- *                               values or ranges; e.g.
- *                               '[0:5,5:10],[of,on,so],[-50:-20]'. Each square
- *                               bracket enclosed list describes the secondary
- *                               classes for the respective attribute in {@code
- *                               cb_column_name2} and the respective class in
- *                               {@code cb_column_name1} / {@code cb_vals1}.
- * @param {Number} min_x  Lower bound for the x values.
- * @param {Number} max_x  Upper bound for the x values.
- * @param {Number} min_y  Lower bound for the y values.
- * @param {Number} max_y  Upper bound for the y values.
- * @param {Number} width  Width of the generated image.
- * @param {Number} height  Height of the generated image.
- * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {Number} bg_color  Background color of the generated image.
- * @param {Object} style_options  Styling options for the image.
- * @param {Object} options  Optional parameters.
+ * @param {String[]} table_names
+ * @param {String[]} world_table_names
+ * @param {String} x_column_name
+ * @param {String} y_column_name
+ * @param {String[][]} track_ids
+ * @param {String} cb_column_name1
+ * @param {String[]} cb_vals1
+ * @param {String[]} cb_column_name2
+ * @param {String[][]} cb_vals2
+ * @param {Number} min_x
+ * @param {Number} max_x
+ * @param {Number} min_y
+ * @param {Number} max_y
+ * @param {Number} width
+ * @param {Number} height
+ * @param {String} projection
+ * @param {Number} bg_color
+ * @param {Object} style_options
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
     var actual_request = {
@@ -5520,12 +6338,6 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
 };
 
 /**
- * Generates rasterized heatmap image tiles for an area of interest using the
- * given tables and the provided parameters.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
- * The heatmap image is contained in the {@code image_data} field.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5534,6 +6346,7 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
     var actual_request = {
@@ -5561,34 +6374,26 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
 };
 
 /**
- * Generates rasterized heatmap image tiles for an area of interest using the
- * given tables and the provided parameters.
- * <p>
- * All color values must be in the format RRGGBB or AARRGGBB (to specify the
- * alpha value).
- * The heatmap image is contained in the {@code image_data} field.
  *
- * @param {String[]} table_names  Name of the table containing the data for the
- *                                various layers to be rendered.
- * @param {String} x_column_name  Name of the column containing the x
- *                                coordinates.
- * @param {String} y_column_name  Name of the column containing the y
- *                                coordinates.
+ * @param {String[]} table_names
+ * @param {String} x_column_name
+ * @param {String} y_column_name
  * @param {String} value_column_name
- * @param {Number} min_x  Lower bound for the x values.
- * @param {Number} max_x  Upper bound for the x values.
- * @param {Number} min_y  Lower bound for the y values.
- * @param {Number} max_y  Upper bound for the y values.
- * @param {Number} width  Width of the generated image.
- * @param {Number} height  Height of the generated image.
- * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {Object} style_options  Various style related options.
- * @param {Object} options  Optional parameters.
+ * @param {Number} min_x
+ * @param {Number} max_x
+ * @param {Number} min_y
+ * @param {Number} max_y
+ * @param {Number} width
+ * @param {Number} height
+ * @param {String} projection
+ * @param {Object} style_options
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
     var actual_request = {
@@ -5616,23 +6421,6 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
 };
 
 /**
- * Generates a rasterized image tile containing text labels defined by data
- * contained in the given table, suitable for overlaying onto a feature image
- * tile covering the same area (for example one generated using
- * /visualize/image).
- * <p>
- * All color values must be integers encoded in the format RRGGBB or AARRGGBB
- * (to specify the alpha value) when represented in hexadecimal; although note
- * that literal color values must be specified in base 10, not hexadecimal.
- * <p>
- * Fonts are specified as strings of the form 'FAMILY STYLE-OPTIONS SIZE',
- * where FAMILY is the font family, STYLE-OPTIONS is a whitespace separated
- * list of words defining style, variant, weight, stretch, or gravity, and SIZE
- * is a decimal number (size in points) or optionally followed by the unit
- * modifier 'px' for absolute size. All three sub-fields are optional; default
- * values will be used for omitted sub-fields. (For example, 'Helvetica Bold
- * Italic 10' specifies Helvetica, Bold and Italic, 10 points.) A substitute
- * font will be used if a requested font is not installed.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5641,6 +6429,7 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
     var actual_request = {
@@ -5680,112 +6469,38 @@ GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
 };
 
 /**
- * Generates a rasterized image tile containing text labels defined by data
- * contained in the given table, suitable for overlaying onto a feature image
- * tile covering the same area (for example one generated using
- * /visualize/image).
- * <p>
- * All color values must be integers encoded in the format RRGGBB or AARRGGBB
- * (to specify the alpha value) when represented in hexadecimal; although note
- * that literal color values must be specified in base 10, not hexadecimal.
- * <p>
- * Fonts are specified as strings of the form 'FAMILY STYLE-OPTIONS SIZE',
- * where FAMILY is the font family, STYLE-OPTIONS is a whitespace separated
- * list of words defining style, variant, weight, stretch, or gravity, and SIZE
- * is a decimal number (size in points) or optionally followed by the unit
- * modifier 'px' for absolute size. All three sub-fields are optional; default
- * values will be used for omitted sub-fields. (For example, 'Helvetica Bold
- * Italic 10' specifies Helvetica, Bold and Italic, 10 points.) A substitute
- * font will be used if a requested font is not installed.
  *
- * @param {String} table_name  Name of the table containing the data defining
- *                             the labels to render.
- * @param {String} x_column_name  Name of the column containing the x
- *                                coordinates of the center points of the
- *                                labels.
- * @param {String} y_column_name  Name of the column containing the y
- *                                coordinates of the center points of the
- *                                labels.
- * @param {String} x_offset  Either the name of an integer column, or a single
- *                           literal integer value, defining the number of
- *                           output pixels by which the labels will be offset
- *                           horizontally from their specified x coordinates.
- *                           If blank, an offset of 0 will be used.
- * @param {String} y_offset  Either the name of an integer column, or a single
- *                           literal integer value, defining the number of
- *                           output pixels by which the labels will be offset
- *                           vertically from their specified y coordinates. If
- *                           blank, an offset of 0 will be used.
- * @param {String} text_string  Either the name of a string column, or a single
- *                              literal string value (enclosed in double
- *                              quotes), defining the text for the labels.
- * @param {String} font  Either the name of a string column, or a single
- *                       literal string value (enclosed in double quotes),
- *                       defining the fonts for the labels.
- * @param {String} text_color  Either the name of an integer column, or a
- *                             single literal integer value, defining the text
- *                             color for the labels. If blank, opaque black
- *                             will be used.
- * @param {String} text_angle  Either the name of a numeric column, or a single
- *                             literal numeric value, defining the angle of
- *                             clockwise rotation (in degrees) for the labels.
- *                             If blank, an angle of 0 will be used.
- * @param {String} text_scale  Either the name of a numeric column, or a single
- *                             literal numeric value, defining the scaling
- *                             factor for the labels. (1 is normal size, 0.5 is
- *                             half size, 2 is double size, etc.) If blank, a
- *                             scaling factor of 1 will be used.
- * @param {String} draw_box  Either the name of an integer column, or a single
- *                           literal integer value, defining a Boolean flag
- *                           indicating whether boxes will be drawn around the
- *                           labels. If blank, no boxes will be drawn.
- * @param {String} draw_leader  Either the name of an integer column, or a
- *                              single literal integer value, defining a
- *                              Boolean flag indicating whether leader lines
- *                              will be drawn from the labels to points
- *                              specified using {@code leader_x_column_name}
- *                              and {@code leader_y_column_name}. If blank, no
- *                              leader lines will be drawn.
- * @param {String} line_width  Either the name of a numeric column, or a single
- *                             literal numeric value, defining the line width
- *                             in output pixels for the labels' boxes and
- *                             leader lines. If blank, a line width of 1 will
- *                             be used.
- * @param {String} line_color  Either the name of an integer column, or a
- *                             single literal integer value, defining the line
- *                             color for the labels' boxes and leader lines. If
- *                             blank, opaque black will be used.
- * @param {String} fill_color  Either the name of an integer column, or a
- *                             single literal integer value, defining the fill
- *                             color for the labels' boxes. If blank, the boxes
- *                             will not be filled.
- * @param {String} leader_x_column_name  Name of the column containing the x
- *                                       coordinates of the points to which the
- *                                       labels' leader lines will be drawn.
- *                                       May be left blank if no leader lines
- *                                       are to be drawn.
- * @param {String} leader_y_column_name  Name of the column containing the y
- *                                       coordinates of the points to which the
- *                                       labels' leader lines will be drawn.
- *                                       May be left blank if no leader lines
- *                                       are to be drawn.
- * @param {Number} min_x  Lower bound for the x coordinates of labels to
- *                        include in the image.
- * @param {Number} max_x  Upper bound for the x coordinates of labels to
- *                        include in the image.
- * @param {Number} min_y  Lower bound for the y coordinates of labels to
- *                        include in the image.
- * @param {Number} max_y  Upper bound for the y coordinates of labels to
- *                        include in the image.
- * @param {Number} width  Width of the generated image.
- * @param {Number} height  Height of the generated image.
- * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
- * @param {Object} options  Optional parameters.
+ * @param {String} table_name
+ * @param {String} x_column_name
+ * @param {String} y_column_name
+ * @param {String} x_offset
+ * @param {String} y_offset
+ * @param {String} text_string
+ * @param {String} font
+ * @param {String} text_color
+ * @param {String} text_angle
+ * @param {String} text_scale
+ * @param {String} draw_box
+ * @param {String} draw_leader
+ * @param {String} line_width
+ * @param {String} line_color
+ * @param {String} fill_color
+ * @param {String} leader_x_column_name
+ * @param {String} leader_y_column_name
+ * @param {Number} min_x
+ * @param {Number} max_x
+ * @param {Number} min_y
+ * @param {Number} max_y
+ * @param {Number} width
+ * @param {Number} height
+ * @param {String} projection
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_column_name, x_offset, y_offset, text_string, font, text_color, text_angle, text_scale, draw_box, draw_leader, line_width, line_color, fill_color, leader_x_column_name, leader_y_column_name, min_x, max_x, min_y, max_y, width, height, projection, options, callback) {
     var actual_request = {
@@ -5992,38 +6707,6 @@ GPUdb.prototype.visualize_video = function(table_names, world_table_names, track
 };
 
 /**
- * Creates raster heat-map images of table data based on input parameters.
- * Numerous parameters are required to call this function. Some of the
- * important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
- * names on which this function is to be applied and a user specified session
- * key. This session key is later used to fetch the generated images stored by
- * GPUdb. The operation is synchronous meaning that GPUdb will not return the
- * request until all the images are fully available.
- * <p>
- * Once the request has been processed then the generated video frames are
- * available for download via WMS using STYLES=cached. In this request the
- * LAYERS parameter should be populated with the session key passed in {@code
- * session_key} of the visualize video request and the FRAME parameter
- * indicates which 0-based frame of the video should be returned. All other WMS
- * parameters are ignored for this mode.
- * <p>
- * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
- * generated, the first frame could be retrieved with the URL::
- * <p>
- *      http://<gpudb-ip-address>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS
- * =MY-SESSION-KEY&FRAME=0
- * <p>
- * and the last frame could be retrieved with::
- * <p>
- *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
- * SESSION-KEY&FRAME=19
- * <p>
-
- * <p>
-
- * The response payload provides among other things the number of frames which
- * were created by GPUdb.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6032,6 +6715,7 @@ GPUdb.prototype.visualize_video = function(table_names, world_table_names, track
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
     var actual_request = {
@@ -6061,63 +6745,28 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
 };
 
 /**
- * Creates raster heat-map images of table data based on input parameters.
- * Numerous parameters are required to call this function. Some of the
- * important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
- * names on which this function is to be applied and a user specified session
- * key. This session key is later used to fetch the generated images stored by
- * GPUdb. The operation is synchronous meaning that GPUdb will not return the
- * request until all the images are fully available.
- * <p>
- * Once the request has been processed then the generated video frames are
- * available for download via WMS using STYLES=cached. In this request the
- * LAYERS parameter should be populated with the session key passed in {@code
- * session_key} of the visualize video request and the FRAME parameter
- * indicates which 0-based frame of the video should be returned. All other WMS
- * parameters are ignored for this mode.
- * <p>
- * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
- * generated, the first frame could be retrieved with the URL::
- * <p>
- *      http://<gpudb-ip-address>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS
- * =MY-SESSION-KEY&FRAME=0
- * <p>
- * and the last frame could be retrieved with::
- * <p>
- *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
- * SESSION-KEY&FRAME=19
- * <p>
-
- * <p>
-
- * The response payload provides among other things the number of frames which
- * were created by GPUdb.
  *
- * @param {String[]} table_names  Names of the tables containing the data for
- *                                various layers of the resulting video
- * @param {String} x_column_name  Name of the column containing the x
- *                                coordinates.
- * @param {String} y_column_name  Name of the column containing the y
- *                                coordinates.
- * @param {Number} min_x  Lower bound for the x values.
- * @param {Number} max_x  Upper bound for the x values.
- * @param {Number} min_y  Lower bound for the y values.
- * @param {Number} max_y  Upper bound for the y values.
+ * @param {String[]} table_names
+ * @param {String} x_column_name
+ * @param {String} y_column_name
+ * @param {Number} min_x
+ * @param {Number} max_x
+ * @param {Number} min_y
+ * @param {Number} max_y
  * @param {Number[][]} time_intervals
- * @param {Number} width  Width of the generated video.
- * @param {Number} height  Height of the generated video.
- * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
+ * @param {Number} width
+ * @param {Number} height
+ * @param {String} projection
  * @param {String} video_style
- * @param {String} session_key  User Provided session key that is later used to
- *                              retrieve the generated video from the WMS.
- * @param {Object} style_options  Various style related options.
- * @param {Object} options  Optional parameters.
+ * @param {String} session_key
+ * @param {Object} style_options
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, video_style, session_key, style_options, options, callback) {
     var actual_request = {

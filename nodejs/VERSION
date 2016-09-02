@@ -1,8 +1,8 @@
-# NodeJS API Version Information
-# --------------------------------
+NodeJS API Version Information
+--------------------------------
 
 MAJOR = 5
 MINOR = 2
 REVISION = 0
-ABI_VERSION = 0
 
+--------------------------------------
