@@ -1,11 +1,8 @@
-========================
-|                      |
-| GPUdb JavaScript API |
-|                      |
+Kinetica JavaScript API
 ========================
 
 
-This repository contains the client-side API for GPUdb for JavaScript.  Using
+This repository contains the client-side API for Kinetica for JavaScript.  Using
 this API requires rpm packages 'nodejs' and 'npm', the nodejs package manager.
 
 The repository also contains an example project.  To see it in action, load
@@ -14,16 +11,16 @@ tools.
 
 
 
-The documentation can be found at http://www.gpudb.com/docs/5.2/index.html.  The
+The documentation can be found at http://www.kinetica.com/docs/5.2/index.html.  The
 JavaScript specific documentation can be found at:
 
-* http://www.gpudb.com/docs/5.2/api/javascript/GPUdb.html
-* http://www.gpudb.com/docs/5.2/tutorials/js_guide.html
+* http://www.kinetica.com/docs/5.2/api/javascript/GPUdb.html
+* http://www.kinetica.com/docs/5.2/tutorials/js_guide.html
 
-The Node.js mdoule specific documentation can be found at:
+The Node.js module specific documentation can be found at:
 
-* http://www.gpudb.com/docs/5.2/api/nodejs-mod/GPUdb.html
-* http://www.gpudb.com/docs/5.2/tutorials/nodejs_guide.html
+* http://www.kinetica.com/docs/5.2/api/nodejs-mod/GPUdb.html
+* http://www.kinetica.com/docs/5.2/tutorials/nodejs_guide.html
 
 
 For the Node.js module, the following rpm packages are required:
