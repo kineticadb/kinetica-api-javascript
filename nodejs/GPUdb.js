@@ -26,11 +26,6 @@
  *                 used for authorization decisions by the server if it is so
  *                 configured. If neither username nor password is specified, no
  *                 authentication will be performed.
- * @param {String} [options.user_auth] The user authorization string to be used
- *                 when making requests to GPUdb. If specified, any GPUdb
- *                 requests made via the API that support a user authorization
- *                 string will use this value in lieu of any value provided in
- *                 the request itself.
  * @param {Number} [options.timeout] The timeout value, in milliseconds, after
  *                 which requests to GPUdb will be aborted. A timeout value of
  *                 zero is interpreted as an infinite timeout. Note that timeout
@@ -86,20 +81,6 @@ function GPUdb(url, options) {
         });
 
         /**
-         * The user authorization string used when making requests to GPUdb.
-         * Will be an empty string if none was provided to the {@link GPUdb
-         * GPUdb constructor}.
-         *
-         * @name GPUdb#password
-         * @type String
-         * @readonly
-         */
-        Object.defineProperty(this, "user_auth", {
-            enumerable: true,
-            value: options.user_auth !== undefined && options.user_auth !== null ? options.user_auth : ""
-        });
-
-        /**
          * The timeout value, in milliseconds, after which requests to GPUdb
          * will be aborted. A timeout of zero is interpreted as an infinite
          * timeout. Will be zero if none was provided to the {@link GPUdb GPUdb
@@ -116,7 +97,6 @@ function GPUdb(url, options) {
     } else {
         Object.defineProperty(this, "username", { enumerable: true, value: "" });
         Object.defineProperty(this, "password", { enumerable: true, value: "" });
-        Object.defineProperty(this, "user_auth", { enumerable: true, value: "" });
         Object.defineProperty(this, "timeout", { enumerable: true, value: 0 });
     }
 
@@ -166,10 +146,6 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
     }
 
     var headers = { "Content-type": "application/json" };
-
-    if (this.user_auth !== "") {
-        headers["GPUdb-User-Auth"] = this.user_auth;
-    }
 
     if (this.authorization !== "") {
         headers["Authorization"] = this.authorization;
@@ -270,10 +246,6 @@ GPUdb.prototype.wms_request = function(request, callback) {
     }
 
     var headers = {};
-
-    if (this.user_auth !== "") {
-        headers["GPUdb-User-Auth"] = this.user_auth;
-    }
 
     if (this.authorization !== "") {
         headers["Authorization"] = this.authorization;
@@ -416,6 +388,15 @@ GPUdb.Type.Column = function(name, type, properties) {
 };
 
 /**
+ * Gets whether the column is nullable.
+ *
+ * @returns {boolean} Whether the column is nullable.
+ */
+GPUdb.Type.Column.prototype.is_nullable = function() {
+    return this.properties.indexOf("nullable") > -1;
+};
+
+/**
  * Creates a Type object using data returned from the GPUdb show_table or
  * show_types endpoints.
  *
@@ -436,7 +417,18 @@ GPUdb.Type.from_type_info = function(label, type_schema, properties) {
 
     for (var i = 0; i < type_schema.fields.length; i++) {
         var field = type_schema.fields[i];
-        columns.push(new GPUdb.Type.Column(field.name, field.type, properties[field.name]));
+        var type = field.type;
+
+        if (Array.isArray(type)) {
+            for (var j = 0; j < type.length; j++) {
+                if (type[j] !== "null") {
+                    type = type[j];
+                    break;
+                }
+            }
+        }
+
+        columns.push(new GPUdb.Type.Column(field.name, type, properties[field.name]));
     }
 
     return new GPUdb.Type(label, columns);
@@ -459,7 +451,7 @@ GPUdb.Type.prototype.generate_schema = function() {
 
         schema.fields.push({
             name: column.name,
-            type: column.type
+            type: column.is_nullable() ? [ column.type, "null" ] : column.type
         });
     }
 
@@ -475,6 +467,17 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @static
  */
 Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.2.0" });
+
+/**
+ * Constant used with certain requests to indicate that the maximum allowed
+ * number of results should be returned.
+ *
+ * @name GPUdb#END_OF_SET
+ * @type Number
+ * @readonly
+ * @static
+ */
+Object.defineProperty(GPUdb, "END_OF_SET", { value: -9999 });
 
 /**
  * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
@@ -1003,8 +1006,7 @@ GPUdb.prototype.admin_set_shard_assignments = function(version, partial_reassign
 };
 
 /**
- * Exits the GPUdb server application. A authorization code is required (chosen
- * at the time of GPUdb configuration) to successfully complete this request.
+ * Exits the GPUdb server application.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1038,14 +1040,12 @@ GPUdb.prototype.admin_shutdown_request = function(request, callback) {
 };
 
 /**
- * Exits the GPUdb server application. A authorization code is required (chosen
- * at the time of GPUdb configuration) to successfully complete this request.
+ * Exits the GPUdb server application.
  *
  * @param {String} exit_type  Reserved for future use. User can pass an empty
  *                            string.
- * @param {String} authorization  The password that GPUdb is configured with
- *                                during startup. Incorrect or missing
- *                                authorization code will result in an error.
+ * @param {String} authorization  No longer used. User can pass an empty
+ *                                string.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -1237,13 +1237,13 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * each group, use column_names=['x','y','count(*)'].  To also compute the sum
  * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
- * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp'
- * and 'count_distinct'. Note that 'count_distinct' can only be used if there
- * are no provided grouping columns. The response is returned as a dynamic
- * schema. For details see: <a href="../../concepts/index.html#dynamic-schemas"
- * target="_top">dynamic schemas documentation</a>. If the 'result_table'
- * option is provided then the results are stored in a table with the name
- * given in the option and the results are not returned in the response.
+ * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp',
+ * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
+ * dynamic schema. For details see: <a href="../../concepts/index.html#dynamic-
+ * schemas" target="_top">dynamic schemas documentation</a>. If the
+ * 'result_table' option is provided then the results are stored in a table
+ * with the name given in the option and the results are not returned in the
+ * response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1300,13 +1300,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * each group, use column_names=['x','y','count(*)'].  To also compute the sum
  * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
- * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp'
- * and 'count_distinct'. Note that 'count_distinct' can only be used if there
- * are no provided grouping columns. The response is returned as a dynamic
- * schema. For details see: <a href="../../concepts/index.html#dynamic-schemas"
- * target="_top">dynamic schemas documentation</a>. If the 'result_table'
- * option is provided then the results are stored in a table with the name
- * given in the option and the results are not returned in the response.
+ * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp',
+ * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
+ * dynamic schema. For details see: <a href="../../concepts/index.html#dynamic-
+ * schemas" target="_top">dynamic schemas documentation</a>. If the
+ * 'result_table' option is provided then the results are stored in a table
+ * with the name given in the option and the results are not returned in the
+ * response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table/view/collection
@@ -2362,8 +2362,7 @@ GPUdb.prototype.alter_user = function(name, action, value, options, callback) {
  * Clears (drops) one or all tables in the GPUdb cluster. The operation is
  * synchronous meaning that the table will be cleared before the function
  * returns. The response payload returns the status of the operation along with
- * the name of the table that was cleared. For protected tables, this function
- * requires an administrator password without which the operation will fail.
+ * the name of the table that was cleared.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2400,15 +2399,13 @@ GPUdb.prototype.clear_table_request = function(request, callback) {
  * Clears (drops) one or all tables in the GPUdb cluster. The operation is
  * synchronous meaning that the table will be cleared before the function
  * returns. The response payload returns the status of the operation along with
- * the name of the table that was cleared. For protected tables, this function
- * requires an administrator password without which the operation will fail.
+ * the name of the table that was cleared.
  *
  * @param {String} table_name  Name of the table to be cleared. Must be an
  *                             existing GPUdb table. Empty string clears all
  *                             available tables in GPUdb.
- * @param {String} authorization  Administrator password needed for clearing
- *                                protected tables. For unprotected tables the
- *                                string can be left blank.
+ * @param {String} authorization  No longer used. User can pass an empty
+ *                                string.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4637,18 +4634,22 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
 /**
  * Calculates which objects from a table, collection or view match a string
  * expression for the given string columns. The 'mode' may be:
- * <p>
- *     'search' for full text search query with wildcards and boolean
- * operators, e.g. '(bob* OR sue) AND NOT jane'. Note that for this mode, no
- * column can be specified in {@code column_names}; GPUdb will search through
- * all string columns of the table that have text search enabled. Also, the
- * first character of the regular expression cannot be a wildcard (* or ?).
- * <p>
- * * 'equals' for an exact whole-string match
- * * 'contains' for a partial substring match (not accelerated)
- * * 'starts_with' to find strings that start with the given expression (not
- * accelerated)
- * * 'regex' - to use a full regular expression search (not accelerated)
+
+ * * search : full text search query with wildcards and boolean operators, e.g.
+ * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
+ * specified in {@code column_names}; GPUdb will search through all string
+ * columns of the table that have text search enabled. Also, the first
+ * character of the regular expression cannot be a wildcard (* or ?).
+ * * equals: exact whole-string match (accelerated)
+ * * contains: partial substring match (not accelerated).  If the column is a
+ * string type (non-charN) and the number of records is too large, it will
+ * return 0.
+ * * starts_with: strings that start with the given expression (not
+ * accelerated), If the column is a string type (non-charN) and the number of
+ * records is too large, it will return 0.
+ * * regex: full regular expression search (not accelerated). If the column is
+ * a string type (non-charN) and the number of records is too large, it will
+ * return 0.
  * <p>
  * The options 'case_sensitive' can be used to modify the behavior for all
  * modes except 'search'
@@ -4690,18 +4691,22 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
 /**
  * Calculates which objects from a table, collection or view match a string
  * expression for the given string columns. The 'mode' may be:
- * <p>
- *     'search' for full text search query with wildcards and boolean
- * operators, e.g. '(bob* OR sue) AND NOT jane'. Note that for this mode, no
- * column can be specified in {@code column_names}; GPUdb will search through
- * all string columns of the table that have text search enabled. Also, the
- * first character of the regular expression cannot be a wildcard (* or ?).
- * <p>
- * * 'equals' for an exact whole-string match
- * * 'contains' for a partial substring match (not accelerated)
- * * 'starts_with' to find strings that start with the given expression (not
- * accelerated)
- * * 'regex' - to use a full regular expression search (not accelerated)
+
+ * * search : full text search query with wildcards and boolean operators, e.g.
+ * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
+ * specified in {@code column_names}; GPUdb will search through all string
+ * columns of the table that have text search enabled. Also, the first
+ * character of the regular expression cannot be a wildcard (* or ?).
+ * * equals: exact whole-string match (accelerated)
+ * * contains: partial substring match (not accelerated).  If the column is a
+ * string type (non-charN) and the number of records is too large, it will
+ * return 0.
+ * * starts_with: strings that start with the given expression (not
+ * accelerated), If the column is a string type (non-charN) and the number of
+ * records is too large, it will return 0.
+ * * regex: full regular expression search (not accelerated). If the column is
+ * a string type (non-charN) and the number of records is too large, it will
+ * return 0.
  * <p>
  * The options 'case_sensitive' can be used to modify the behavior for all
  * modes except 'search'
@@ -6104,12 +6109,13 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
 };
 
 /**
- * Locks a table.  By default a table has no locks and all operations are
- * permitted.  A user may request a read-only or a write-only lock, after which
- * only read or write operations are permitted on the table until the next
- * request.  When lock_type is disable then then no operations are permitted on
- * the table.  The lock status can be queried by passing an empty string for
- * {@code lock_type}.
+ * Locks a table.  By default a table has a {@code lock_type} of {@code
+ * unlock}, indicating all operations are permitted.  A user may request a
+ * {@code read-only} or a {@code write-only} lock, after which only read or
+ * write operations, respectively, are permitted on the table until the lock is
+ * removed.  When {@code lock_type} is {@code disable} then no operations are
+ * permitted on the table.  The lock status can be queried by setting  {@code
+ * lock_type} to {@code status}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6135,7 +6141,7 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
 
     var actual_request = {
         table_name: request.table_name,
-        lock_type: (request.lock_type !== undefined && request.lock_type !== null) ? request.lock_type : "",
+        lock_type: (request.lock_type !== undefined && request.lock_type !== null) ? request.lock_type : "status",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -6143,20 +6149,20 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
 };
 
 /**
- * Locks a table.  By default a table has no locks and all operations are
- * permitted.  A user may request a read-only or a write-only lock, after which
- * only read or write operations are permitted on the table until the next
- * request.  When lock_type is disable then then no operations are permitted on
- * the table.  The lock status can be queried by passing an empty string for
- * {@code lock_type}.
+ * Locks a table.  By default a table has a {@code lock_type} of {@code
+ * unlock}, indicating all operations are permitted.  A user may request a
+ * {@code read-only} or a {@code write-only} lock, after which only read or
+ * write operations, respectively, are permitted on the table until the lock is
+ * removed.  When {@code lock_type} is {@code disable} then no operations are
+ * permitted on the table.  The lock status can be queried by setting  {@code
+ * lock_type} to {@code status}.
  *
  * @param {String} table_name  Name of the table to be locked. It must be a
  *                             currently existing table and not a collection or
  *                             a view.
- * @param {String} lock_type  The type of lock being applied to the table or
- *                            blank to query. Empty string returns the lock
- *                            status without change the lock status of the
- *                            table.
+ * @param {String} lock_type  The type of lock being applied to the table.
+ *                            Setting it to 'status' will return the current
+ *                            lock status of the table without changing it.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6180,7 +6186,7 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
 
     var actual_request = {
         table_name: table_name,
-        lock_type: (lock_type !== undefined && lock_type !== null) ? lock_type : "",
+        lock_type: (lock_type !== undefined && lock_type !== null) ? lock_type : "status",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -6405,7 +6411,9 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
 };
 
 /**
- * Shows security information relating to users and/or roles.
+ * Shows security information relating to users and/or roles. If the caller is
+ * not a system administrator, only information relating to the caller and
+ * their roles is returned.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6438,7 +6446,9 @@ GPUdb.prototype.show_security_request = function(request, callback) {
 };
 
 /**
- * Shows security information relating to users and/or roles.
+ * Shows security information relating to users and/or roles. If the caller is
+ * not a system administrator, only information relating to the caller and
+ * their roles is returned.
  *
  * @param {String[]} names  A list of names of users and/or roles about which
  *                          security information is requested. If none are
