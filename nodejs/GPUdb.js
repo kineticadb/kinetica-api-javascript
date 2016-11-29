@@ -466,7 +466,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.2.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.4.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -831,7 +831,8 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  * Take the system offline. When the system is offline, no user operations can
  * be performed with the exception of a system shutdown.
  *
- * @param {Boolean} offline  Set to true if desired state is offline.
+ * @param {Boolean} offline  Set to true if desired state is offline. Values:
+ *                           true, false.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -1239,11 +1240,11 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp',
  * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
- * dynamic schema. For details see: <a href="../../concepts/index.html#dynamic-
- * schemas" target="_top">dynamic schemas documentation</a>. If the
- * 'result_table' option is provided then the results are stored in a table
- * with the name given in the option and the results are not returned in the
- * response.
+ * dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>. If the 'result_table' option is provided then the
+ * results are stored in a table with the name given in the option and the
+ * results are not returned in the response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1302,11 +1303,11 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * Available aggregation functions are: 'count(*)', 'sum', 'min', 'max', 'avg',
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp',
  * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
- * dynamic schema. For details see: <a href="../../concepts/index.html#dynamic-
- * schemas" target="_top">dynamic schemas documentation</a>. If the
- * 'result_table' option is provided then the results are stored in a table
- * with the name given in the option and the results are not returned in the
- * response.
+ * dynamic schema. For details see: <a
+ * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>. If the 'result_table' option is provided then the
+ * results are stored in a table with the name given in the option and the
+ * results are not returned in the response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table/view/collection
@@ -1324,6 +1325,21 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> expression: Filter expression to apply
+ *                          to the table prior to computing the aggregate group
+ *                          by.
+ *                                  <li> having: Filter expression to apply to
+ *                          the aggregated results.
+ *                                  <li> sort_order: String indicating how the
+ *                          returned values should be sorted - ascending or
+ *                          descending. Values: ascending, descending.
+ *                                  <li> sort_by: String determining how the
+ *                          results are sorted. Values: key, value.
+ *                                  <li> result_table: The name of the table
+ *                          used to store the results. If present no results
+ *                          are returned in the response.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1367,12 +1383,12 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
  * Performs a histogram calculation given a table, a column, and an interval
  * function. The {@code interval} is used to produce bins of that size and the
  * result, computed over the records falling within each bin, is returned.  For
- * each bin, the start value is inclusive, but the end value is exclusive--
- * except for the very last bin for which the end value is also inclusive.  The
- * value returned for each bin is the number of records in it, except when a
- * column name is provided as a *value_column* in {@code options}.  In this
- * latter case the sum of the values corresponding to the *value_column* is
- * used as the result instead.
+ * each bin, the start value is inclusive, but the end value is
+ * exclusive--except for the very last bin for which the end value is also
+ * inclusive.  The value returned for each bin is the number of records in it,
+ * except when a column name is provided as a *value_column* in {@code
+ * options}.  In this latter case the sum of the values corresponding to the
+ * *value_column* is used as the result instead.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1412,12 +1428,12 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  * Performs a histogram calculation given a table, a column, and an interval
  * function. The {@code interval} is used to produce bins of that size and the
  * result, computed over the records falling within each bin, is returned.  For
- * each bin, the start value is inclusive, but the end value is exclusive--
- * except for the very last bin for which the end value is also inclusive.  The
- * value returned for each bin is the number of records in it, except when a
- * column name is provided as a *value_column* in {@code options}.  In this
- * latter case the sum of the values corresponding to the *value_column* is
- * used as the result instead.
+ * each bin, the start value is inclusive, but the end value is
+ * exclusive--except for the very last bin for which the end value is also
+ * inclusive.  The value returned for each bin is the number of records in it,
+ * except when a column name is provided as a *value_column* in {@code
+ * options}.  In this latter case the sum of the values corresponding to the
+ * *value_column* is used as the result instead.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table or collection
@@ -1430,6 +1446,12 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  * @param {Number} interval  The size of each bin within the start and end
  *                           parameters.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> value_column: The name of the column
+ *                          GPUdb will use when calculating the bin values
+ *                          (values are summed).  The column must be a
+ *                          numerical type (int, double, long, float).
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1529,6 +1551,18 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  *                            successive points is less than the given
  *                            tolerance.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> whiten: When set to 1 each of the
+ *                          columns is first normalized by its stdv - default
+ *                          is not to whiten.
+ *                                  <li> max_iters: Number of times to try to
+ *                          hit the tolerance limit before giving up - default
+ *                          is 10.
+ *                                  <li> num_tries: Number of times to run the
+ *                          k-means algorithm with a different randomly
+ *                          selected starting points - helps avoid local
+ *                          minimum. Default is 1.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1648,8 +1682,8 @@ GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, c
  * Percentiles and percentile_ranks are approximate and are calculated using
  * the t-digest algorithm. They must include the desired
  * percentile/percentile_rank. To compute multiple percentiles each value must
- * be specified separately (i.e. 'percentile(75.0),percentile(99.0),percentile_
- * rank(1234.56),percentile_rank(-5)').
+ * be specified separately (i.e.
+ * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
  * The weighted average statistic requires a weight_attribute to be specified
  * in {@code options}. The weighted average is then defined as the sum of the
@@ -1705,8 +1739,8 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  * Percentiles and percentile_ranks are approximate and are calculated using
  * the t-digest algorithm. They must include the desired
  * percentile/percentile_rank. To compute multiple percentiles each value must
- * be specified separately (i.e. 'percentile(75.0),percentile(99.0),percentile_
- * rank(1234.56),percentile_rank(-5)').
+ * be specified separately (i.e.
+ * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
  * The weighted average statistic requires a weight_attribute to be specified
  * in {@code options}. The weighted average is then defined as the sum of the
@@ -1721,8 +1755,19 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  * @param {String} column_name  Name of the column for which the statistics are
  *                              to be calculated.
  * @param {String} stats  Comma separated list of the statistics to calculate,
- *                        e.g. "sum,mean".
+ *                        e.g. "sum,mean". Values: count, mean, stdv, variance,
+ *                        skew, kurtosis, sum, min, max, weighted_average,
+ *                        cardinality, estimated_cardinality, percentile,
+ *                        percentile_rank.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> additional_column_names: A list of
+ *                          comma separated column names over which statistics
+ *                          can be accumulated along with the primary column.
+ *                                  <li> weight_column_name: Name of column
+ *                          used as weighting attribute for the weighted
+ *                          average statistic.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1768,8 +1813,8 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  * <p>
  * There are two methods for binning the set members. In the first, which can
  * be used for numeric valued binning-columns, a min, max and interval are
- * specified. The number of bins, nbins, is the integer upper bound of (max-
- * min)/interval. Values that fall in the range
+ * specified. The number of bins, nbins, is the integer upper bound of
+ * (max-min)/interval. Values that fall in the range
  * [min+n\*interval,min+(n+1)\*interval) are placed in the nth bin where n
  * ranges from 0..nbin-2. The final bin is [min+(nbin-1)\*interval,max]. In the
  * second method, {@code options} bin_values specifies a list of binning column
@@ -1829,8 +1874,8 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  * <p>
  * There are two methods for binning the set members. In the first, which can
  * be used for numeric valued binning-columns, a min, max and interval are
- * specified. The number of bins, nbins, is the integer upper bound of (max-
- * min)/interval. Values that fall in the range
+ * specified. The number of bins, nbins, is the integer upper bound of
+ * (max-min)/interval. Values that fall in the range
  * [min+n\*interval,min+(n+1)\*interval) are placed in the nth bin where n
  * ranges from 0..nbin-2. The final bin is [min+(nbin-1)\*interval,max]. In the
  * second method, {@code options} bin_values specifies a list of binning column
@@ -1857,6 +1902,20 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                           if the binning-column falls in the range
  *                           [start+interval``*``i, start+interval``*``(i+1)).
  * @param {Object} options  Map of optional parameters:
+ *                          <ul>
+ *                                  <li> additional_column_names: A list of
+ *                          comma separated value-column names over which
+ *                          statistics can be accumulated along with the
+ *                          primary value_column.
+ *                                  <li> bin_values: A list of comma separated
+ *                          binning-column values. Values that match the nth
+ *                          bin_values value are placed in the nth bin.
+ *                                  <li> weight_column_name: Name of the column
+ *                          used as weighting column for the weighted_average
+ *                          statistic.
+ *                                  <li> order_column_name: Name of the column
+ *                          used for candlestick charting techniques.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1982,6 +2041,15 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> expression: Optional filter expression
+ *                          to apply to the table.
+ *                                  <li> sort_order: String indicating how the
+ *                          returned values should be sorted.
+ *                                  <li> result_table: The name of the table
+ *                          used to store the results. If present no results
+ *                          are returned in the response.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2067,6 +2135,76 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *
  * @param {Object} property_updates_map  Map containing the properties of the
  *                                       system to be updated. Error if empty.
+ *                                       <ul>
+ *                                               <li> sm_omp_threads: Set the
+ *                                       number of sm_omp_threads to the
+ *                                       specified integer value.
+ *                                               <li> kernel_omp_threads: Set
+ *                                       the number of kernel_omp_threads to
+ *                                       the specified integer value.
+ *                                               <li>
+ *                                       concurrent_kernel_execution: Enables
+ *                                       concurrent kernel execution if the
+ *                                       value is 'true' and disables it if the
+ *                                       value is 'false'.
+ *                                               <li> chunk_size: Sets the
+ *                                       chunk size of all new sets to the
+ *                                       specified integer value.
+ *                                               <li> flush_to_disk: Flushes
+ *                                       any changes to any tables to the
+ *                                       persistent store.  These changes
+ *                                       include updates to the vector store,
+ *                                       object store, and text search store,
+ *                                       Value string is ignored
+ *                                               <li> clear_cache: Clears
+ *                                       cached results.  Useful to allow
+ *                                       repeated timing of endpoints. Value
+ *                                       string is ignored
+ *                                               <li> communicator_test: Invoke
+ *                                       the communicator test and report
+ *                                       timing results. Value string is is a
+ *                                       comma separated list of <key>=<value>
+ *                                       expressions.  Expressions are:
+ *                                       num_transactions = <num> where <num>
+ *                                       is the number of request reply
+ *                                       transactions to invoke per test;
+ *                                       message_size = <bytes> where bytes is
+ *                                       the size of the messages to send in
+ *                                       bytes; check_values = <enabled> where
+ *                                       if enabled is true the value of the
+ *                                       messages received are verified.
+ *                                               <li>
+ *                                       set_message_timers_enabled: Enables
+ *                                       the communicator test to collect
+ *                                       additional timing statistics when the
+ *                                       value string is 'true'. Disables the
+ *                                       collection when the value string is
+ *                                       'false'
+ *                                               <li> bulk_add_test: Invoke the
+ *                                       bulk_add test and report timing
+ *                                       results. Value string is ignored.
+ *                                               <li> network_speed: Invoke the
+ *                                       network speed test and report timing
+ *                                       results. Value string is a comma
+ *                                       separated list of <key>=<value>
+ *                                       expressions.  Expressions are: seconds
+ *                                       = <time> where time is the time in
+ *                                       seconds to run the test; data_size =
+ *                                       <size> where <size> is the size in
+ *                                       bytes of the block to be transferred;
+ *                                       threads = <number of threads>;
+ *                                       to_ranks = <comma separated list of
+ *                                       ranks> where the list of ranks is the
+ *                                       ranks that rank 0 will send data to
+ *                                       and get data from. If to_ranks is
+ *                                       unspecified then all worker ranks are
+ *                                       used.
+ *                                               <li> request_timeout: Number
+ *                                       of minutes after which /filter/* and
+ *                                       /aggregate/* queries will timeout.
+ *                                               <li> max_get_records_size: set
+ *                                       max_get_records_size. default 20000
+ *                                       </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -2103,16 +2241,17 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  *      Creating or deleting an index on a particular column. This can speed up
  * certain search queries (such as /get/records, /delete/records,
  * /update/records) when using expressions containing equality or relational
- * operators on indexed columns. This only applies to child tables.
+ * operators on indexed columns. This only applies to tables.
  * <p>
- *      Making a table protected or not. Protected tables need the admin
- * password to be sent in a /clear/table to delete the table. This can be
- * applied to child tables or collections or views.
+ *      Setting the time-to-live (TTL). This can be applied to tables, views,
+ * or collections.  When applied to collections, every table & view within the
+ * collection will have its TTL set to the given value.
  * <p>
- *      Setting the ttl (time-to-live). This can be applied to child tables or
- * collections or views.
+ *      Making a table protected or not. Protected tables have their TTLs set
+ * to not automatically expire. This can be applied to tables, views, and
+ * collections.
  * <p>
- *      Allowing homogeneous child tables. This only applies to collections.
+ *      Allowing homogeneous tables within a collection.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2153,24 +2292,27 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *      Creating or deleting an index on a particular column. This can speed up
  * certain search queries (such as /get/records, /delete/records,
  * /update/records) when using expressions containing equality or relational
- * operators on indexed columns. This only applies to child tables.
+ * operators on indexed columns. This only applies to tables.
  * <p>
- *      Making a table protected or not. Protected tables need the admin
- * password to be sent in a /clear/table to delete the table. This can be
- * applied to child tables or collections or views.
+ *      Setting the time-to-live (TTL). This can be applied to tables, views,
+ * or collections.  When applied to collections, every table & view within the
+ * collection will have its TTL set to the given value.
  * <p>
- *      Setting the ttl (time-to-live). This can be applied to child tables or
- * collections or views.
+ *      Making a table protected or not. Protected tables have their TTLs set
+ * to not automatically expire. This can be applied to tables, views, and
+ * collections.
  * <p>
- *      Allowing homogeneous child tables. This only applies to collections.
+ *      Allowing homogeneous tables within a collection.
  *
  * @param {String} table_name  Table on which the operation will be performed.
- *                             Must be a valid table or collection in GPUdb.
- * @param {String} action  Modification operation to be applied to the table or
- *                         collection
+ *                             Must be a valid table, view, or collection in
+ *                             GPUdb.
+ * @param {String} action  Modification operation to be applied Values:
+ *                         create_index, delete_index,
+ *                         allow_homogeneous_tables, protected, ttl.
  * @param {String} value  The value of the modification. May be a column name,
- *                        'true' or 'false', or a time-to-live depending on
- *                        {@code action}.
+ *                        'true' or 'false', or a TTL depending on {@code
+ *                        action}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -2325,6 +2467,7 @@ GPUdb.prototype.alter_user_request = function(request, callback) {
  * @param {String} name  Name of the user to be altered. Must be an existing
  *                       user.
  * @param {String} action  Modification operation to be applied to the user.
+ *                         Values: set_password.
  * @param {String} value  The value of the modification, depending on {@code
  *                        action}.
  * @param {Object} options  Optional parameters.
@@ -2601,9 +2744,8 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
 
     var actual_request = {
         join_table_name: request.join_table_name,
-        table_names: request.table_names,
-        aliases: request.aliases,
-        expression: (request.expression !== undefined && request.expression !== null) ? request.expression : "",
+        table_names: (request.table_names !== undefined && request.table_names !== null) ? request.table_names : [],
+        column_names: (request.column_names !== undefined && request.column_names !== null) ? request.column_names : [],
         expressions: (request.expressions !== undefined && request.expressions !== null) ? request.expressions : [],
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -2623,13 +2765,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  * @param {String[]} table_names  The list of table names making up the joined
  *                                set.  Corresponds to a SQL statement FROM
  *                                clause
- * @param {String[]} aliases  The list of aliases for each of the corresponding
- *                            tables.
- * @param {String} expression  An optional expression GPUdb uses to combine and
- *                             filter the joined set.  Corresponds to a SQL
- *                             statement WHERE clause. For details see: <a
- *                             href="../../concepts/index.html#expressions"
- *                             target="_top">expressions</a>.
+ * @param {String[]} column_names  The list of columns to be selected from the
+ *                                 input table names. Empty list says to select
+ *                                 all the column names.  Empty list is the
+ *                                 default.
  * @param {String[]} expressions  An optional list of expressions GPUdb uses to
  *                                combine and filter the joined set.
  *                                Corresponds to a SQL statement WHERE clause.
@@ -2637,17 +2776,34 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                href="../../concepts/index.html#expressions"
  *                                target="_top">expressions</a>.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> collection_name: Name of a collection
+ *                          which is to contain the join table. If empty, then
+ *                          the join table will be a top-level table.
+ *                                  <li> max_query_dimensions: The maximum
+ *                          number of tables in a joined table that can be
+ *                          accessed by a query and are not equated by a
+ *                          foreign-key to primary-key equality predicate
+ *                                  <li> optimize_lookups: Use the applied
+ *                          filters to precalculate the lookup table to get
+ *                          data from the primary key sets
+ *                                  <li> refresh_method: Method by which the
+ *                          join table can be refreshed when underlying member
+ *                          tables have changed.
+ *                                  <li> refresh: Do a manual refresh of the
+ *                          join table if it exists - throws an error otherwise
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.create_join_table = function(join_table_name, table_names, aliases, expression, expressions, options, callback) {
+GPUdb.prototype.create_join_table = function(join_table_name, table_names, column_names, expressions, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.create_join_table(join_table_name, table_names, aliases, expression, expressions, options, function(err, response) {
+            self.create_join_table(join_table_name, table_names, column_names, expressions, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -2659,9 +2815,8 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, alias
 
     var actual_request = {
         join_table_name: join_table_name,
-        table_names: table_names,
-        aliases: aliases,
-        expression: (expression !== undefined && expression !== null) ? expression : "",
+        table_names: (table_names !== undefined && table_names !== null) ? table_names : [],
+        column_names: (column_names !== undefined && column_names !== null) ? column_names : [],
         expressions: (expressions !== undefined && expressions !== null) ? expressions : [],
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -2804,6 +2959,36 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          this type.  Must be an empty string if the
  *                          *is_collection* is 'true'.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> no_error_if_exists: If {@code true},
+ *                          prevents an error from occurring if the table
+ *                          already exists and is of the given type.  If a
+ *                          table with the same ID but a different type exists,
+ *                          it is still an error. Values: true, false.
+ *                                  <li> collection_name: Name of a collection
+ *                          which is to contain the newly created table. If
+ *                          empty, then the newly created table will be a
+ *                          top-level table. If the collection does not allow
+ *                          duplicate types and it contains a table of the same
+ *                          type as the given one, then this table creation
+ *                          request will fail.
+ *                                  <li> is_collection: Indicates whether the
+ *                          new table to be created will be a collection.
+ *                          Values: true, false.
+ *                                  <li> disallow_homogeneous_tables: For a
+ *                          collection, indicates whether the collection
+ *                          prohibits containment of multiple tables of exactly
+ *                          the same data type. Values: true, false.
+ *                                  <li> is_replicated: For a table, indicates
+ *                          whether the table is to be replicated to all the
+ *                          database ranks. This may be necessary when the
+ *                          table is to be joined with other tables in a query.
+ *                          Values: true, false.
+ *                                  <li> foreign_keys: Semicolon-separated list
+ *                          of foreign key constraints, of the format
+ *                          'source_column references
+ *                          target_table(primary_key_column)'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3330,6 +3515,15 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  * @param {String[]} output_column_names  The list of names of the columns to
  *                                        be stored in the union.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> collection_name: Name of a collection
+ *                          which is to contain the union. If empty, then the
+ *                          union will be a top-level table.
+ *                                  <li> mode: If 'merge_views' then this
+ *                          operation will merge (i.e. union) the provided
+ *                          views. All 'table_names' must be views from the
+ *                          same underlying base table.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3566,6 +3760,16 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                                specifying {@code record_id} in the {@code
  *                                options}.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> global_expression: An optional global
+ *                          expression to reduce the search space of the {@code
+ *                          expressions}.
+ *                                  <li> record_id: A record id identifying a
+ *                          single record, obtained at the time of
+ *                          /insert/records or by calling
+ *                          /get/records/fromcollection with the
+ *                          *return_record_ids* option.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4115,8 +4319,9 @@ GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, m
 };
 
 /**
- * Applies a geometry filter against a spatial column in a given table,
- * collection or view. The filtering geometry is provided by {@code input_wkt}.
+ * Applies a geometry filter against a spatial column named WKT in a given
+ * table, collection or view. The filtering geometry is provided by {@code
+ * input_wkt}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4153,21 +4358,24 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
 };
 
 /**
- * Applies a geometry filter against a spatial column in a given table,
- * collection or view. The filtering geometry is provided by {@code input_wkt}.
+ * Applies a geometry filter against a spatial column named WKT in a given
+ * table, collection or view. The filtering geometry is provided by {@code
+ * input_wkt}.
  *
- * @param {String} table_name  Name of the table on which the filter by spatial
- *                             operation will be performed.  Must be an
- *                             existing table, collection or view in GPUdb.
+ * @param {String} table_name  Name of the table on which the filter by
+ *                             geometry will be performed.  Must be an existing
+ *                             table, collection or view containing a column
+ *                             named WKT.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Must not be an
  *                            already existing collection, table or view.
  * @param {String} column_name  Name of the column to be used in the filter.
- *                              Must be a spatial column. Typically this will
- *                              be 'WKT'
+ *                              Must be 'WKT'
  * @param {String} input_wkt  A geometry in WKT format that will be used to
- *                            filter the objects in {@code table_name}
+ *                            filter the objects in {@code table_name}.
  * @param {String} operation  The geometric filtering operation to perform
+ *                            Values: contains, crosses, disjoint, equals,
+ *                            intersects, overlaps, touches, within.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4274,6 +4482,10 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  * @param {Object} column_values_map  List of values for the corresponding
  *                                    column in the table
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> filter_mode: String indicating the
+ *                          filter mode, either 'in_list' or 'not_in_list'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4380,8 +4592,8 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                                x-coordinate (the longitude) of the center.
  * @param {Number} x_center  Value of the longitude of the center. Must be
  *                           within [-180.0, 180.0].
- * @param {String} y_column_name  Name of the column to be used for the y
- *                                -coordinate-the latitude-of the center.
+ * @param {String} y_column_name  Name of the column to be used for the
+ *                                y-coordinate-the latitude-of the center.
  * @param {Number} y_center  Value of the latitude of the center. Must be
  *                           within [-90.0, 90.0].
  * @param {Number} radius  The radius of the circle within which the search
@@ -4524,15 +4736,15 @@ GPUdb.prototype.filter_by_range = function(table_name, view_name, column_name, l
 /**
  * Filters objects matching all points of the given track (works only on track
  * type data).  It allows users to specify a particular track to find all other
- * points in the table that fall within specified ranges-spatial and temporal-
- * of all points of the given track. Additionally, the user can specify another
- * track to see if the two intersect (or go close to each other within the
- * specified ranges). The user also has the flexibility of using different
- * metrics for the spatial distance calculation: Euclidean (flat geometry) or
- * Great Circle (spherical geometry to approximate the Earth's surface
- * distances). The filtered points are stored in a newly created result set.
- * The return value of the function is the number of points in the resultant
- * set (view).
+ * points in the table that fall within specified ranges-spatial and
+ * temporal-of all points of the given track. Additionally, the user can
+ * specify another track to see if the two intersect (or go close to each other
+ * within the specified ranges). The user also has the flexibility of using
+ * different metrics for the spatial distance calculation: Euclidean (flat
+ * geometry) or Great Circle (spherical geometry to approximate the Earth's
+ * surface distances). The filtered points are stored in a newly created result
+ * set. The return value of the function is the number of points in the
+ * resultant set (view).
  * <p>
  * This operation is synchronous meaning that GPUdb will not return a response
  * until all the objects are fully available.
@@ -4573,15 +4785,15 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
 /**
  * Filters objects matching all points of the given track (works only on track
  * type data).  It allows users to specify a particular track to find all other
- * points in the table that fall within specified ranges-spatial and temporal-
- * of all points of the given track. Additionally, the user can specify another
- * track to see if the two intersect (or go close to each other within the
- * specified ranges). The user also has the flexibility of using different
- * metrics for the spatial distance calculation: Euclidean (flat geometry) or
- * Great Circle (spherical geometry to approximate the Earth's surface
- * distances). The filtered points are stored in a newly created result set.
- * The return value of the function is the number of points in the resultant
- * set (view).
+ * points in the table that fall within specified ranges-spatial and
+ * temporal-of all points of the given track. Additionally, the user can
+ * specify another track to see if the two intersect (or go close to each other
+ * within the specified ranges). The user also has the flexibility of using
+ * different metrics for the spatial distance calculation: Euclidean (flat
+ * geometry) or Great Circle (spherical geometry to approximate the Earth's
+ * surface distances). The filtered points are stored in a newly created result
+ * set. The return value of the function is the number of points in the
+ * resultant set (view).
  * <p>
  * This operation is synchronous meaning that GPUdb will not return a response
  * until all the objects are fully available.
@@ -4600,6 +4812,24 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                     be an valid track ID within the given
  *                                     set.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> spatial_radius: A positive number
+ *                          passed as a string representing the radius of the
+ *                          search area centered around each track point's
+ *                          geospatial coordinates. The value is interpreted in
+ *                          meters. Required parameter.
+ *                                  <li> time_radius: A positive number passed
+ *                          as a string representing the maximum allowable time
+ *                          difference between the timestamps of a filtered
+ *                          object and the given track's points. The value is
+ *                          interpreted in seconds. Required parameter.
+ *                                  <li> spatial_distance_metric: A string
+ *                          representing the coordinate system to use for the
+ *                          spatial search criteria. Acceptable values are
+ *                          'euclidean' and 'great_circle'. Optional parameter;
+ *                          default is 'euclidean'. Values: euclidean,
+ *                          great_circle.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4719,10 +4949,16 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                            already existing collection, table or view.
  * @param {String} expression  The expression with which to filter the table.
  * @param {String} mode  The string filtering mode to apply. See above for
- *                       details.
+ *                       details. Values: search, equals, contains,
+ *                       starts_with, regex.
  * @param {String[]} column_names  List of columns on which to apply the
  *                                 filter. Ignored for 'search' mode.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> case_sensitive: If 'false' then string
+ *                          filtering will ignore case. Does not apply to
+ *                          'search' mode. Values: true, false.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4828,6 +5064,28 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                           match the type of the {@code
  *                                           column_name}.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> filter_mode: String indicating the
+ *                          filter mode, either 'in_table' or 'not_in_table'.
+ *                                  <li> mode: Mode - should be either
+ *                          'spatial' or 'normal'.
+ *                                  <li> buffer: Buffer size, in meters. Only
+ *                          relevant for 'spatial' mode.
+ *                                  <li> buffer_method: Method used to buffer
+ *                          polygons.  Only relevant for 'spatial' mode.
+ *                                  <li> max_partition_size: Maximum number of
+ *                          points in a partition. Only relevant for 'spatial'
+ *                          mode.
+ *                                  <li> max_partition_score: Maximum number of
+ *                          points * edges in a partition. Only relevant for
+ *                          'spatial' mode.
+ *                                  <li> x_column_name: Name of column
+ *                          containing x value of point being filtered in
+ *                          spatial mode.
+ *                                  <li> y_column_name: Name of column
+ *                          containing x value of point being filtered in
+ *                          spatial mode.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4963,8 +5221,8 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
 
 /**
  * Retrieves records from a given table, optionally filtered by an expression
- * and/or sorted by a column. This operation can only be performed on tables or
- * on homogeneous collection (collections whose children all have the same
+ * and/or sorted by a column. This operation can be performed on tables, views,
+ * or on homogeneous collections (collections containing tables of all the same
  * type). Records can be returned encoded as binary or json.
  * <p>
  * This operation supports paging through the data via the {@code offset} and
@@ -5018,8 +5276,8 @@ GPUdb.prototype.get_records_request = function(request, callback) {
 
 /**
  * Retrieves records from a given table, optionally filtered by an expression
- * and/or sorted by a column. This operation can only be performed on tables or
- * on homogeneous collection (collections whose children all have the same
+ * and/or sorted by a column. This operation can be performed on tables, views,
+ * or on homogeneous collections (collections containing tables of all the same
  * type). Records can be returned encoded as binary or json.
  * <p>
  * This operation supports paging through the data via the {@code offset} and
@@ -5042,6 +5300,17 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options
+ *                          <ul>
+ *                                  <li> expression: Optional filter expression
+ *                          to apply to the table.
+ *                                  <li> sort_by: Optional column that the data
+ *                          should be sorted by. Empty by default (i.e. no
+ *                          sorting is applied).
+ *                                  <li> sort_order: String indicating how the
+ *                          returned values should be sorted - ascending or
+ *                          descending. Ignored if 'sort_by' option is not
+ *                          specified. Values: ascending, descending.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -5169,9 +5438,22 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                         through the results).
  * @param {Number} limit  A positive integer indicating the maximum number of
  *                        results to be returned (if not provided the default
- *                        is 10000). Or END_OF_column (-9999) to indicate that
- *                        the max number of results should be returned.
+ *                        is 10000), or END_OF_SET (-9999) to indicate that the
+ *                        maximum number of results allowed by the server
+ *                        should be returned.
  * @param {Object} options
+ *                          <ul>
+ *                                  <li> expression: Optional filter expression
+ *                          to apply to the table.
+ *                                  <li> sort_by: Optional column that the data
+ *                          should be sorted by. Empty by default (i.e. no
+ *                          sorting is applied).
+ *                                  <li> sort_order: String indicating how the
+ *                          returned values should be sorted - ascending or
+ *                          descending. Default is 'ascending'. Ignored if
+ *                          'sort_by' option is not specified. Values:
+ *                          ascending, descending.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -5397,7 +5679,7 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *
  * @param {String} table_name  Name of the collection or table from which
  *                             records are to be retrieved. Must be an existing
- *                             GPUdb collection or table.
+ *                             collection or table.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
  *                         through the results).
@@ -5406,6 +5688,12 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                        indicate that the max number of results should be
  *                        returned.
  * @param {Object} options
+ *                          <ul>
+ *                                  <li> return_record_ids: If 'true' then
+ *                          return GPUdb's internal record id along with each
+ *                          returned record. Default is 'false'. Values: true,
+ *                          false.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -5483,7 +5771,8 @@ GPUdb.prototype.grant_permission_system_request = function(request, callback) {
  *
  * @param {String} name  Name of the user or role to which the permission will
  *                       be granted. Must be an existing user or role.
- * @param {String} permission  Permission to grant to the user or role.
+ * @param {String} permission  Permission to grant to the user or role. Values:
+ *                             system_admin, system_write, system_read.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5555,7 +5844,9 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
  *
  * @param {String} name  Name of the user or role to which the permission will
  *                       be granted. Must be an existing user or role.
- * @param {String} permission  Permission to grant to the user or role.
+ * @param {String} permission  Permission to grant to the user or role. Values:
+ *                             table_admin, table_insert, table_update,
+ *                             table_delete, table_read.
  * @param {String} table_name  Name of the table to which the permission grants
  *                             access. Must be an existing table, collection,
  *                             or view. If a collection, the permission also
@@ -5880,6 +6171,30 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                         of the table. Empty array if {@code list_encoding}
  *                         is {@code binary}.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> update_on_existing_pk: If the table
+ *                          has a /create/type, then if the value is 'true'
+ *                          then if any of the records being added have the
+ *                          same primary key as existing records, the existing
+ *                          records are replaced (i.e. *updated*) with the
+ *                          given records. If 'false' and if the records being
+ *                          added have the same primary key as existing
+ *                          records, the given records with existing primary
+ *                          keys are ignored (the existing records are left
+ *                          unchanged).  It is quite possible that in this case
+ *                          some of the given records will be inserted and some
+ *                          (those having existing primary keys) will be
+ *                          ignored (or updated). If the specified table does
+ *                          not have a primary key column then this optional
+ *                          parameter is ignored. Values: true, false.
+ *                                  <li> return_record_ids: If 'true' then
+ *                          return GPUdb's internal record id along for each
+ *                          inserted record. Default is 'false'. Values: true,
+ *                          false.
+ *                                  <li> route_to_address: Route to a specific
+ *                          rank/tom. Option not suitable for tables using
+ *                          primary/shard keys
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -5983,6 +6298,131 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          meanings depending on the type of the column.
  *                          Below follows a more detailed description of the
  *                          map:
+ *                          <ul>
+ *                                  <li> all: This key indicates that the
+ *                          specifications relayed in the internal map are to
+ *                          be applied to all columns of the records.
+ *                          <ul>
+ *                                  <li> min: For numerical columns, the
+ *                          minimum of the generated values is set to this
+ *                          value.  Default is -99999.  For point, shape, and
+ *                          track semantic types, min for numeric 'x' and 'y'
+ *                          columns needs to be within [-180, 180] and [-90,
+ *                          90], respectively. The default minimum possible
+ *                          values for these columns in such cases are -180.0
+ *                          and -90.0. For the 'TIMESTAMP' column, the default
+ *                          minimum corresponds to Jan 1, 2010.
+ *                          For string columns, the minimum length of the
+ *                          randomly generated strings is set to this value
+ *                          (default is 1). If both minimum and maximum are
+ *                          provided, minimum must be less than or equal to
+ *                          max. Value needs to be within [1, 200].
+ *                          If the min is outside the accepted ranges for
+ *                          strings columns and 'x' and 'y' columns for
+ *                          point/shape/track types, then those parameters will
+ *                          not be set; however, GPUdb will not throw an error
+ *                          in such a case. It is the responsibility of the
+ *                          user to use the {@code all} parameter judiciously.
+ *                                  <li> max: For numerical columns, the
+ *                          maximum of the generated values is set to this
+ *                          value. Default is 99999. For point, shape, and
+ *                          track semantic types, max for numeric 'x' and 'y'
+ *                          columns needs to be within [-180, 180] and [-90,
+ *                          90], respectively. The default minimum possible
+ *                          values for these columns in such cases are 180.0
+ *                          and 90.0.
+ *                          For string columns, the maximum length of the
+ *                          randomly generated strings is set to this value
+ *                          (default is 200). If both minimum and maximum are
+ *                          provided, *max* must be greater than or equal to
+ *                          *min*. Value needs to be within [1, 200].
+ *                          If the *max* is outside the accepted ranges for
+ *                          strings columns and 'x' and 'y' columns for
+ *                          point/shape/track types, then those parameters will
+ *                          not be set; however, GPUdb will not throw an error
+ *                          in such a case. It is the responsibility of the
+ *                          user to use the {@code all} parameter judiciously.
+ *                                  <li> interval: If specified, then generate
+ *                          values for all columns linearly and evenly spaced
+ *                          with the given interval value starting at the
+ *                          minimum value (instead of generating random data).
+ *                          *Any provided max value is disregarded.*  For
+ *                          string-type columns, the interval value is ignored
+ *                          but the string values would be generated following
+ *                          the pattern: 'attrname_creationIndex#', i.e. the
+ *                          column name suffixed with an underscore and a
+ *                          running counter (starting at 0).
+ *                          </ul>
+ *                                  <li> attr_name: Set the following
+ *                          parameters for the column specified by the key.
+ *                          This overrides any parameter set by {@code all}.
+ *                          <ul>
+ *                                  <li> min: For numerical columns, the
+ *                          minimum of the generated values is set to this
+ *                          value.  Default is -99999.  For point, shape, and
+ *                          track semantic types, min for numeric 'x' and 'y'
+ *                          columns needs to be within [-180, 180] and [-90,
+ *                          90], respectively. The default minimum possible
+ *                          values for these columns in such cases are -180.0
+ *                          and -90.0. For the 'TIMESTAMP' column, the default
+ *                          minimum corresponds to Jan 1, 2010.
+ *                          For string columns, the minimum length of the
+ *                          randomly generated strings is set to this value
+ *                          (default is 1). If both minimum and maximum are
+ *                          provided, minimum must be less than or equal to
+ *                          max. Value needs to be within [1, 200].
+ *                          If the min is outside the accepted ranges for
+ *                          strings columns and 'x' and 'y' columns for
+ *                          point/shape/track types, then those parameters will
+ *                          not be set; however, GPUdb will not throw an error
+ *                          in such a case. It is the responsibility of the
+ *                          user to use the {@code all} parameter judiciously.
+ *                                  <li> max: For numerical columns, the
+ *                          maximum of the generated values is set to this
+ *                          value. Default is 99999. For point, shape, and
+ *                          track semantic types, max for numeric 'x' and 'y'
+ *                          columns needs to be within [-180, 180] and [-90,
+ *                          90], respectively. The default minimum possible
+ *                          values for these columns in such cases are 180.0
+ *                          and 90.0.
+ *                          For string columns, the maximum length of the
+ *                          randomly generated strings is set to this value
+ *                          (default is 200). If both minimum and maximum are
+ *                          provided, *max* must be greater than or equal to
+ *                          *min*. Value needs to be within [1, 200].
+ *                          If the *max* is outside the accepted ranges for
+ *                          strings columns and 'x' and 'y' columns for
+ *                          point/shape/track types, then those parameters will
+ *                          not be set; however, GPUdb will not throw an error
+ *                          in such a case. It is the responsibility of the
+ *                          user to use the {@code all} parameter judiciously.
+ *                                  <li> interval: If specified, then generate
+ *                          values for all columns linearly and evenly spaced
+ *                          with the given interval value starting at the
+ *                          minimum value (instead of generating random data).
+ *                          *Any provided max value is disregarded.*  For
+ *                          string-type columns, the interval value is ignored
+ *                          but the string values would be generated following
+ *                          the pattern: 'attrname_creationIndex#', i.e. the
+ *                          column name suffixed with an underscore and a
+ *                          running counter (starting at 0).
+ *                          </ul>
+ *                                  <li> track_length: This key-map pair is
+ *                          only valid for track type data sets (GPUdb throws
+ *                          an error otherwise).
+ *                          <ul>
+ *                                  <li> min: Minimum possible length for
+ *                          generated series; default is 100 records per
+ *                          series. Must be an integral value within the range
+ *                          [1, 500]. If both min and max are specified, min
+ *                          must be less than or equal to max.
+ *                                  <li> max: Maximum possible length for
+ *                          generated series; default is 500 records per
+ *                          series. Must be an integral value within the range
+ *                          [1, 500]. If both min and max are specified, max
+ *                          must be greater than or equal to min.
+ *                          </ul>
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6070,14 +6510,23 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  *                            same id that should be in the 'SYMBOLCODE' column
  *                            for objects using this symbol
  * @param {String} symbol_format  Specifies the symbol format. Must be either
- *                                'svg' or 'svg_path'.
+ *                                'svg' or 'svg_path'. Values: svg, svg_path.
  * @param {String} symbol_data  The actual symbol data. If {@code
  *                              symbol_format} is 'svg' then this should be the
  *                              raw bytes representing an svg file. If {@code
  *                              symbol_format} is svg path then this should be
- *                              an svg path string, for example: 'M25.979,12.89
- *                              6,5.979,12.896,5.979,19.562,25.979,19.562z'
+ *                              an svg path string, for example:
+ *                              'M25.979,12.896,5.979,12.896,5.979,19.562,25.979,19.562z'
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> color: If {@code symbol_format} is
+ *                          'svg' this is ignored. If {@code symbol_format} is
+ *                          'svg_path' then this option specifies the color (in
+ *                          RRGGBB hex format) of the path. For example, to
+ *                          have the path rendered in red, used 'FF0000'. If
+ *                          'color' is not provided then '00FF00' (i.e. green)
+ *                          is used by default.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6109,13 +6558,13 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
 };
 
 /**
- * Locks a table.  By default a table has a {@code lock_type} of {@code
- * unlock}, indicating all operations are permitted.  A user may request a
- * {@code read-only} or a {@code write-only} lock, after which only read or
- * write operations, respectively, are permitted on the table until the lock is
- * removed.  When {@code lock_type} is {@code disable} then no operations are
- * permitted on the table.  The lock status can be queried by setting  {@code
- * lock_type} to {@code status}.
+ * Manages global access to a table's data.  By default a table has a {@code
+ * lock_type} of {@code unlock}, indicating all operations are permitted.  A
+ * user may request a {@code read-only} or a {@code write-only} lock, after
+ * which only read or write operations, respectively, are permitted on the
+ * table until the lock is removed.  When {@code lock_type} is {@code disable}
+ * then no operations are permitted on the table.  The lock status can be
+ * queried by setting {@code lock_type} to {@code status}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6149,20 +6598,21 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
 };
 
 /**
- * Locks a table.  By default a table has a {@code lock_type} of {@code
- * unlock}, indicating all operations are permitted.  A user may request a
- * {@code read-only} or a {@code write-only} lock, after which only read or
- * write operations, respectively, are permitted on the table until the lock is
- * removed.  When {@code lock_type} is {@code disable} then no operations are
- * permitted on the table.  The lock status can be queried by setting  {@code
- * lock_type} to {@code status}.
+ * Manages global access to a table's data.  By default a table has a {@code
+ * lock_type} of {@code unlock}, indicating all operations are permitted.  A
+ * user may request a {@code read-only} or a {@code write-only} lock, after
+ * which only read or write operations, respectively, are permitted on the
+ * table until the lock is removed.  When {@code lock_type} is {@code disable}
+ * then no operations are permitted on the table.  The lock status can be
+ * queried by setting {@code lock_type} to {@code status}.
  *
  * @param {String} table_name  Name of the table to be locked. It must be a
- *                             currently existing table and not a collection or
- *                             a view.
+ *                             currently existing table, collection, or view.
  * @param {String} lock_type  The type of lock being applied to the table.
- *                            Setting it to 'status' will return the current
- *                            lock status of the table without changing it.
+ *                            Setting it to {@code status} will return the
+ *                            current lock status of the table without changing
+ *                            it. Values: status, disable, read-only,
+ *                            write-only, unlock.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6233,6 +6683,7 @@ GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
  * @param {String} name  Name of the user or role from which the permission
  *                       will be revoked. Must be an existing user or role.
  * @param {String} permission  Permission to revoke from the user or role.
+ *                             Values: system_admin, system_write, system_read.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6304,6 +6755,8 @@ GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
  * @param {String} name  Name of the user or role from which the permission
  *                       will be revoked. Must be an existing user or role.
  * @param {String} permission  Permission to revoke from the user or role.
+ *                             Values: table_admin, table_insert, table_update,
+ *                             table_delete, table_read.
  * @param {String} table_name  Name of the table to which the permission grants
  *                             access. Must be an existing table, collection,
  *                             or view.
@@ -6523,6 +6976,11 @@ GPUdb.prototype.show_system_properties_request = function(request, callback) {
  * user.
  *
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> properties: A list of comma separated
+ *                          names of properties requested. If not specified,
+ *                          all properties will be returned.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6707,8 +7165,8 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  *     Running with 'show_children' = 'false' with {@code table_name} empty
  * will return an error.
  * <p>
- * If the requested table is blank, then information is returned about all top-
- * level tables including collections.
+ * If the requested table is blank, then information is returned about all
+ * top-level tables including collections.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6765,13 +7223,26 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *     Running with 'show_children' = 'false' with {@code table_name} empty
  * will return an error.
  * <p>
- * If the requested table is blank, then information is returned about all top-
- * level tables including collections.
+ * If the requested table is blank, then information is returned about all
+ * top-level tables including collections.
  *
  * @param {String} table_name  Name of the table for which to retrieve the
  *                             information. If blank then information about all
  *                             collections and top-level tables is returned.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> get_sizes: If 'true' then the table
+ *                          sizes will be returned; otherwise they will be
+ *                          returned blank. Values: true, false.
+ *                                  <li> show_children: If {@code table_name}
+ *                          is a collection, then 'true' will return
+ *                          information about the children of the collection,
+ *                          and 'false' will return information about the
+ *                          collection itself. If {@code table_name} is a child
+ *                          table, 'show_children' must be 'false'. If {@code
+ *                          table_name} is empty then 'show_children' must be
+ *                          'true'. Values: true, false.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7190,6 +7661,28 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                         insert, one for each update, to be added to the set
  *                         if the particular update did not affect any objects.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> global_expression: An optional global
+ *                          expression to reduce the search space of the
+ *                          predicates listed in {@code expressions}.
+ *                                  <li> bypass_safety_checks: When set to
+ *                          'true', all predicates are available for primary
+ *                          key updates.  Keep in mind that it is possible to
+ *                          destroy data in this case, since a single predicate
+ *                          may match multiple objects (potentially all of
+ *                          records of a table), and then updating all of those
+ *                          records to have the same primary key will, due to
+ *                          the primary key uniqueness constraints, effectively
+ *                          delete all but one of those updated records.
+ *                          Values: true, false.
+ *                                  <li> update_on_existing_pk: Can be used to
+ *                          customize behavior when the updated primary key
+ *                          value already exists, as described in
+ *                          /insert/records. Values: true, false.
+ *                                  <li> record_id: ID of a single record to be
+ *                          updated (returned in the call to /insert/records or
+ *                          /get/records/fromcollection).
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7365,9 +7858,31 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  * @param {Number} max_y
  * @param {Number} width
  * @param {Number} height
- * @param {String} projection
+ * @param {String} projection  Values: EPSG:4326, PLATE_CARREE, 900913,
+ *                             EPSG:900913, 102100, EPSG:102100, 3857,
+ *                             EPSG:3857, WEB_MERCATOR.
  * @param {Number} bg_color
  * @param {Object} style_options
+ *                                <ul>
+ *                                        <li> do_points:
+ *                                        <li> do_shapes:
+ *                                        <li> do_tracks:
+ *                                        <li> do_symbology:
+ *                                        <li> pointcolors:
+ *                                        <li> pointsizes:
+ *                                        <li> pointshapes:
+ *                                        <li> shapelinewidths:
+ *                                        <li> shapelinecolors:
+ *                                        <li> shapefillcolors:
+ *                                        <li> tracklinewidths:
+ *                                        <li> tracklinecolors:
+ *                                        <li> trackmarkersizes:
+ *                                        <li> trackmarkercolors:
+ *                                        <li> trackmarkershapes:
+ *                                        <li> trackheadcolors:
+ *                                        <li> trackheadsizes:
+ *                                        <li> trackheadshapes:
+ *                                </ul>
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7478,9 +7993,31 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {Number} max_y
  * @param {Number} width
  * @param {Number} height
- * @param {String} projection
+ * @param {String} projection  Values: EPSG:4326, PLATE_CARREE, 900913,
+ *                             EPSG:900913, 102100, EPSG:102100, 3857,
+ *                             EPSG:3857, WEB_MERCATOR.
  * @param {Number} bg_color
  * @param {Object} style_options
+ *                                <ul>
+ *                                        <li> do_points:
+ *                                        <li> do_shapes:
+ *                                        <li> do_tracks:
+ *                                        <li> do_symbology:
+ *                                        <li> pointcolors:
+ *                                        <li> pointsizes:
+ *                                        <li> pointshapes:
+ *                                        <li> shapelinewidths:
+ *                                        <li> shapelinecolors:
+ *                                        <li> shapefillcolors:
+ *                                        <li> tracklinewidths:
+ *                                        <li> tracklinecolors:
+ *                                        <li> trackmarkersizes:
+ *                                        <li> trackmarkercolors:
+ *                                        <li> trackmarkershapes:
+ *                                        <li> trackheadcolors:
+ *                                        <li> trackheadsizes:
+ *                                        <li> trackheadshapes:
+ *                                </ul>
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7584,8 +8121,17 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  * @param {Number} max_y
  * @param {Number} width
  * @param {Number} height
- * @param {String} projection
+ * @param {String} projection  Values: EPSG:4326, PLATE_CARREE, 900913,
+ *                             EPSG:900913, 102100, EPSG:102100, 3857,
+ *                             EPSG:3857, WEB_MERCATOR.
  * @param {Object} style_options
+ *                                <ul>
+ *                                        <li> colormap:
+ *                                        <li> blur_radius:
+ *                                        <li> bg_color:
+ *                                        <li> gradient_start_color:
+ *                                        <li> gradient_end_color:
+ *                                </ul>
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7708,7 +8254,9 @@ GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
  * @param {Number} max_y
  * @param {Number} width
  * @param {Number} height
- * @param {String} projection
+ * @param {String} projection  Values: EPSG:4326, PLATE_CARREE, 900913,
+ *                             EPSG:900913, 102100, EPSG:102100, 3857,
+ *                             EPSG:3857, WEB_MERCATOR.
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7784,13 +8332,11 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
  * generated, the first frame could be retrieved with the URL::
  * <p>
- *      http://<gpudb-ip-address>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS
- * =MY-SESSION-KEY&FRAME=0
+ * http://<gpudb-ip-address>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=0
  * <p>
  * and the last frame could be retrieved with::
  * <p>
- *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
- * SESSION-KEY&FRAME=19
+ * http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=19
  * The response payload provides, among other things, the number of frames
  * which were created by GPUdb.
  *
@@ -7862,13 +8408,11 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
  * generated, the first frame could be retrieved with the URL::
  * <p>
- *      http://<gpudb-ip-address>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS
- * =MY-SESSION-KEY&FRAME=0
+ * http://<gpudb-ip-address>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=0
  * <p>
  * and the last frame could be retrieved with::
  * <p>
- *     http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-
- * SESSION-KEY&FRAME=19
+ * http://gpudb-ip-address:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=19
  * The response payload provides, among other things, the number of frames
  * which were created by GPUdb.
  *
@@ -7894,12 +8438,51 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * @param {Number} width  Width of the generated image.
  * @param {Number} height  Height of the generated image.
  * @param {String} projection  Spatial Reference System (i.e. EPSG Code).
+ *                             Values: EPSG:4326, PLATE_CARREE, 900913,
+ *                             EPSG:900913, 102100, EPSG:102100, 3857,
+ *                             EPSG:3857, WEB_MERCATOR.
  * @param {Number} bg_color  Background color of the generated image.
  * @param {Number[][]} time_intervals
  * @param {String} video_style
  * @param {String} session_key  User Provided session key that is later used to
  *                              retrieve the generated video from the WMS.
  * @param {Object} style_options  Styling options for the image.
+ *                                <ul>
+ *                                        <li> do_points: Rasterize point data
+ *                                toggle.
+ *                                        <li> do_shapes: Rasterize shapes
+ *                                toggle.
+ *                                        <li> do_tracks: Rasterize tracks
+ *                                toggle.
+ *                                        <li> pointcolors: RGB color value in
+ *                                hex for the points.
+ *                                        <li> pointsizes: Size of points.
+ *                                        <li> pointshapes: Shape of the point.
+ *                                        <li> shapelinewidths: Width of the
+ *                                lines.
+ *                                        <li> shapelinecolors: RGB color
+ *                                values in hex for the line.
+ *                                        <li> shapefillcolors: RGB color
+ *                                values in hex for the fill color of the
+ *                                shapes. Use '-1' for no fill.
+ *                                        <li> tracklinewidths: Width of the
+ *                                track lines. '0' implies do not draw track
+ *                                lines.
+ *                                        <li> tracklinecolors: RGB color
+ *                                values for the track lines.
+ *                                        <li> trackmarkersizes: Size of the
+ *                                track point markers.
+ *                                        <li> trackmarkercolors: Color of the
+ *                                track point markers.
+ *                                        <li> trackmarkershapes: Shape of
+ *                                track point markers.
+ *                                        <li> trackheadcolors: Color of track
+ *                                head markers.
+ *                                        <li> trackheadsizes: Size of track
+ *                                head markers.
+ *                                        <li> trackheadshapes: Shape of track
+ *                                head markers.
+ *                                </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -8003,10 +8586,19 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
  * @param {Number[][]} time_intervals
  * @param {Number} width
  * @param {Number} height
- * @param {String} projection
+ * @param {String} projection  Values: EPSG:4326, PLATE_CARREE, 900913,
+ *                             EPSG:900913, 102100, EPSG:102100, 3857,
+ *                             EPSG:3857, WEB_MERCATOR.
  * @param {String} video_style
  * @param {String} session_key
  * @param {Object} style_options
+ *                                <ul>
+ *                                        <li> colormap:
+ *                                        <li> blur_radius:
+ *                                        <li> bg_color:
+ *                                        <li> gradient_start_color:
+ *                                        <li> gradient_end_color:
+ *                                </ul>
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
