@@ -2381,6 +2381,130 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.create_proc_request = function(request, callback) {
+    var actual_request = {
+        proc_name: request.proc_name,
+        files: (request.files !== undefined && request.files !== null) ? request.files : {},
+        command: (request.command !== undefined && request.command !== null) ? request.command : "",
+        args: (request.args !== undefined && request.args !== null) ? request.args : [],
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} proc_name
+ * @param {Object} files
+ * @param {String} command
+ * @param {String[]} args
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> nondistributed: Values: true, false.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.create_proc = function(proc_name, files, command, args, options, callback) {
+    var actual_request = {
+        proc_name: proc_name,
+        files: (files !== undefined && files !== null) ? files : {},
+        command: (command !== undefined && command !== null) ? command : "",
+        args: (args !== undefined && args !== null) ? args : [],
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.create_projection_request = function(request, callback) {
+    var actual_request = {
+        table_name: request.table_name,
+        projection_name: request.projection_name,
+        column_names: request.column_names,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/projection", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/projection", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} table_name
+ * @param {String} projection_name
+ * @param {String[]} column_names
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> collection_name:
+ *                                  <li> expression:
+ *                                  <li> limit:
+ *                                  <li> order_by:
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.create_projection = function(table_name, projection_name, column_names, options, callback) {
+    var actual_request = {
+        table_name: table_name,
+        projection_name: projection_name,
+        column_names: column_names,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/projection", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/projection", actual_request);
+        return data;
+    }
+};
+
+/**
  * Creates a new role.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -2926,7 +3050,10 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
 };
 
 /**
- * Creates a table that is the union of one or more existing tables.
+ * Creates a table that is the concatenation of one or more existing tables. It
+ * is equivalent to the SQL UNION ALL operator.  Non-charN 'string' and 'bytes'
+ * column types cannot be included in a union, neither can columns with the
+ * property 'store_only'.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2954,7 +3081,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
 };
 
 /**
- * Creates a table that is the union of one or more existing tables.
+ * Creates a table that is the concatenation of one or more existing tables. It
+ * is equivalent to the SQL UNION ALL operator.  Non-charN 'string' and 'bytes'
+ * column types cannot be included in a union, neither can columns with the
+ * property 'store_only'.
  *
  * @param {String} table_name  Name of the table to be created. Must not be the
  *                             name of a currently existing GPUdb table. Cannot
@@ -3108,6 +3238,56 @@ GPUdb.prototype.create_user_internal = function(name, password, options, callbac
         this.submit_request("/create/user/internal", actual_request, callback);
     } else {
         var data = this.submit_request("/create/user/internal", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.delete_proc_request = function(request, callback) {
+    var actual_request = {
+        proc_name: request.proc_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} proc_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.delete_proc = function(proc_name, options, callback) {
+    var actual_request = {
+        proc_name: proc_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/proc", actual_request);
         return data;
     }
 };
@@ -3299,7 +3479,6 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
 };
 
 /**
- * Executes a proc in the GPUdb Node.js proc server.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3308,12 +3487,16 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
 GPUdb.prototype.execute_proc_request = function(request, callback) {
     var actual_request = {
-        name: request.name,
-        params: request.params,
-        bin_params: request.bin_params,
+        proc_name: request.proc_name,
+        params: (request.params !== undefined && request.params !== null) ? request.params : {},
+        bin_params: (request.bin_params !== undefined && request.bin_params !== null) ? request.bin_params : {},
+        input_table_names: (request.input_table_names !== undefined && request.input_table_names !== null) ? request.input_table_names : [],
+        input_column_names: (request.input_column_names !== undefined && request.input_column_names !== null) ? request.input_column_names : {},
+        output_table_names: (request.output_table_names !== undefined && request.output_table_names !== null) ? request.output_table_names : [],
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -3326,27 +3509,29 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
 };
 
 /**
- * Executes a proc in the GPUdb Node.js proc server.
  *
- * @param {String} name  Name of the proc to execute.
- * @param {Object} params  A map containing string parameters to pass to the
- *                         proc. Each key/value pair specifies the name of a
- *                         parameter and its value.
- * @param {Object} bin_params  A map containing binary parameters to pass to
- *                             the proc. Each key/value pair specifies the name
- *                             of a parameter and its value.
- * @param {Object} options  Optional parameters.
+ * @param {String} proc_name
+ * @param {Object} params
+ * @param {Object} bin_params
+ * @param {String[]} input_table_names
+ * @param {Object} input_column_names
+ * @param {String[]} output_table_names
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
+ * @private
  */
-GPUdb.prototype.execute_proc = function(name, params, bin_params, options, callback) {
+GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_table_names, input_column_names, output_table_names, options, callback) {
     var actual_request = {
-        name: name,
-        params: params,
-        bin_params: bin_params,
+        proc_name: proc_name,
+        params: (params !== undefined && params !== null) ? params : {},
+        bin_params: (bin_params !== undefined && bin_params !== null) ? bin_params : {},
+        input_table_names: (input_table_names !== undefined && input_table_names !== null) ? input_table_names : [],
+        input_column_names: (input_column_names !== undefined && input_column_names !== null) ? input_column_names : {},
+        output_table_names: (output_table_names !== undefined && output_table_names !== null) ? output_table_names : [],
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -4084,14 +4269,57 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
 };
 
 /**
- * Calculates which objects from a table, collection or view match a string
+ * Calculates which objects from a table, collection, or view match a string
  * expression for the given string columns. The 'mode' may be:
 
  * * search : full text search query with wildcards and boolean operators, e.g.
  * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
  * specified in {@code column_names}; GPUdb will search through all string
  * columns of the table that have text search enabled. Also, the first
- * character of the regular expression cannot be a wildcard (* or ?).
+ * character of a search term cannot be a wildcard (* or ?), and search terms
+ * cannot be any of the following:  "a", "an", "and", "are", "as", "at", "be",
+ * "but", "by", "for", "if", "in", "into", "is", "it", "no", "not", "of", "on",
+ * "or", "such", "that", "the", "their", "then", "there", "these", "they",
+ * "this", "to", "was", "will", "with".
+ *     Search query types:
+ *         * Multiple search terms
+ *             ex. perfect union - will match any record containing "perfect",
+ * "union", or both.
+ *         * Exact phrases
+ *             ex. "Perfect Union" - will only match the exact phrase "Perfect
+ * Union"
+ *         * Boolean (NOT, AND, OR, parentheses. OR assumed if no operator
+ * specified)
+ *             ex. justice AND tranquility - will match only those records
+ * containing both justice and tranquility
+ *         * XOR (specified with -)
+ *             ex. justice - peace - will match records containing "justice" or
+ * "peace", but not both
+ *         * Zero or more char wildcard - (specified with *)
+ *             ex, est*is* - will match any records containing a word that
+ * starts with "est" and ends with "sh", such as "establish", "establishable",
+ * and "establishment"
+ *         * Exactly one char wildcard - (specified with ?)
+ *             ex. est???is* - will only match strings that start with "est",
+ * followed by exactly three letters, followed by "is", followed by one more
+ * letter.  This would only match "establish"
+ *         * Fuzzy search (term~)
+ *             ex. rear~ will match rear,fear,bear,read,etc.
+ *         * Proximity - match two words within a specified distance of
+ * eachother
+ *             ex. "Union Tranquility"~10 will match any record that has the
+ * words Union and Tranquility within 10 words of eachother
+ *         * Range - inclusive [<term1> TO <term2>] and exclusive {<term1> TO
+ * <term2>}.  Note: This is a string search, so numbers will be seen as a
+ * string of numeric characters, not as a number.  Ex. 2 > 123
+ *             ex. [100 TO 200] will find all strings between 100 and 200
+ * inclusive.
+ *             ex. {alpha to beta} will find all strings between alpha and
+ * beta, but not the words alpha or beta
+ *         * escaping special characters - Special characters are escaped with
+ * a backslash(\), special characters are: + - && || ! ( ) { } [ ] ^ " ~ * ? :
+ * \
+ * <p>
  * * equals: exact whole-string match (accelerated)
  * * contains: partial substring match (not accelerated).  If the column is a
  * string type (non-charN) and the number of records is too large, it will
@@ -4133,14 +4361,57 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
 };
 
 /**
- * Calculates which objects from a table, collection or view match a string
+ * Calculates which objects from a table, collection, or view match a string
  * expression for the given string columns. The 'mode' may be:
 
  * * search : full text search query with wildcards and boolean operators, e.g.
  * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
  * specified in {@code column_names}; GPUdb will search through all string
  * columns of the table that have text search enabled. Also, the first
- * character of the regular expression cannot be a wildcard (* or ?).
+ * character of a search term cannot be a wildcard (* or ?), and search terms
+ * cannot be any of the following:  "a", "an", "and", "are", "as", "at", "be",
+ * "but", "by", "for", "if", "in", "into", "is", "it", "no", "not", "of", "on",
+ * "or", "such", "that", "the", "their", "then", "there", "these", "they",
+ * "this", "to", "was", "will", "with".
+ *     Search query types:
+ *         * Multiple search terms
+ *             ex. perfect union - will match any record containing "perfect",
+ * "union", or both.
+ *         * Exact phrases
+ *             ex. "Perfect Union" - will only match the exact phrase "Perfect
+ * Union"
+ *         * Boolean (NOT, AND, OR, parentheses. OR assumed if no operator
+ * specified)
+ *             ex. justice AND tranquility - will match only those records
+ * containing both justice and tranquility
+ *         * XOR (specified with -)
+ *             ex. justice - peace - will match records containing "justice" or
+ * "peace", but not both
+ *         * Zero or more char wildcard - (specified with *)
+ *             ex, est*is* - will match any records containing a word that
+ * starts with "est" and ends with "sh", such as "establish", "establishable",
+ * and "establishment"
+ *         * Exactly one char wildcard - (specified with ?)
+ *             ex. est???is* - will only match strings that start with "est",
+ * followed by exactly three letters, followed by "is", followed by one more
+ * letter.  This would only match "establish"
+ *         * Fuzzy search (term~)
+ *             ex. rear~ will match rear,fear,bear,read,etc.
+ *         * Proximity - match two words within a specified distance of
+ * eachother
+ *             ex. "Union Tranquility"~10 will match any record that has the
+ * words Union and Tranquility within 10 words of eachother
+ *         * Range - inclusive [<term1> TO <term2>] and exclusive {<term1> TO
+ * <term2>}.  Note: This is a string search, so numbers will be seen as a
+ * string of numeric characters, not as a number.  Ex. 2 > 123
+ *             ex. [100 TO 200] will find all strings between 100 and 200
+ * inclusive.
+ *             ex. {alpha to beta} will find all strings between alpha and
+ * beta, but not the words alpha or beta
+ *         * escaping special characters - Special characters are escaped with
+ * a backslash(\), special characters are: + - && || ! ( ) { } [ ] ^ " ~ * ? :
+ * \
+ * <p>
  * * equals: exact whole-string match (accelerated)
  * * contains: partial substring match (not accelerated).  If the column is a
  * string type (non-charN) and the number of records is too large, it will
@@ -5558,6 +5829,56 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.kill_proc_request = function(request, callback) {
+    var actual_request = {
+        run_id: (request.run_id !== undefined && request.run_id !== null) ? request.run_id : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/kill/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/kill/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} run_id
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.kill_proc = function(run_id, options, callback) {
+    var actual_request = {
+        run_id: (run_id !== undefined && run_id !== null) ? run_id : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/kill/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/kill/proc", actual_request);
+        return data;
+    }
+};
+
+/**
  * Manages global access to a table's data.  By default a table has a {@code
  * lock_type} of {@code unlock}, indicating all operations are permitted.  A
  * user may request a {@code read-only} or a {@code write-only} lock, after
@@ -5800,6 +6121,112 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.show_proc_request = function(request, callback) {
+    var actual_request = {
+        proc_name: (request.proc_name !== undefined && request.proc_name !== null) ? request.proc_name : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} proc_name
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> include_files: Values: true, false.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.show_proc = function(proc_name, options, callback) {
+    var actual_request = {
+        proc_name: (proc_name !== undefined && proc_name !== null) ? proc_name : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.show_proc_status_request = function(request, callback) {
+    var actual_request = {
+        run_id: (request.run_id !== undefined && request.run_id !== null) ? request.run_id : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/proc/status", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/proc/status", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} run_id
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> clear_complete: Values: true, false.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.show_proc_status = function(run_id, options, callback) {
+    var actual_request = {
+        run_id: (run_id !== undefined && run_id !== null) ? run_id : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/proc/status", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/proc/status", actual_request);
+        return data;
+    }
+};
+
+/**
  * Shows security information relating to users and/or roles. If the caller is
  * not a system administrator, only information relating to the caller and
  * their roles is returned.
@@ -6013,32 +6440,22 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
 };
 
 /**
- * Retrieves detailed information about a particular GPUdb table, specified in
- * {@code table_name}. If the supplied {@code table_name} is a collection, the
- * call returns a list of tables contained in the collection, and for each
- * table it returns the description, type id, schema, type label, type
- * properties, and additional information including TTL. If {@code table_name}
- * is empty it will return all top-level tables including all collections and
- * top-level child tables (i.e. tables with no parent).
+ * Retrieves detailed information about a table, view, or collection, specified
+ * in {@code table_name}. If the supplied {@code table_name} is a collection,
+ * the call can return information about either the collection itself or the
+ * tables and views it contains. If {@code table_name} is empty, information
+ * about all collections and top-level tables and views can be returned.
  * <p>
- *     If the option 'get_sizes' is set to 'true' then the sizes (objects and
- * elements) of each table are returned (in {@code sizes} and {@code
- * full_sizes}), along with the total number of objects in the requested table
- * (in {@code total_size} and {@code total_full_size}).
+ * If the option {@code get_sizes} is set to {@code true}, then the sizes
+ * (objects and elements) of each table are returned (in {@code sizes} and
+ * {@code full_sizes}), along with the total number of objects in the requested
+ * table (in {@code total_size} and {@code total_full_size}).
  * <p>
- *     If the option 'show_children' is set to 'false' then for a collection it
- * only returns information about the collection itself, not about the child
- * tables. If 'show_children' is set to 'true' then it will return information
- * about each of the children, but not the collection.
- * <p>
- *     Running with 'show_children' = 'true' on a child table will return an
- * error.
- * <p>
- *     Running with 'show_children' = 'false' with {@code table_name} empty
- * will return an error.
- * <p>
- * If the requested table is blank, then information is returned about all
- * top-level tables including collections.
+ * For a collection, setting the {@code show_children} option to {@code false}
+ * returns only information about the collection itself; setting {@code
+ * show_children} to {@code true} returns a list of tables and views contained
+ * in the collection, along with their description, type id, schema, type
+ * label, type properties, and additional information including TTL.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6063,49 +6480,41 @@ GPUdb.prototype.show_table_request = function(request, callback) {
 };
 
 /**
- * Retrieves detailed information about a particular GPUdb table, specified in
- * {@code table_name}. If the supplied {@code table_name} is a collection, the
- * call returns a list of tables contained in the collection, and for each
- * table it returns the description, type id, schema, type label, type
- * properties, and additional information including TTL. If {@code table_name}
- * is empty it will return all top-level tables including all collections and
- * top-level child tables (i.e. tables with no parent).
+ * Retrieves detailed information about a table, view, or collection, specified
+ * in {@code table_name}. If the supplied {@code table_name} is a collection,
+ * the call can return information about either the collection itself or the
+ * tables and views it contains. If {@code table_name} is empty, information
+ * about all collections and top-level tables and views can be returned.
  * <p>
- *     If the option 'get_sizes' is set to 'true' then the sizes (objects and
- * elements) of each table are returned (in {@code sizes} and {@code
- * full_sizes}), along with the total number of objects in the requested table
- * (in {@code total_size} and {@code total_full_size}).
+ * If the option {@code get_sizes} is set to {@code true}, then the sizes
+ * (objects and elements) of each table are returned (in {@code sizes} and
+ * {@code full_sizes}), along with the total number of objects in the requested
+ * table (in {@code total_size} and {@code total_full_size}).
  * <p>
- *     If the option 'show_children' is set to 'false' then for a collection it
- * only returns information about the collection itself, not about the child
- * tables. If 'show_children' is set to 'true' then it will return information
- * about each of the children, but not the collection.
- * <p>
- *     Running with 'show_children' = 'true' on a child table will return an
- * error.
- * <p>
- *     Running with 'show_children' = 'false' with {@code table_name} empty
- * will return an error.
- * <p>
- * If the requested table is blank, then information is returned about all
- * top-level tables including collections.
+ * For a collection, setting the {@code show_children} option to {@code false}
+ * returns only information about the collection itself; setting {@code
+ * show_children} to {@code true} returns a list of tables and views contained
+ * in the collection, along with their description, type id, schema, type
+ * label, type properties, and additional information including TTL.
  *
  * @param {String} table_name  Name of the table for which to retrieve the
- *                             information. If blank then information about all
- *                             collections and top-level tables is returned.
+ *                             information. If blank, then information about
+ *                             all collections and top-level tables and views
+ *                             is returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> get_sizes: If 'true' then the table
- *                          sizes will be returned; otherwise they will be
- *                          returned blank. Values: true, false.
+ *                                  <li> get_sizes: If {@code true} then the
+ *                          table sizes will be returned; blank, otherwise.
+ *                          Values: true, false.
  *                                  <li> show_children: If {@code table_name}
- *                          is a collection, then 'true' will return
+ *                          is a collection, then {@code true} will return
  *                          information about the children of the collection,
- *                          and 'false' will return information about the
- *                          collection itself. If {@code table_name} is a child
- *                          table, 'show_children' must be 'false'. If {@code
- *                          table_name} is empty then 'show_children' must be
- *                          'true'. Values: true, false.
+ *                          and {@code false} will return information about the
+ *                          collection itself. If {@code table_name} is a table
+ *                          or view, {@code show_children} must be {@code
+ *                          false}. If {@code table_name} is empty, then {@code
+ *                          show_children} must be {@code true}. Values: true,
+ *                          false.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
