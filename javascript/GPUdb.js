@@ -370,7 +370,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "5.4.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "6.0.0.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -947,7 +947,7 @@ GPUdb.prototype.admin_verify_db = function(options, callback) {
 
 /**
  * Calculates and returns the convex hull for the values in a table specified
- * by {@code table_name}.
+ * by <code>table_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -975,7 +975,7 @@ GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
 
 /**
  * Calculates and returns the convex hull for the values in a table specified
- * by {@code table_name}.
+ * by <code>table_name</code>.
  *
  * @param {String} table_name  Name of Table on which the operation will be
  *                             performed. Must be a valid table in GPUdb.  It
@@ -1015,10 +1015,10 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * Any column(s) can be grouped on, but only non-string (i.e. numeric) columns
  * may be used for computing aggregates. The results can be paged via the
- * {@code offset} and {@code limit} parameters. For example, to get 10 groups
- * with the largest counts the inputs would be: limit=10,
- * options={"sort_order":"descending", "sort_by":"value"}. {@code options} can
- * be used to customize behavior of this call e.g. filtering or sorting the
+ * <code>offset</code> and <code>limit</code> parameters. For example, to get
+ * 10 groups with the largest counts the inputs would be: limit=10,
+ * options={"sort_order":"descending", "sort_by":"value"}. <code>options</code>
+ * can be used to customize behavior of this call e.g. filtering or sorting the
  * results. To group by 'x' and 'y' and compute the number of objects within
  * each group, use column_names=['x','y','count(*)'].  To also compute the sum
  * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
@@ -1072,10 +1072,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * Any column(s) can be grouped on, but only non-string (i.e. numeric) columns
  * may be used for computing aggregates. The results can be paged via the
- * {@code offset} and {@code limit} parameters. For example, to get 10 groups
- * with the largest counts the inputs would be: limit=10,
- * options={"sort_order":"descending", "sort_by":"value"}. {@code options} can
- * be used to customize behavior of this call e.g. filtering or sorting the
+ * <code>offset</code> and <code>limit</code> parameters. For example, to get
+ * 10 groups with the largest counts the inputs would be: limit=10,
+ * options={"sort_order":"descending", "sort_by":"value"}. <code>options</code>
+ * can be used to customize behavior of this call e.g. filtering or sorting the
  * results. To group by 'x' and 'y' and compute the number of objects within
  * each group, use column_names=['x','y','count(*)'].  To also compute the sum
  * of 'z' over each group, use column_names=['x','y','count(*)','sum(z)'].
@@ -1116,8 +1116,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> sort_by: String determining how the
  *                          results are sorted. Values: key, value.
  *                                  <li> result_table: The name of the table
- *                          used to store the results. If present no results
- *                          are returned in the response.
+ *                          used to store the results. Column names (group-by
+ *                          and aggregate fields) need to be given aliases e.g.
+ *                          ["FChar256 as fchar256", "sum(FDouble) as sfd"].
+ *                          If present, no results are returned in the
+ *                          response.  This option is not available if one of
+ *                          the grouping attributes is an unrestricted string
+ *                          (i.e.; not charN) type.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -1154,14 +1159,14 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
 
 /**
  * Performs a histogram calculation given a table, a column, and an interval
- * function. The {@code interval} is used to produce bins of that size and the
- * result, computed over the records falling within each bin, is returned.  For
- * each bin, the start value is inclusive, but the end value is
+ * function. The <code>interval</code> is used to produce bins of that size and
+ * the result, computed over the records falling within each bin, is returned.
+ * For each bin, the start value is inclusive, but the end value is
  * exclusive--except for the very last bin for which the end value is also
  * inclusive.  The value returned for each bin is the number of records in it,
- * except when a column name is provided as a *value_column* in {@code
- * options}.  In this latter case the sum of the values corresponding to the
- * *value_column* is used as the result instead.
+ * except when a column name is provided as a *value_column* in
+ * <code>options</code>.  In this latter case the sum of the values
+ * corresponding to the *value_column* is used as the result instead.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1191,14 +1196,14 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
 
 /**
  * Performs a histogram calculation given a table, a column, and an interval
- * function. The {@code interval} is used to produce bins of that size and the
- * result, computed over the records falling within each bin, is returned.  For
- * each bin, the start value is inclusive, but the end value is
+ * function. The <code>interval</code> is used to produce bins of that size and
+ * the result, computed over the records falling within each bin, is returned.
+ * For each bin, the start value is inclusive, but the end value is
  * exclusive--except for the very last bin for which the end value is also
  * inclusive.  The value returned for each bin is the number of records in it,
- * except when a column name is provided as a *value_column* in {@code
- * options}.  In this latter case the sum of the values corresponding to the
- * *value_column* is used as the result instead.
+ * except when a column name is provided as a *value_column* in
+ * <code>options</code>.  In this latter case the sum of the values
+ * corresponding to the *value_column* is used as the result instead.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be a valid table or collection
@@ -1411,9 +1416,9 @@ GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, c
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
  * The weighted average statistic requires a weight_attribute to be specified
- * in {@code options}. The weighted average is then defined as the sum of the
- * products of {@code column_name} times the weight attribute divided by the
- * sum of the weight attribute.
+ * in <code>options</code>. The weighted average is then defined as the sum of
+ * the products of <code>column_name</code> times the weight attribute divided
+ * by the sum of the weight attribute.
  * <p>
  * The response includes a list of the statistics requested along with the
  * count of the number of items in the given set.
@@ -1460,9 +1465,9 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
  * The weighted average statistic requires a weight_attribute to be specified
- * in {@code options}. The weighted average is then defined as the sum of the
- * products of {@code column_name} times the weight attribute divided by the
- * sum of the weight attribute.
+ * in <code>options</code>. The weighted average is then defined as the sum of
+ * the products of <code>column_name</code> times the weight attribute divided
+ * by the sum of the weight attribute.
  * <p>
  * The response includes a list of the statistics requested along with the
  * count of the number of items in the given set.
@@ -1516,7 +1521,7 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  * total samples in each bin is returned. This counts vector is just the
  * histogram of the column used to divide the set members into bins. The
  * weighted average statistic requires a weight_column to be specified in
- * {@code options}. The weighted average is then defined as the sum of the
+ * <code>options</code>. The weighted average is then defined as the sum of the
  * products of the value column times the weight column divided by the sum of
  * the weight column.
  * <p>
@@ -1526,10 +1531,10 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  * (max-min)/interval. Values that fall in the range
  * [min+n\*interval,min+(n+1)\*interval) are placed in the nth bin where n
  * ranges from 0..nbin-2. The final bin is [min+(nbin-1)\*interval,max]. In the
- * second method, {@code options} bin_values specifies a list of binning column
- * values. Binning-columns whose value matches the nth member of the bin_values
- * list are placed in the nth bin. When a list is provided the binning-column
- * must be of type string or int.
+ * second method, <code>options</code> bin_values specifies a list of binning
+ * column values. Binning-columns whose value matches the nth member of the
+ * bin_values list are placed in the nth bin. When a list is provided the
+ * binning-column must be of type string or int.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1569,7 +1574,7 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  * total samples in each bin is returned. This counts vector is just the
  * histogram of the column used to divide the set members into bins. The
  * weighted average statistic requires a weight_column to be specified in
- * {@code options}. The weighted average is then defined as the sum of the
+ * <code>options</code>. The weighted average is then defined as the sum of the
  * products of the value column times the weight column divided by the sum of
  * the weight column.
  * <p>
@@ -1579,10 +1584,10 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  * (max-min)/interval. Values that fall in the range
  * [min+n\*interval,min+(n+1)\*interval) are placed in the nth bin where n
  * ranges from 0..nbin-2. The final bin is [min+(nbin-1)\*interval,max]. In the
- * second method, {@code options} bin_values specifies a list of binning column
- * values. Binning-columns whose value matches the nth member of the bin_values
- * list are placed in the nth bin. When a list is provided the binning-column
- * must be of type string or int.
+ * second method, <code>options</code> bin_values specifies a list of binning
+ * column values. Binning-columns whose value matches the nth member of the
+ * bin_values list are placed in the nth bin. When a list is provided the
+ * binning-column must be of type string or int.
  *
  * @param {String} table_name  Name of the table on which the ranged-statistics
  *                             operation will be performed.
@@ -1645,14 +1650,15 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
 };
 
 /**
- * Returns all the unique values from a particular column (specified by {@code
- * column_name}) of a particular table (specified by {@code table_name}). If
- * {@code column_name} is a numeric column the values will be in {@code
- * binary_encoded_response}. Otherwise if {@code column_name} is a string
- * column the values will be in {@code json_encoded_response}.  {@code offset}
- * and {@code limit} are used to page through the results if there are large
+ * Returns all the unique values from a particular column (specified by
+ * <code>column_name</code>) of a particular table (specified by
+ * <code>table_name</code>). If <code>column_name</code> is a numeric column
+ * the values will be in <code>binary_encoded_response</code>. Otherwise if
+ * <code>column_name</code> is a string column the values will be in
+ * <code>json_encoded_response</code>.  <code>offset</code> and
+ * <code>limit</code> are used to page through the results if there are large
  * numbers of unique values. To get the first 10 unique values sorted in
- * descending order {@code options} would be::
+ * descending order <code>options</code> would be::
  * <p>
  * {"limit":"10","sort_order":"descending"}.
  * <p>
@@ -1698,14 +1704,15 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
 };
 
 /**
- * Returns all the unique values from a particular column (specified by {@code
- * column_name}) of a particular table (specified by {@code table_name}). If
- * {@code column_name} is a numeric column the values will be in {@code
- * binary_encoded_response}. Otherwise if {@code column_name} is a string
- * column the values will be in {@code json_encoded_response}.  {@code offset}
- * and {@code limit} are used to page through the results if there are large
+ * Returns all the unique values from a particular column (specified by
+ * <code>column_name</code>) of a particular table (specified by
+ * <code>table_name</code>). If <code>column_name</code> is a numeric column
+ * the values will be in <code>binary_encoded_response</code>. Otherwise if
+ * <code>column_name</code> is a string column the values will be in
+ * <code>json_encoded_response</code>.  <code>offset</code> and
+ * <code>limit</code> are used to page through the results if there are large
  * numbers of unique values. To get the first 10 unique values sorted in
- * descending order {@code options} would be::
+ * descending order <code>options</code> would be::
  * <p>
  * {"limit":"10","sort_order":"descending"}.
  * <p>
@@ -1905,9 +1912,10 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * modifications include:
  * <p>
  *      Creating or deleting an index on a particular column. This can speed up
- * certain search queries (such as /get/records, /delete/records,
- * /update/records) when using expressions containing equality or relational
- * operators on indexed columns. This only applies to tables.
+ * certain search queries (such as {@linkcode GPUdb#get_records},
+ * {@linkcode GPUdb#delete_records}, {@linkcode GPUdb#update_records}) when
+ * using expressions containing equality or relational operators on indexed
+ * columns. This only applies to tables.
  * <p>
  *      Setting the time-to-live (TTL). This can be applied to tables, views,
  * or collections.  When applied to collections, every table & view within the
@@ -1948,9 +1956,10 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * modifications include:
  * <p>
  *      Creating or deleting an index on a particular column. This can speed up
- * certain search queries (such as /get/records, /delete/records,
- * /update/records) when using expressions containing equality or relational
- * operators on indexed columns. This only applies to tables.
+ * certain search queries (such as {@linkcode GPUdb#get_records},
+ * {@linkcode GPUdb#delete_records}, {@linkcode GPUdb#update_records}) when
+ * using expressions containing equality or relational operators on indexed
+ * columns. This only applies to tables.
  * <p>
  *      Setting the time-to-live (TTL). This can be applied to tables, views,
  * or collections.  When applied to collections, every table & view within the
@@ -1967,11 +1976,36 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                             GPUdb.
  * @param {String} action  Modification operation to be applied Values:
  *                         create_index, delete_index,
- *                         allow_homogeneous_tables, protected, ttl.
+ *                         allow_homogeneous_tables, protected, ttl,
+ *                         add_column, delete_column, change_column,
+ *                         rename_table.
  * @param {String} value  The value of the modification. May be a column name,
- *                        'true' or 'false', or a TTL depending on {@code
- *                        action}.
+ *                        'true' or 'false', or a TTL depending on
+ *                        <code>action</code>.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> column_default_value: when adding a
+ *                          column: set a default value, for existing data.
+ *                                  <li> column_properties: when adding or
+ *                          changing a column: set the column properties
+ *                          (strings, separated by a comma: data, store_only,
+ *                          text_search, char8, int8 etc).
+ *                                  <li> column_type: when adding or changing a
+ *                          column: set the column type (strings, separated by
+ *                          a comma: int, double, string, null etc).
+ *                                  <li> validate_change_column: Validate the
+ *                          type change before applying column_change request.
+ *                          Default is true (if option is missing). If True,
+ *                          then validate all values. A value too large (or too
+ *                          long) for the new type will prevent any change. If
+ *                          False, then when a value is too large or long, it
+ *                          will be trancated. Values: true, false.
+ *                                  <li> copy_values_from_column: when adding
+ *                          or changing a column: enter column name - from
+ *                          where to copy values.
+ *                                  <li> rename_column: new column name (using
+ *                          change_column).
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -2094,8 +2128,8 @@ GPUdb.prototype.alter_user_request = function(request, callback) {
  *                       user.
  * @param {String} action  Modification operation to be applied to the user.
  *                         Values: set_password.
- * @param {String} value  The value of the modification, depending on {@code
- *                        action}.
+ * @param {String} value  The value of the modification, depending on
+ *                        <code>action</code>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -2182,7 +2216,8 @@ GPUdb.prototype.clear_table = function(table_name, authorization, options, callb
 };
 
 /**
- * Deactivates a table monitor previously created with /create/tablemonitor.
+ * Deactivates a table monitor previously created with
+ * {@linkcode GPUdb#create_table_monitor}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2207,9 +2242,11 @@ GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
 };
 
 /**
- * Deactivates a table monitor previously created with /create/tablemonitor.
+ * Deactivates a table monitor previously created with
+ * {@linkcode GPUdb#create_table_monitor}.
  *
- * @param {String} topic_id  The topic ID returned by /create/tablemonitor.
+ * @param {String} topic_id  The topic ID returned by
+ *                           {@linkcode GPUdb#create_table_monitor}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -2381,6 +2418,7 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
 };
 
 /**
+ * Creates a proc.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2389,11 +2427,11 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.create_proc_request = function(request, callback) {
     var actual_request = {
         proc_name: request.proc_name,
+        execution_mode: (request.execution_mode !== undefined && request.execution_mode !== null) ? request.execution_mode : "distributed",
         files: (request.files !== undefined && request.files !== null) ? request.files : {},
         command: (request.command !== undefined && request.command !== null) ? request.command : "",
         args: (request.args !== undefined && request.args !== null) ? request.args : [],
@@ -2409,25 +2447,45 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
 };
 
 /**
+ * Creates a proc.
  *
- * @param {String} proc_name
- * @param {Object} files
- * @param {String} command
- * @param {String[]} args
- * @param {Object} options
- *                          <ul>
- *                                  <li> nondistributed: Values: true, false.
- *                          </ul>
+ * @param {String} proc_name  Name of the proc to be created. Must not be the
+ *                            name of a currently existing proc.
+ * @param {String} execution_mode  The execution mode of the proc. Values:
+ *                                 distributed, nondistributed.
+ * @param {Object} files  A map of the files that make up the proc. The keys of
+ *                        the map are file names, and the values are the binary
+ *                        contents of the files. The file names may include
+ *                        subdirectory names (e.g. 'subdir/file') but must not
+ *                        resolve to a directory above the root for the proc.
+ * @param {String} command  The command (excluding arguments) that will be
+ *                          invoked when the proc is executed. It will be
+ *                          invoked from the directory containing the proc
+ *                          <code>files</code> and may be any command that can
+ *                          be resolved from that directory. It need not refer
+ *                          to a file actually in that directory; for example,
+ *                          it could be 'java' if the proc is a Java
+ *                          application; however, any necessary external
+ *                          programs must be preinstalled on every GPUdb node.
+ *                          If the command refers to a file in that directory,
+ *                          it must be preceded with './' as per Linux
+ *                          convention. If not specified, and exactly one file
+ *                          is provided in <code>files</code>, that file will
+ *                          be invoked.
+ * @param {String[]} args  An array of command-line arguments that will be
+ *                         passed to <code>command</code> when the proc is
+ *                         executed.
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
-GPUdb.prototype.create_proc = function(proc_name, files, command, args, options, callback) {
+GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command, args, options, callback) {
     var actual_request = {
         proc_name: proc_name,
+        execution_mode: (execution_mode !== undefined && execution_mode !== null) ? execution_mode : "distributed",
         files: (files !== undefined && files !== null) ? files : {},
         command: (command !== undefined && command !== null) ? command : "",
         args: (args !== undefined && args !== null) ? args : [],
@@ -2558,14 +2616,16 @@ GPUdb.prototype.create_role = function(name, options, callback) {
 };
 
 /**
- * Creates a new table or collection in GPUdb. If a new table is being created
- * then type of the table is given by {@code type_id} which must the be the
- * type id of a currently registered type (i.e. one created via /create/type).
- * The table will be created inside a collection if the option
- * *collection_name* is specified. If that collection does not already exist
- * then it will be created. To create a new, empty collection specify the
- * collection name in {@code table_name}, leave {@code type_id} blank, and set
- * the *is_collection* option to 'true'.
+ * Creates a new table or collection. If a new table is being created, the type
+ * of the table is given by <code>type_id</code>, which must the be the ID of a
+ * currently registered type (i.e. one created via
+ * {@linkcode GPUdb#create_type}). The table will be created inside a
+ * collection if the option <code>collection_name</code> is specified. If that
+ * collection does not already exist, it will be created.
+
+ * To create a new collection, specify the name of the collection in
+ * <code>table_name</code> and set the <code>is_collection</code> option to
+ * <code>true</code>; <code>type_id</code> will be ignored.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2591,36 +2651,40 @@ GPUdb.prototype.create_table_request = function(request, callback) {
 };
 
 /**
- * Creates a new table or collection in GPUdb. If a new table is being created
- * then type of the table is given by {@code type_id} which must the be the
- * type id of a currently registered type (i.e. one created via /create/type).
- * The table will be created inside a collection if the option
- * *collection_name* is specified. If that collection does not already exist
- * then it will be created. To create a new, empty collection specify the
- * collection name in {@code table_name}, leave {@code type_id} blank, and set
- * the *is_collection* option to 'true'.
+ * Creates a new table or collection. If a new table is being created, the type
+ * of the table is given by <code>type_id</code>, which must the be the ID of a
+ * currently registered type (i.e. one created via
+ * {@linkcode GPUdb#create_type}). The table will be created inside a
+ * collection if the option <code>collection_name</code> is specified. If that
+ * collection does not already exist, it will be created.
+
+ * To create a new collection, specify the name of the collection in
+ * <code>table_name</code> and set the <code>is_collection</code> option to
+ * <code>true</code>; <code>type_id</code> will be ignored.
  *
  * @param {String} table_name  Name of the table to be created. Must not be the
- *                             name of a currently existing GPUdb table of a
+ *                             name of a currently existing table of a
  *                             different type.  Error for requests with
  *                             existing table of the same name and type id may
- *                             be suppressed by using the {@code
- *                             no_error_if_exists} option.  Cannot be an empty
- *                             string.  Valid characters are 'A-Za-z0-9_-(){}[]
- *                             .:' (excluding the single quote), with the first
- *                             character being one of 'A-Za-z0-9_'.  The
+ *                             be suppressed by using the
+ *                             <code>no_error_if_exists</code> option.  Cannot
+ *                             be an empty string.  Valid characters are
+ *                             alphanumeric or any of '_-(){}[] .:' (excluding
+ *                             the single quotes), with the first character
+ *                             being alphanumeric or an underscore.  The
  *                             maximum length is 256 characters.
- * @param {String} type_id  ID of a currently registered type in GPUdb. All
- *                          objects added to the newly created table will be of
- *                          this type.  Must be an empty string if the
- *                          *is_collection* is 'true'.
+ * @param {String} type_id  ID of a currently registered type. All objects
+ *                          added to the newly created table will be of this
+ *                          type.  Ignored if <code>is_collection</code> is
+ *                          <code>true</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> no_error_if_exists: If {@code true},
- *                          prevents an error from occurring if the table
- *                          already exists and is of the given type.  If a
- *                          table with the same ID but a different type exists,
- *                          it is still an error. Values: true, false.
+ *                                  <li> no_error_if_exists: If
+ *                          <code>true</code>, prevents an error from occurring
+ *                          if the table already exists and is of the given
+ *                          type.  If a table with the same ID but a different
+ *                          type exists, it is still an error. Values: true,
+ *                          false.
  *                                  <li> collection_name: Name of a collection
  *                          which is to contain the newly created table. If
  *                          empty, then the newly created table will be a
@@ -2668,14 +2732,15 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
 
 /**
  * Creates a monitor that watches for new records inserted into a particular
- * table (identified by {@code table_name}) and forwards copies to subscribers
- * via ZMQ. After this call completes, subscribe to the returned {@code
- * topic_id} on the GPUdb ZMQ table monitor port (default 9002). Each time an
- * insert operation on the table completes, a multipart message is published
- * for that topic; the first part contains only the topic ID, and each
- * subsequent part contains one binary-encoded Avro object that was inserted.
- * The monitor will continue to run (regardless of whether or not there are any
- * subscribers) until deactivated with /clear/tablemonitor.
+ * table (identified by <code>table_name</code>) and forwards copies to
+ * subscribers via ZMQ. After this call completes, subscribe to the returned
+ * <code>topic_id</code> on the GPUdb ZMQ table monitor port (default 9002).
+ * Each time an insert operation on the table completes, a multipart message is
+ * published for that topic; the first part contains only the topic ID, and
+ * each subsequent part contains one binary-encoded Avro object that was
+ * inserted. The monitor will continue to run (regardless of whether or not
+ * there are any subscribers) until deactivated with
+ * {@linkcode GPUdb#clear_table_monitor}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2701,14 +2766,15 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
 
 /**
  * Creates a monitor that watches for new records inserted into a particular
- * table (identified by {@code table_name}) and forwards copies to subscribers
- * via ZMQ. After this call completes, subscribe to the returned {@code
- * topic_id} on the GPUdb ZMQ table monitor port (default 9002). Each time an
- * insert operation on the table completes, a multipart message is published
- * for that topic; the first part contains only the topic ID, and each
- * subsequent part contains one binary-encoded Avro object that was inserted.
- * The monitor will continue to run (regardless of whether or not there are any
- * subscribers) until deactivated with /clear/tablemonitor.
+ * table (identified by <code>table_name</code>) and forwards copies to
+ * subscribers via ZMQ. After this call completes, subscribe to the returned
+ * <code>topic_id</code> on the GPUdb ZMQ table monitor port (default 9002).
+ * Each time an insert operation on the table completes, a multipart message is
+ * published for that topic; the first part contains only the topic ID, and
+ * each subsequent part contains one binary-encoded Avro object that was
+ * inserted. The monitor will continue to run (regardless of whether or not
+ * there are any subscribers) until deactivated with
+ * {@linkcode GPUdb#clear_table_monitor}.
  *
  * @param {String} table_name  Name of the table to monitor. Must not refer to
  *                             a collection.
@@ -2736,13 +2802,15 @@ GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
 /**
  * Sets up an area trigger mechanism for two column_names for one or more
  * tables. (This function is essentially the two-dimensional version of
- * /create/trigger/byrange.) Once the trigger has been activated, any record
- * added to the listed tables(s) via /insert/records with the chosen columns'
- * values falling within the specified region will trip the trigger. All such
- * records will be queued at GPUdb's trigger port-by default '9001' but can
- * also be obtained via /show/system/status-for any listening client to
- * collect. Active triggers can be cancelled by using the /clear/trigger
- * endpoint or by clearing all relevant tables.
+ * {@linkcode GPUdb#create_trigger_by_range}.) Once the trigger has been
+ * activated, any record added to the listed tables(s) via
+ * {@linkcode GPUdb#insert_records} with the chosen columns' values falling
+ * within the specified region will trip the trigger. All such records will be
+ * queued at GPUdb's trigger port-by default '9001' but can also be obtained
+ * via {@linkcode GPUdb#show_system_status}-for any listening client to
+ * collect. Active triggers can be cancelled by using the
+ * {@linkcode GPUdb#clear_trigger} endpoint or by clearing all relevant
+ * tables.
  * <p>
  * The output returns the trigger handle as well as indicating success or
  * failure of the trigger activation.
@@ -2777,13 +2845,15 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
 /**
  * Sets up an area trigger mechanism for two column_names for one or more
  * tables. (This function is essentially the two-dimensional version of
- * /create/trigger/byrange.) Once the trigger has been activated, any record
- * added to the listed tables(s) via /insert/records with the chosen columns'
- * values falling within the specified region will trip the trigger. All such
- * records will be queued at GPUdb's trigger port-by default '9001' but can
- * also be obtained via /show/system/status-for any listening client to
- * collect. Active triggers can be cancelled by using the /clear/trigger
- * endpoint or by clearing all relevant tables.
+ * {@linkcode GPUdb#create_trigger_by_range}.) Once the trigger has been
+ * activated, any record added to the listed tables(s) via
+ * {@linkcode GPUdb#insert_records} with the chosen columns' values falling
+ * within the specified region will trip the trigger. All such records will be
+ * queued at GPUdb's trigger port-by default '9001' but can also be obtained
+ * via {@linkcode GPUdb#show_system_status}-for any listening client to
+ * collect. Active triggers can be cancelled by using the
+ * {@linkcode GPUdb#clear_trigger} endpoint or by clearing all relevant
+ * tables.
  * <p>
  * The output returns the trigger handle as well as indicating success or
  * failure of the trigger activation.
@@ -2834,12 +2904,14 @@ GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_col
 /**
  * Sets up a simple range trigger for a column_name for one or more tables.
  * Once the trigger has been activated, any record added to the listed
- * tables(s) via /insert/records with the chosen column_name's value falling
- * within the specified range will trip the trigger. All such records will be
- * queued at GPUdb's trigger port-by default '9001' but can also be obtained
- * via /show/system/status-for any listening client to collect. Active triggers
- * can be cancelled by using the /clear/trigger endpoint or by clearing all
- * relevant tables.
+ * tables(s) via {@linkcode GPUdb#insert_records} with the chosen
+ * column_name's value falling within the specified range will trip the
+ * trigger. All such records will be queued at GPUdb's trigger port-by default
+ * '9001' but can also be obtained via
+ * {@linkcode GPUdb#show_system_status}-for any listening client to collect.
+ * Active triggers can be cancelled by using the
+ * {@linkcode GPUdb#clear_trigger} endpoint or by clearing all relevant
+ * tables.
  * <p>
  * The output returns the trigger handle as well as indicating success or
  * failure of the trigger activation.
@@ -2873,12 +2945,14 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
 /**
  * Sets up a simple range trigger for a column_name for one or more tables.
  * Once the trigger has been activated, any record added to the listed
- * tables(s) via /insert/records with the chosen column_name's value falling
- * within the specified range will trip the trigger. All such records will be
- * queued at GPUdb's trigger port-by default '9001' but can also be obtained
- * via /show/system/status-for any listening client to collect. Active triggers
- * can be cancelled by using the /clear/trigger endpoint or by clearing all
- * relevant tables.
+ * tables(s) via {@linkcode GPUdb#insert_records} with the chosen
+ * column_name's value falling within the specified range will trip the
+ * trigger. All such records will be queued at GPUdb's trigger port-by default
+ * '9001' but can also be obtained via
+ * {@linkcode GPUdb#show_system_status}-for any listening client to collect.
+ * Active triggers can be cancelled by using the
+ * {@linkcode GPUdb#clear_trigger} endpoint or by clearing all relevant
+ * tables.
  * <p>
  * The output returns the trigger handle as well as indicating success or
  * failure of the trigger activation.
@@ -2922,14 +2996,15 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * properties can be specified for each column which customize the memory usage
  * and query availability of that column.  Note that some properties are
  * mutually exclusive--i.e. they cannot be specified for any given column
- * simultaneously.  One example of mutually exclusive properties are {@code
- * data} and {@code store_only}.
+ * simultaneously.  One example of mutually exclusive properties are
+ * <code>data</code> and <code>store_only</code>.
  * <p>
  * To set a *primary key* on one or more columns include the property
  * 'primary_key' on the desired column_names. If a primary key is specified
  * then GPUdb enforces a uniqueness constraint in that only a single object can
- * exist with a given primary key. When /insert/records data into a table with
- * a primary key, depending on the parameters in the request, incoming objects
+ * exist with a given primary key. When
+ * [inserting]{@linkcode GPUdb#insert_records} data into a table with a
+ * primary key, depending on the parameters in the request, incoming objects
  * with primary keys that match existing objects will either overwrite (i.e.
  * update) the existing object or will be skipped and not added into the set.
  * <p>
@@ -2984,14 +3059,15 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * properties can be specified for each column which customize the memory usage
  * and query availability of that column.  Note that some properties are
  * mutually exclusive--i.e. they cannot be specified for any given column
- * simultaneously.  One example of mutually exclusive properties are {@code
- * data} and {@code store_only}.
+ * simultaneously.  One example of mutually exclusive properties are
+ * <code>data</code> and <code>store_only</code>.
  * <p>
  * To set a *primary key* on one or more columns include the property
  * 'primary_key' on the desired column_names. If a primary key is specified
  * then GPUdb enforces a uniqueness constraint in that only a single object can
- * exist with a given primary key. When /insert/records data into a table with
- * a primary key, depending on the parameters in the request, incoming objects
+ * exist with a given primary key. When
+ * [inserting]{@linkcode GPUdb#insert_records} data into a table with a
+ * primary key, depending on the parameters in the request, incoming objects
  * with primary keys that match existing objects will either overwrite (i.e.
  * update) the existing object or will be skipped and not added into the set.
  * <p>
@@ -3104,7 +3180,8 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> mode: If 'merge_views' then this
  *                          operation will merge (i.e. union) the provided
  *                          views. All 'table_names' must be views from the
- *                          same underlying base table. Values: normal,
+ *                          same underlying base table. Values: union_all,
+ *                          union, union_distinct, except, intersect,
  *                          merge_views.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
@@ -3243,6 +3320,7 @@ GPUdb.prototype.create_user_internal = function(name, password, options, callbac
 };
 
 /**
+ * Deletes a proc. Any currently running instances of the proc will be killed.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3251,7 +3329,6 @@ GPUdb.prototype.create_user_internal = function(name, password, options, callbac
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.delete_proc_request = function(request, callback) {
     var actual_request = {
@@ -3268,15 +3345,16 @@ GPUdb.prototype.delete_proc_request = function(request, callback) {
 };
 
 /**
+ * Deletes a proc. Any currently running instances of the proc will be killed.
  *
- * @param {String} proc_name
- * @param {Object} options
+ * @param {String} proc_name  Name of the proc to be deleted. Must be the name
+ *                            of a currently existing proc.
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.delete_proc = function(proc_name, options, callback) {
     var actual_request = {
@@ -3294,13 +3372,13 @@ GPUdb.prototype.delete_proc = function(proc_name, options, callback) {
 
 /**
  * Deletes record(s) matching the provided criteria from the given table. The
- * record selection criteria can either be one or more  {@code expressions}
- * (matching multiple records) or a single record identified by {@code
- * record_id} options.  Note that the two selection criteria are mutually
- * exclusive.  This operation cannot be run on a collection or a view.  The
- * operation is synchronous meaning that a response will not be available until
- * the request is completely processed and all the matching records are
- * deleted.
+ * record selection criteria can either be one or more
+ * <code>expressions</code> (matching multiple records) or a single record
+ * identified by <code>record_id</code> options.  Note that the two selection
+ * criteria are mutually exclusive.  This operation cannot be run on a
+ * collection or a view.  The operation is synchronous meaning that a response
+ * will not be available until the request is completely processed and all the
+ * matching records are deleted.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3327,33 +3405,36 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
 
 /**
  * Deletes record(s) matching the provided criteria from the given table. The
- * record selection criteria can either be one or more  {@code expressions}
- * (matching multiple records) or a single record identified by {@code
- * record_id} options.  Note that the two selection criteria are mutually
- * exclusive.  This operation cannot be run on a collection or a view.  The
- * operation is synchronous meaning that a response will not be available until
- * the request is completely processed and all the matching records are
- * deleted.
+ * record selection criteria can either be one or more
+ * <code>expressions</code> (matching multiple records) or a single record
+ * identified by <code>record_id</code> options.  Note that the two selection
+ * criteria are mutually exclusive.  This operation cannot be run on a
+ * collection or a view.  The operation is synchronous meaning that a response
+ * will not be available until the request is completely processed and all the
+ * matching records are deleted.
  *
  * @param {String} table_name  Name of the table from which to delete records.
  *                             The set must be a currently existing table and
  *                             not a collection or a view.
  * @param {String[]} expressions  A list of the actual predicates, one for each
  *                                select; format should follow the guidelines
- *                                provided /filter. Specifying one or more
- *                                {@code expressions} is mutually exclusive to
- *                                specifying {@code record_id} in the {@code
- *                                options}.
+ *                                provided [here]{@linkcode GPUdb#filter}.
+ *                                Specifying one or more
+ *                                <code>expressions</code> is mutually
+ *                                exclusive to specifying
+ *                                <code>record_id</code> in the
+ *                                <code>options</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> global_expression: An optional global
- *                          expression to reduce the search space of the {@code
- *                          expressions}.
+ *                          expression to reduce the search space of the
+ *                          <code>expressions</code>.
  *                                  <li> record_id: A record id identifying a
  *                          single record, obtained at the time of
- *                          /insert/records or by calling
- *                          /get/records/fromcollection with the
- *                          *return_record_ids* option.
+ *                          [insertion of the record]{@linkcode GPUdb#insert_records}
+ *                          or by calling
+ *                          {@linkcode GPUdb#get_records_from_collection}
+ *                          with the *return_record_ids* option.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -3479,6 +3560,8 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
 };
 
 /**
+ * Executes a proc. This endpoint is asynchronous and does not wait for the
+ * proc to complete before returning.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3487,7 +3570,6 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.execute_proc_request = function(request, callback) {
     var actual_request = {
@@ -3509,20 +3591,77 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
 };
 
 /**
+ * Executes a proc. This endpoint is asynchronous and does not wait for the
+ * proc to complete before returning.
  *
- * @param {String} proc_name
- * @param {Object} params
- * @param {Object} bin_params
- * @param {String[]} input_table_names
- * @param {Object} input_column_names
- * @param {String[]} output_table_names
- * @param {Object} options
+ * @param {String} proc_name  Name of the proc to execute. Must be the name of
+ *                            a currently existing proc.
+ * @param {Object} params  A map containing named parameters to pass to the
+ *                         proc. Each key/value pair specifies the name of a
+ *                         parameter and its value.
+ * @param {Object} bin_params  A map containing named binary parameters to pass
+ *                             to the proc. Each key/value pair specifies the
+ *                             name of a parameter and its value.
+ * @param {String[]} input_table_names  Names of the tables containing data to
+ *                                      be passed to the proc. Each name
+ *                                      specified must be the name of a
+ *                                      currently existing table. If no table
+ *                                      names are specified, no data will be
+ *                                      passed to the proc.
+ * @param {Object} input_column_names  Map of table names from
+ *                                     <code>input_table_names</code> to lists
+ *                                     of names of columns from those tables
+ *                                     that will be passed to the proc. Each
+ *                                     column name specified must be the name
+ *                                     of an existing column in the
+ *                                     corresponding table. If a table name
+ *                                     from <code>input_table_names</code> is
+ *                                     not included, all columns from that
+ *                                     table will be passed to the proc.
+ * @param {String[]} output_table_names  Names of the tables to which output
+ *                                       data from the proc will be written. If
+ *                                       a specified table does not exist, it
+ *                                       will automatically be created with the
+ *                                       same schema as the corresponding table
+ *                                       (by order) from
+ *                                       <code>input_table_names</code>,
+ *                                       excluding any primary and shard keys.
+ *                                       If no table names are specified, no
+ *                                       output data can be returned from the
+ *                                       proc.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> cache_input: A comma-delimited list of
+ *                          table names from <code>input_table_names</code>
+ *                          from which input data will be cached for use in
+ *                          subsequent calls to
+ *                          {@linkcode GPUdb#execute_proc} with the
+ *                          <code>use_cached_input</code> option. Cached input
+ *                          data will be retained until the proc status is
+ *                          cleared with the
+ *                          [clear_complete]{@linkcode GPUdb#show_proc_status}
+ *                          option of {@linkcode GPUdb#show_proc_status} and
+ *                          all proc instances using the cached data have
+ *                          completed.
+ *                                  <li> use_cached_input: A comma-delimited
+ *                          list of run IDs (as returned from prior calls to
+ *                          {@linkcode GPUdb#execute_proc}) of running or
+ *                          completed proc instances from which input data
+ *                          cached using the <code>cache_input</code> option
+ *                          will be used. Cached input data will not be used
+ *                          for any tables specified in
+ *                          <code>input_table_names</code>, but data from all
+ *                          other tables cached for the specified run IDs will
+ *                          be passed to the proc. If the same table was cached
+ *                          for multiple specified run IDs, the cached data
+ *                          from the first run ID specified in the list that
+ *                          includes that table will be used.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_table_names, input_column_names, output_table_names, options, callback) {
     var actual_request = {
@@ -3545,7 +3684,7 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
 
 /**
  * Filters data based on the specified expression.  The results are stored in a
- * result set with the given {@code view_name}.
+ * result set with the given <code>view_name</code>.
  * <p>
  * For details see <a href="../../concepts/index.html#expressions"
  * target="_top">concepts</a>.
@@ -3579,7 +3718,7 @@ GPUdb.prototype.filter_request = function(request, callback) {
 
 /**
  * Filters data based on the specified expression.  The results are stored in a
- * result set with the given {@code view_name}.
+ * result set with the given <code>view_name</code>.
  * <p>
  * For details see <a href="../../concepts/index.html#expressions"
  * target="_top">concepts</a>.
@@ -3628,7 +3767,7 @@ GPUdb.prototype.filter = function(table_name, view_name, expression, options, ca
  * return the request until all the matching objects are fully available. The
  * response payload provides the count of the resulting set. A new resultant
  * set (view) which satisfies the input NAI restriction specification is
- * created with the name {@code view_name} passed in as part of the input.
+ * created with the name <code>view_name</code> passed in as part of the input.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3663,7 +3802,7 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  * return the request until all the matching objects are fully available. The
  * response payload provides the count of the resulting set. A new resultant
  * set (view) which satisfies the input NAI restriction specification is
- * created with the name {@code view_name} passed in as part of the input.
+ * created with the name <code>view_name</code> passed in as part of the input.
  *
  * @param {String} table_name  Name of the table to filter.  This may be the
  *                             name of a collection, a table or a view (when
@@ -3712,8 +3851,8 @@ GPUdb.prototype.filter_by_area = function(table_name, view_name, x_column_name, 
  * The operation is synchronous meaning that GPUdb will not return the request
  * until all the objects are fully available. The response payload provides the
  * count of the resulting set. A new resultant set which satisfies the input
- * NAI restriction specification is also created when a {@code view_name} is
- * passed in as part of the input payload.
+ * NAI restriction specification is also created when a <code>view_name</code>
+ * is passed in as part of the input payload.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3749,8 +3888,8 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  * The operation is synchronous meaning that GPUdb will not return the request
  * until all the objects are fully available. The response payload provides the
  * count of the resulting set. A new resultant set which satisfies the input
- * NAI restriction specification is also created when a {@code view_name} is
- * passed in as part of the input payload.
+ * NAI restriction specification is also created when a <code>view_name</code>
+ * is passed in as part of the input payload.
  *
  * @param {String} table_name  Name of the table on which the bounding box
  *                             operation will be performed. Must be a valid
@@ -3763,19 +3902,19 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                                bounding box query. If the table's data type
  *                                is not a shape type, must be a valid numeric
  *                                column.
- * @param {Number} min_x  Lower bound for the column chosen by {@code
- *                        x_column_name}.  Must be less than or equal to {@code
- *                        max_x}.
- * @param {Number} max_x  Upper bound for {@code x_column_name}.  Must be
- *                        greater than or equal to {@code min_x}.
+ * @param {Number} min_x  Lower bound for the column chosen by
+ *                        <code>x_column_name</code>.  Must be less than or
+ *                        equal to <code>max_x</code>.
+ * @param {Number} max_x  Upper bound for <code>x_column_name</code>.  Must be
+ *                        greater than or equal to <code>min_x</code>.
  * @param {String} y_column_name  Name of a column on which to perform the
  *                                bounding box query. If the table's data type
  *                                is not a shape type, must be a valid numeric
  *                                column.
- * @param {Number} min_y  Lower bound for {@code y_column_name}. Must be less
- *                        than or equal to {@code max_y}.
- * @param {Number} max_y  Upper bound for {@code y_column_name}. Must be
- *                        greater than or equal to {@code min_y}.
+ * @param {Number} min_y  Lower bound for <code>y_column_name</code>. Must be
+ *                        less than or equal to <code>max_y</code>.
+ * @param {Number} max_y  Upper bound for <code>y_column_name</code>. Must be
+ *                        greater than or equal to <code>min_y</code>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -3806,8 +3945,8 @@ GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, m
 
 /**
  * Applies a geometry filter against a spatial column named WKT in a given
- * table, collection or view. The filtering geometry is provided by {@code
- * input_wkt}.
+ * table, collection or view. The filtering geometry is provided by
+ * <code>input_wkt</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3837,8 +3976,8 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
 
 /**
  * Applies a geometry filter against a spatial column named WKT in a given
- * table, collection or view. The filtering geometry is provided by {@code
- * input_wkt}.
+ * table, collection or view. The filtering geometry is provided by
+ * <code>input_wkt</code>.
  *
  * @param {String} table_name  Name of the table on which the filter by
  *                             geometry will be performed.  Must be an existing
@@ -3850,7 +3989,7 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  * @param {String} column_name  Name of the column to be used in the filter.
  *                              Must be 'WKT'
  * @param {String} input_wkt  A geometry in WKT format that will be used to
- *                            filter the objects in {@code table_name}.
+ *                            filter the objects in <code>table_name</code>.
  * @param {String} operation  The geometric filtering operation to perform
  *                            Values: contains, crosses, disjoint, equals,
  *                            intersects, overlaps, touches, within.
@@ -3885,7 +4024,7 @@ GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name
  * not return a response until all the objects are fully available. The
  * response payload provides the count of the resulting set. A new resultant
  * set (view) which satisfies the input filter specification is also created if
- * a {@code view_name} is passed in as part of the request.
+ * a <code>view_name</code> is passed in as part of the request.
  * <p>
  * For example, if a type definition has the columns 'x' and 'y', then a filter
  * by list query with the column map {"x":["10.1", "2.3"], "y":["0.0", "-31.5",
@@ -3924,7 +4063,7 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  * not return a response until all the objects are fully available. The
  * response payload provides the count of the resulting set. A new resultant
  * set (view) which satisfies the input filter specification is also created if
- * a {@code view_name} is passed in as part of the request.
+ * a <code>view_name</code> is passed in as part of the request.
  * <p>
  * For example, if a type definition has the columns 'x' and 'y', then a filter
  * by list query with the column map {"x":["10.1", "2.3"], "y":["0.0", "-31.5",
@@ -3977,8 +4116,8 @@ GPUdb.prototype.filter_by_list = function(table_name, view_name, column_values_m
  * meaning that GPUdb will not return a response until all the objects are
  * fully available. The response payload provides the count of the resulting
  * set. A new resultant set (view) which satisfies the input circular NAI
- * restriction specification is also created if a {@code view_name} is passed
- * in as part of the request.
+ * restriction specification is also created if a <code>view_name</code> is
+ * passed in as part of the request.
  * <p>
  * For track data, all track points that lie within the circle plus one point
  * on either side of the circle (if the track goes beyond the circle) will be
@@ -4020,8 +4159,8 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  * meaning that GPUdb will not return a response until all the objects are
  * fully available. The response payload provides the count of the resulting
  * set. A new resultant set (view) which satisfies the input circular NAI
- * restriction specification is also created if a {@code view_name} is passed
- * in as part of the request.
+ * restriction specification is also created if a <code>view_name</code> is
+ * passed in as part of the request.
  * <p>
  * For track data, all track points that lie within the circle plus one point
  * on either side of the circle (if the track goes beyond the circle) will be
@@ -4076,10 +4215,11 @@ GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name
 
 /**
  * Calculates which objects from a table have a column that is within the given
- * bounds. An object from the table identified by {@code table_name} is added
- * to the view {@code view_name} if its column is within [{@code lower_bound},
- * {@code upper_bound}] (inclusive). The operation is synchronous. The response
- * provides a count of the number of objects which passed the bound filter.
+ * bounds. An object from the table identified by <code>table_name</code> is
+ * added to the view <code>view_name</code> if its column is within
+ * [<code>lower_bound</code>, <code>upper_bound</code>] (inclusive). The
+ * operation is synchronous. The response provides a count of the number of
+ * objects which passed the bound filter.
  * <p>
  * For track objects, the count reflects how many points fall within the given
  * bounds (which may not include all the track points of any given track).
@@ -4112,10 +4252,11 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
 
 /**
  * Calculates which objects from a table have a column that is within the given
- * bounds. An object from the table identified by {@code table_name} is added
- * to the view {@code view_name} if its column is within [{@code lower_bound},
- * {@code upper_bound}] (inclusive). The operation is synchronous. The response
- * provides a count of the number of objects which passed the bound filter.
+ * bounds. An object from the table identified by <code>table_name</code> is
+ * added to the view <code>view_name</code> if its column is within
+ * [<code>lower_bound</code>, <code>upper_bound</code>] (inclusive). The
+ * operation is synchronous. The response provides a count of the number of
+ * objects which passed the bound filter.
  * <p>
  * For track objects, the count reflects how many points fall within the given
  * bounds (which may not include all the track points of any given track).
@@ -4274,7 +4415,7 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
 
  * * search : full text search query with wildcards and boolean operators, e.g.
  * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
- * specified in {@code column_names}; GPUdb will search through all string
+ * specified in <code>column_names</code>; GPUdb will search through all string
  * columns of the table that have text search enabled. Also, the first
  * character of a search term cannot be a wildcard (* or ?), and search terms
  * cannot be any of the following:  "a", "an", "and", "are", "as", "at", "be",
@@ -4366,7 +4507,7 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
 
  * * search : full text search query with wildcards and boolean operators, e.g.
  * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
- * specified in {@code column_names}; GPUdb will search through all string
+ * specified in <code>column_names</code>; GPUdb will search through all string
  * columns of the table that have text search enabled. Also, the first
  * character of a search term cannot be a wildcard (* or ?), and search terms
  * cannot be any of the following:  "a", "an", "and", "are", "as", "at", "be",
@@ -4473,10 +4614,11 @@ GPUdb.prototype.filter_by_string = function(table_name, view_name, expression, m
  * must specify matching column types from the two tables (i.e. the target
  * table from which objects will be filtered and the source table based on
  * which the filter will be created); the column names need not be the same. If
- * a {@code view_name} is specified, then the filtered objects will then be put
- * in a newly created view. The operation is synchronous, meaning that GPUdb
- * will not return until all objects are fully available in the result view.
- * The return value contains the count (i.e. the size) of the resulting view.
+ * a <code>view_name</code> is specified, then the filtered objects will then
+ * be put in a newly created view. The operation is synchronous, meaning that
+ * GPUdb will not return until all objects are fully available in the result
+ * view. The return value contains the count (i.e. the size) of the resulting
+ * view.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4509,10 +4651,11 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  * must specify matching column types from the two tables (i.e. the target
  * table from which objects will be filtered and the source table based on
  * which the filter will be created); the column names need not be the same. If
- * a {@code view_name} is specified, then the filtered objects will then be put
- * in a newly created view. The operation is synchronous, meaning that GPUdb
- * will not return until all objects are fully available in the result view.
- * The return value contains the count (i.e. the size) of the resulting view.
+ * a <code>view_name</code> is specified, then the filtered objects will then
+ * be put in a newly created view. The operation is synchronous, meaning that
+ * GPUdb will not return until all objects are fully available in the result
+ * view. The return value contains the count (i.e. the size) of the resulting
+ * view.
  *
  * @param {String} table_name  Name of the table whose data will be filtered.
  *                             Must be an existing table in GPUdb.
@@ -4520,18 +4663,19 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                            view containing the results. Must not be an
  *                            already existing collection, table or view.
  * @param {String} column_name  Name of the column by whose value the data will
- *                              be filtered from the table designated by {@code
- *                              table_name}.
+ *                              be filtered from the table designated by
+ *                              <code>table_name</code>.
  * @param {String} source_table_name  Name of the table whose data will be
  *                                    compared against in the table called
- *                                    {@code table_name}. Must be an existing
- *                                    table in GPUdb.
- * @param {String} source_table_column_name  Name of the column in the {@code
- *                                           source_table_name} whose values
- *                                           will be used as the filter for
- *                                           table {@code table_name}. Must
- *                                           match the type of the {@code
- *                                           column_name}.
+ *                                    <code>table_name</code>. Must be an
+ *                                    existing table in GPUdb.
+ * @param {String} source_table_column_name  Name of the column in the
+ *                                           <code>source_table_name</code>
+ *                                           whose values will be used as the
+ *                                           filter for table
+ *                                           <code>table_name</code>. Must
+ *                                           match the type of the
+ *                                           <code>column_name</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> filter_mode: String indicating the
@@ -4672,10 +4816,10 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
  * or on homogeneous collections (collections containing tables of all the same
  * type). Records can be returned encoded as binary or json.
  * <p>
- * This operation supports paging through the data via the {@code offset} and
- * {@code limit} parameters. Note that when paging through a table, if the
- * table (or the underlying table in case of a view) is updated (records are
- * inserted, deleted or modified) the records retrieved may differ between
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters. Note that when paging through a table, if
+ * the table (or the underlying table in case of a view) is updated (records
+ * are inserted, deleted or modified) the records retrieved may differ between
  * calls based on the updates applied.
  * <p>
  * Note that when using the Java API, it is not possible to retrieve records
@@ -4721,10 +4865,10 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  * or on homogeneous collections (collections containing tables of all the same
  * type). Records can be returned encoded as binary or json.
  * <p>
- * This operation supports paging through the data via the {@code offset} and
- * {@code limit} parameters. Note that when paging through a table, if the
- * table (or the underlying table in case of a view) is updated (records are
- * inserted, deleted or modified) the records retrieved may differ between
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters. Note that when paging through a table, if
+ * the table (or the underlying table in case of a view) is updated (records
+ * are inserted, deleted or modified) the records retrieved may differ between
  * calls based on the updates applied.
  * <p>
  * Note that when using the Java API, it is not possible to retrieve records
@@ -4917,17 +5061,18 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
 };
 
 /**
- * Retrieves the complete series/track records from the given {@code
- * world_table_name} based on the partial track information contained in the
- * {@code table_name}.
+ * Retrieves the complete series/track records from the given
+ * <code>world_table_name</code> based on the partial track information
+ * contained in the <code>table_name</code>.
  * <p>
- * This operation supports paging through the data via the {@code offset} and
- * {@code limit} parameters.
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters.
  * <p>
- * In contrast to /get/records this returns records grouped by series/track. So
- * if {@code offset} is 0 and {@code limit} is 5 this operation would return
- * the first 5 series/tracks in {@code table_name}. Each series/track will be
- * returned sorted by their TIMESTAMP column.
+ * In contrast to {@linkcode GPUdb#get_records} this returns records grouped
+ * by series/track. So if <code>offset</code> is 0 and <code>limit</code> is 5
+ * this operation would return the first 5 series/tracks in
+ * <code>table_name</code>. Each series/track will be returned sorted by their
+ * TIMESTAMP column.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4965,28 +5110,30 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
 };
 
 /**
- * Retrieves the complete series/track records from the given {@code
- * world_table_name} based on the partial track information contained in the
- * {@code table_name}.
+ * Retrieves the complete series/track records from the given
+ * <code>world_table_name</code> based on the partial track information
+ * contained in the <code>table_name</code>.
  * <p>
- * This operation supports paging through the data via the {@code offset} and
- * {@code limit} parameters.
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters.
  * <p>
- * In contrast to /get/records this returns records grouped by series/track. So
- * if {@code offset} is 0 and {@code limit} is 5 this operation would return
- * the first 5 series/tracks in {@code table_name}. Each series/track will be
- * returned sorted by their TIMESTAMP column.
+ * In contrast to {@linkcode GPUdb#get_records} this returns records grouped
+ * by series/track. So if <code>offset</code> is 0 and <code>limit</code> is 5
+ * this operation would return the first 5 series/tracks in
+ * <code>table_name</code>. Each series/track will be returned sorted by their
+ * TIMESTAMP column.
  *
  * @param {String} table_name  Name of the collection/table/view for which
  *                             series/tracks will be fetched.
  * @param {String} world_table_name  Name of the table containing the complete
  *                                   series/track information to be returned
- *                                   for the tracks present in the {@code
- *                                   table_name}. Typically this is used when
- *                                   retrieving series/tracks from a view
- *                                   (which contains partial series/tracks) but
- *                                   the user wants to retrieve the entire
- *                                   original series/tracks. Can be blank.
+ *                                   for the tracks present in the
+ *                                   <code>table_name</code>. Typically this is
+ *                                   used when retrieving series/tracks from a
+ *                                   view (which contains partial
+ *                                   series/tracks) but the user wants to
+ *                                   retrieve the entire original
+ *                                   series/tracks. Can be blank.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         series/tracks to skip (useful for paging through the
  *                         results).
@@ -5030,10 +5177,11 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
 
 /**
  * Retrieves records from a collection. The operation can optionally return the
- * record IDs which can be used in certain queries such as /delete/records.
+ * record IDs which can be used in certain queries such as
+ * {@linkcode GPUdb#delete_records}.
  * <p>
- * This operation supports paging through the data via the {@code offset} and
- * {@code limit} parameters.
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters.
  * <p>
  * Note that when using the Java API, it is not possible to retrieve records
  * from join tables using this operation.
@@ -5074,10 +5222,11 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
 
 /**
  * Retrieves records from a collection. The operation can optionally return the
- * record IDs which can be used in certain queries such as /delete/records.
+ * record IDs which can be used in certain queries such as
+ * {@linkcode GPUdb#delete_records}.
  * <p>
- * This operation supports paging through the data via the {@code offset} and
- * {@code limit} parameters.
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters.
  * <p>
  * Note that when using the Java API, it is not possible to retrieve records
  * from join tables using this operation.
@@ -5283,8 +5432,8 @@ GPUdb.prototype.grant_role_request = function(request, callback) {
  * @param {String} role  Name of the role in which membership will be granted.
  *                       Must be an existing role.
  * @param {String} member  Name of the user or role that will be granted
- *                         membership in {@code role}. Must be an existing user
- *                         or role.
+ *                         membership in <code>role</code>. Must be an existing
+ *                         user or role.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5303,6 +5452,56 @@ GPUdb.prototype.grant_role = function(role, member, options, callback) {
         this.submit_request("/grant/role", actual_request, callback);
     } else {
         var data = this.submit_request("/grant/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Checks the existence of a proc with the given name.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.has_proc_request = function(request, callback) {
+    var actual_request = {
+        proc_name: request.proc_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/has/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/has/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Checks the existence of a proc with the given name.
+ *
+ * @param {String} proc_name  Name of the proc to check for existence.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.has_proc = function(proc_name, options, callback) {
+    var actual_request = {
+        proc_name: proc_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/has/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/has/proc", actual_request);
         return data;
     }
 };
@@ -5386,7 +5585,7 @@ GPUdb.prototype.has_type_request = function(request, callback) {
  * Check the existence of a type in GPUdb.
  *
  * @param {String} type_id  Id of the type returned by GPUdb in response to
- *                          /create/type request.
+ *                          {@linkcode GPUdb#create_type} request.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5411,23 +5610,30 @@ GPUdb.prototype.has_type = function(type_id, options, callback) {
 /**
  * Adds multiple records to the specified table. The operation is synchronous
  * meaning that GPUdb will not return a response until all the records are
- * fully inserted and available. The response payload provides unique
- * identifier for each added record along with counts of the number of records
- * actually inserted and/or updated.
+ * fully inserted and available. The response payload provides the counts of
+ * the number of records actually inserted and/or updated, and can provide the
+ * unique identifier of each added record.
  * <p>
- * {@code options} can be used to customize this function's behavior. The only
- * parameter available is {@code update_on_existing_pk}. The value can be
- * either 'true' or 'false'. If the table has a /create/type and if {@code
- * update_on_existing_pk} is 'true' then if any of the records being added have
- * the same primary key as existing records, the existing records are replaced
- * (i.e. *updated*) with the given records. If {@code update_on_existing_pk} is
- * false and if the records being added have the same primary key as existing
- * records, the given records with existing primary keys are ignored (the
- * existing records are left unchanged). It is quite possible that in this case
- * some of the given records will be inserted and some (those having existing
- * primary keys) will be ignored (or updated). If the specified table does not
- * have a primary key column then the {@code update_on_existing_pk} option is
- * ignored.
+ * The <code>options</code> parameter can be used to customize this function's
+ * behavior.  The <code>update_on_existing_pk</code> option specifies the
+ * primary-key collision policy.  If the table has a
+ * [primary key]{@linkcode GPUdb#create_type} and if
+ * <code>update_on_existing_pk</code> is <code>true</code>, then if any of the
+ * records being added have the same primary key as existing records, the
+ * existing records are replaced (i.e. updated) with the given records.  If
+ * <code>update_on_existing_pk</code> is <code>false</code> and if the records
+ * being added have the same primary key as existing records, they are ignored
+ * (the existing records are left unchanged).  It is quite possible that in
+ * this case some of the given records will be inserted and some (those having
+ * existing primary keys) will be ignored (or updated).  If the specified table
+ * does not have a primary key column, then the
+ * <code>update_on_existing_pk</code> option is ignored.
+ * <p>
+ * The <code>return_record_ids</code> option indicates that the database should
+ * return the unique identifiers of inserted records.
+ * <p>
+ * The <code>route_to_address</code> option directs that inserted records
+ * should be targeted for a particular database node.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5457,51 +5663,59 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
 /**
  * Adds multiple records to the specified table. The operation is synchronous
  * meaning that GPUdb will not return a response until all the records are
- * fully inserted and available. The response payload provides unique
- * identifier for each added record along with counts of the number of records
- * actually inserted and/or updated.
+ * fully inserted and available. The response payload provides the counts of
+ * the number of records actually inserted and/or updated, and can provide the
+ * unique identifier of each added record.
  * <p>
- * {@code options} can be used to customize this function's behavior. The only
- * parameter available is {@code update_on_existing_pk}. The value can be
- * either 'true' or 'false'. If the table has a /create/type and if {@code
- * update_on_existing_pk} is 'true' then if any of the records being added have
- * the same primary key as existing records, the existing records are replaced
- * (i.e. *updated*) with the given records. If {@code update_on_existing_pk} is
- * false and if the records being added have the same primary key as existing
- * records, the given records with existing primary keys are ignored (the
- * existing records are left unchanged). It is quite possible that in this case
- * some of the given records will be inserted and some (those having existing
- * primary keys) will be ignored (or updated). If the specified table does not
- * have a primary key column then the {@code update_on_existing_pk} option is
- * ignored.
+ * The <code>options</code> parameter can be used to customize this function's
+ * behavior.  The <code>update_on_existing_pk</code> option specifies the
+ * primary-key collision policy.  If the table has a
+ * [primary key]{@linkcode GPUdb#create_type} and if
+ * <code>update_on_existing_pk</code> is <code>true</code>, then if any of the
+ * records being added have the same primary key as existing records, the
+ * existing records are replaced (i.e. updated) with the given records.  If
+ * <code>update_on_existing_pk</code> is <code>false</code> and if the records
+ * being added have the same primary key as existing records, they are ignored
+ * (the existing records are left unchanged).  It is quite possible that in
+ * this case some of the given records will be inserted and some (those having
+ * existing primary keys) will be ignored (or updated).  If the specified table
+ * does not have a primary key column, then the
+ * <code>update_on_existing_pk</code> option is ignored.
+ * <p>
+ * The <code>return_record_ids</code> option indicates that the database should
+ * return the unique identifiers of inserted records.
+ * <p>
+ * The <code>route_to_address</code> option directs that inserted records
+ * should be targeted for a particular database node.
  *
  * @param {String} table_name  Table to which the records are to be added. Must
  *                             be an existing table.
  * @param {Object[]} data  An array of JSON encoded data for the records to be
  *                         added. All records must be of the same type as that
- *                         of the table. Empty array if {@code list_encoding}
- *                         is {@code binary}.
+ *                         of the table. Empty array if
+ *                         <code>list_encoding</code> is <code>binary</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> update_on_existing_pk: If the table
- *                          has a /create/type, then if the value is 'true'
- *                          then if any of the records being added have the
- *                          same primary key as existing records, the existing
- *                          records are replaced (i.e. *updated*) with the
- *                          given records. If 'false' and if the records being
- *                          added have the same primary key as existing
- *                          records, the given records with existing primary
- *                          keys are ignored (the existing records are left
+ *                          has a
+ *                          [primary key]{@linkcode GPUdb#create_type},
+ *                          then if the value is <code>true</code> then if any
+ *                          of the records being added have the same primary
+ *                          key as existing records, the existing records are
+ *                          replaced (i.e. updated) with the given records. If
+ *                          <code>false</code>, and if the records being added
+ *                          have the same primary key as existing records, they
+ *                          are ignored (the existing records are left
  *                          unchanged).  It is quite possible that in this case
  *                          some of the given records will be inserted and some
  *                          (those having existing primary keys) will be
  *                          ignored (or updated). If the specified table does
  *                          not have a primary key column then this optional
  *                          parameter is ignored. Values: true, false.
- *                                  <li> return_record_ids: If 'true' then
- *                          return GPUdb's internal record id along for each
- *                          inserted record. Default is 'false'. Values: true,
- *                          false.
+ *                                  <li> return_record_ids: If
+ *                          <code>true</code> then return GPUdb's internal
+ *                          record id along for each inserted record. Values:
+ *                          true, false.
  *                                  <li> route_to_address: Route to a specific
  *                          rank/tom. Option not suitable for tables using
  *                          primary/shard keys
@@ -5617,7 +5831,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          point/shape/track types, then those parameters will
  *                          not be set; however, GPUdb will not throw an error
  *                          in such a case. It is the responsibility of the
- *                          user to use the {@code all} parameter judiciously.
+ *                          user to use the <code>all</code> parameter
+ *                          judiciously.
  *                                  <li> max: For numerical columns, the
  *                          maximum of the generated values is set to this
  *                          value. Default is 99999. For point, shape, and
@@ -5636,7 +5851,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          point/shape/track types, then those parameters will
  *                          not be set; however, GPUdb will not throw an error
  *                          in such a case. It is the responsibility of the
- *                          user to use the {@code all} parameter judiciously.
+ *                          user to use the <code>all</code> parameter
+ *                          judiciously.
  *                                  <li> interval: If specified, then generate
  *                          values for all columns linearly and evenly spaced
  *                          with the given interval value starting at the
@@ -5650,7 +5866,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          </ul>
  *                                  <li> attr_name: Set the following
  *                          parameters for the column specified by the key.
- *                          This overrides any parameter set by {@code all}.
+ *                          This overrides any parameter set by
+ *                          <code>all</code>.
  *                          <ul>
  *                                  <li> min: For numerical columns, the
  *                          minimum of the generated values is set to this
@@ -5671,7 +5888,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          point/shape/track types, then those parameters will
  *                          not be set; however, GPUdb will not throw an error
  *                          in such a case. It is the responsibility of the
- *                          user to use the {@code all} parameter judiciously.
+ *                          user to use the <code>all</code> parameter
+ *                          judiciously.
  *                                  <li> max: For numerical columns, the
  *                          maximum of the generated values is set to this
  *                          value. Default is 99999. For point, shape, and
@@ -5690,7 +5908,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          point/shape/track types, then those parameters will
  *                          not be set; however, GPUdb will not throw an error
  *                          in such a case. It is the responsibility of the
- *                          user to use the {@code all} parameter judiciously.
+ *                          user to use the <code>all</code> parameter
+ *                          judiciously.
  *                                  <li> interval: If specified, then generate
  *                          values for all columns linearly and evenly spaced
  *                          with the given interval value starting at the
@@ -5746,9 +5965,10 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a> or /visualize/image) if
- * the 'dosymbology' parameter is 'true' then GPUdb uses the value of the
- * 'SYMBOLCODE' column to pick the symbol displayed for each point.
+ * href="../rest/wms_rest.html" target="_top">WMS</a> or
+ * {@linkcode GPUdb#visualize_image}) if the 'dosymbology' parameter is
+ * 'true' then GPUdb uses the value of the 'SYMBOLCODE' column to pick the
+ * symbol displayed for each point.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5781,30 +6001,32 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a> or /visualize/image) if
- * the 'dosymbology' parameter is 'true' then GPUdb uses the value of the
- * 'SYMBOLCODE' column to pick the symbol displayed for each point.
+ * href="../rest/wms_rest.html" target="_top">WMS</a> or
+ * {@linkcode GPUdb#visualize_image}) if the 'dosymbology' parameter is
+ * 'true' then GPUdb uses the value of the 'SYMBOLCODE' column to pick the
+ * symbol displayed for each point.
  *
  * @param {String} symbol_id  The id of the symbol being added. This is the
  *                            same id that should be in the 'SYMBOLCODE' column
  *                            for objects using this symbol
  * @param {String} symbol_format  Specifies the symbol format. Must be either
  *                                'svg' or 'svg_path'. Values: svg, svg_path.
- * @param {String} symbol_data  The actual symbol data. If {@code
- *                              symbol_format} is 'svg' then this should be the
- *                              raw bytes representing an svg file. If {@code
- *                              symbol_format} is svg path then this should be
- *                              an svg path string, for example:
+ * @param {String} symbol_data  The actual symbol data. If
+ *                              <code>symbol_format</code> is 'svg' then this
+ *                              should be the raw bytes representing an svg
+ *                              file. If <code>symbol_format</code> is svg path
+ *                              then this should be an svg path string, for
+ *                              example:
  *                              'M25.979,12.896,5.979,12.896,5.979,19.562,25.979,19.562z'
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> color: If {@code symbol_format} is
- *                          'svg' this is ignored. If {@code symbol_format} is
- *                          'svg_path' then this option specifies the color (in
- *                          RRGGBB hex format) of the path. For example, to
- *                          have the path rendered in red, used 'FF0000'. If
- *                          'color' is not provided then '00FF00' (i.e. green)
- *                          is used by default.
+ *                                  <li> color: If <code>symbol_format</code>
+ *                          is 'svg' this is ignored. If
+ *                          <code>symbol_format</code> is 'svg_path' then this
+ *                          option specifies the color (in RRGGBB hex format)
+ *                          of the path. For example, to have the path rendered
+ *                          in red, used 'FF0000'. If 'color' is not provided
+ *                          then '00FF00' (i.e. green) is used by default.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5829,6 +6051,7 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
 };
 
 /**
+ * Kills a running proc instance.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5837,7 +6060,6 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.kill_proc_request = function(request, callback) {
     var actual_request = {
@@ -5854,15 +6076,18 @@ GPUdb.prototype.kill_proc_request = function(request, callback) {
 };
 
 /**
+ * Kills a running proc instance.
  *
- * @param {String} run_id
- * @param {Object} options
+ * @param {String} run_id  The run ID of the running proc instance. If the run
+ *                         ID is not found or the proc instance has already
+ *                         completed, this does nothing. If not specified, all
+ *                         running proc instances will be killed.
+ * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.kill_proc = function(run_id, options, callback) {
     var actual_request = {
@@ -5879,13 +6104,14 @@ GPUdb.prototype.kill_proc = function(run_id, options, callback) {
 };
 
 /**
- * Manages global access to a table's data.  By default a table has a {@code
- * lock_type} of {@code unlock}, indicating all operations are permitted.  A
- * user may request a {@code read-only} or a {@code write-only} lock, after
- * which only read or write operations, respectively, are permitted on the
- * table until the lock is removed.  When {@code lock_type} is {@code disable}
- * then no operations are permitted on the table.  The lock status can be
- * queried by setting {@code lock_type} to {@code status}.
+ * Manages global access to a table's data.  By default a table has a
+ * <code>lock_type</code> of <code>unlock</code>, indicating all operations are
+ * permitted.  A user may request a <code>read-only</code> or a
+ * <code>write-only</code> lock, after which only read or write operations,
+ * respectively, are permitted on the table until the lock is removed.  When
+ * <code>lock_type</code> is <code>disable</code> then no operations are
+ * permitted on the table.  The lock status can be queried by setting
+ * <code>lock_type</code> to <code>status</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5911,18 +6137,19 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
 };
 
 /**
- * Manages global access to a table's data.  By default a table has a {@code
- * lock_type} of {@code unlock}, indicating all operations are permitted.  A
- * user may request a {@code read-only} or a {@code write-only} lock, after
- * which only read or write operations, respectively, are permitted on the
- * table until the lock is removed.  When {@code lock_type} is {@code disable}
- * then no operations are permitted on the table.  The lock status can be
- * queried by setting {@code lock_type} to {@code status}.
+ * Manages global access to a table's data.  By default a table has a
+ * <code>lock_type</code> of <code>unlock</code>, indicating all operations are
+ * permitted.  A user may request a <code>read-only</code> or a
+ * <code>write-only</code> lock, after which only read or write operations,
+ * respectively, are permitted on the table until the lock is removed.  When
+ * <code>lock_type</code> is <code>disable</code> then no operations are
+ * permitted on the table.  The lock status can be queried by setting
+ * <code>lock_type</code> to <code>status</code>.
  *
  * @param {String} table_name  Name of the table to be locked. It must be a
  *                             currently existing table, collection, or view.
  * @param {String} lock_type  The type of lock being applied to the table.
- *                            Setting it to {@code status} will return the
+ *                            Setting it to <code>status</code> will return the
  *                            current lock status of the table without changing
  *                            it. Values: status, disable, read-only,
  *                            write-only, unlock.
@@ -6096,8 +6323,8 @@ GPUdb.prototype.revoke_role_request = function(request, callback) {
  * @param {String} role  Name of the role in which membership will be revoked.
  *                       Must be an existing role.
  * @param {String} member  Name of the user or role that will be revoked
- *                         membership in {@code role}. Must be an existing user
- *                         or role.
+ *                         membership in <code>role</code>. Must be an existing
+ *                         user or role.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6121,6 +6348,7 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
 };
 
 /**
+ * Shows information about a proc.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6129,7 +6357,6 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.show_proc_request = function(request, callback) {
     var actual_request = {
@@ -6146,18 +6373,24 @@ GPUdb.prototype.show_proc_request = function(request, callback) {
 };
 
 /**
+ * Shows information about a proc.
  *
- * @param {String} proc_name
- * @param {Object} options
+ * @param {String} proc_name  Name of the proc to show information about. If
+ *                            specified, must be the name of a currently
+ *                            existing proc. If not specified, information
+ *                            about all procs will be returned.
+ * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> include_files: Values: true, false.
+ *                                  <li> include_files: If set to
+ *                          <code>true</code>, the files that make up the proc
+ *                          will be returned. If set to <code>false</code>, the
+ *                          files will not be returned. Values: true, false.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.show_proc = function(proc_name, options, callback) {
     var actual_request = {
@@ -6174,6 +6407,10 @@ GPUdb.prototype.show_proc = function(proc_name, options, callback) {
 };
 
 /**
+ * Shows the statuses of running or completed proc instances. Results are
+ * grouped by run ID (as returned from {@linkcode GPUdb#execute_proc}) and
+ * data segment ID (each invocation of the proc command on a data segment is
+ * assigned a data segment ID).
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6182,7 +6419,6 @@ GPUdb.prototype.show_proc = function(proc_name, options, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.show_proc_status_request = function(request, callback) {
     var actual_request = {
@@ -6199,18 +6435,29 @@ GPUdb.prototype.show_proc_status_request = function(request, callback) {
 };
 
 /**
+ * Shows the statuses of running or completed proc instances. Results are
+ * grouped by run ID (as returned from {@linkcode GPUdb#execute_proc}) and
+ * data segment ID (each invocation of the proc command on a data segment is
+ * assigned a data segment ID).
  *
- * @param {String} run_id
- * @param {Object} options
+ * @param {String} run_id  The run ID of a specific running or completed proc
+ *                         instance for which the status will be returned. If
+ *                         the run ID is not found, nothing will be returned.
+ *                         If not specified, the statuses of all running and
+ *                         completed proc instances will be returned.
+ * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> clear_complete: Values: true, false.
+ *                                  <li> clear_complete: If set to
+ *                          <code>true</code>, if a proc instance has completed
+ *                          (either successfully or unsuccessfully) then its
+ *                          status will be cleared and no longer returned in
+ *                          subsequent calls. Values: true, false.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.show_proc_status = function(run_id, options, callback) {
     var actual_request = {
@@ -6441,21 +6688,24 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
 
 /**
  * Retrieves detailed information about a table, view, or collection, specified
- * in {@code table_name}. If the supplied {@code table_name} is a collection,
- * the call can return information about either the collection itself or the
- * tables and views it contains. If {@code table_name} is empty, information
- * about all collections and top-level tables and views can be returned.
+ * in <code>table_name</code>. If the supplied <code>table_name</code> is a
+ * collection, the call can return information about either the collection
+ * itself or the tables and views it contains. If <code>table_name</code> is
+ * empty, information about all collections and top-level tables and views can
+ * be returned.
  * <p>
- * If the option {@code get_sizes} is set to {@code true}, then the sizes
- * (objects and elements) of each table are returned (in {@code sizes} and
- * {@code full_sizes}), along with the total number of objects in the requested
- * table (in {@code total_size} and {@code total_full_size}).
+ * If the option <code>get_sizes</code> is set to <code>true</code>, then the
+ * sizes (objects and elements) of each table are returned (in
+ * <code>sizes</code> and <code>full_sizes</code>), along with the total number
+ * of objects in the requested table (in <code>total_size</code> and
+ * <code>total_full_size</code>).
  * <p>
- * For a collection, setting the {@code show_children} option to {@code false}
- * returns only information about the collection itself; setting {@code
- * show_children} to {@code true} returns a list of tables and views contained
- * in the collection, along with their description, type id, schema, type
- * label, type properties, and additional information including TTL.
+ * For a collection, setting the <code>show_children</code> option to
+ * <code>false</code> returns only information about the collection itself;
+ * setting <code>show_children</code> to <code>true</code> returns a list of
+ * tables and views contained in the collection, along with their description,
+ * type id, schema, type label, type properties, and additional information
+ * including TTL.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6481,21 +6731,24 @@ GPUdb.prototype.show_table_request = function(request, callback) {
 
 /**
  * Retrieves detailed information about a table, view, or collection, specified
- * in {@code table_name}. If the supplied {@code table_name} is a collection,
- * the call can return information about either the collection itself or the
- * tables and views it contains. If {@code table_name} is empty, information
- * about all collections and top-level tables and views can be returned.
+ * in <code>table_name</code>. If the supplied <code>table_name</code> is a
+ * collection, the call can return information about either the collection
+ * itself or the tables and views it contains. If <code>table_name</code> is
+ * empty, information about all collections and top-level tables and views can
+ * be returned.
  * <p>
- * If the option {@code get_sizes} is set to {@code true}, then the sizes
- * (objects and elements) of each table are returned (in {@code sizes} and
- * {@code full_sizes}), along with the total number of objects in the requested
- * table (in {@code total_size} and {@code total_full_size}).
+ * If the option <code>get_sizes</code> is set to <code>true</code>, then the
+ * sizes (objects and elements) of each table are returned (in
+ * <code>sizes</code> and <code>full_sizes</code>), along with the total number
+ * of objects in the requested table (in <code>total_size</code> and
+ * <code>total_full_size</code>).
  * <p>
- * For a collection, setting the {@code show_children} option to {@code false}
- * returns only information about the collection itself; setting {@code
- * show_children} to {@code true} returns a list of tables and views contained
- * in the collection, along with their description, type id, schema, type
- * label, type properties, and additional information including TTL.
+ * For a collection, setting the <code>show_children</code> option to
+ * <code>false</code> returns only information about the collection itself;
+ * setting <code>show_children</code> to <code>true</code> returns a list of
+ * tables and views contained in the collection, along with their description,
+ * type id, schema, type label, type properties, and additional information
+ * including TTL.
  *
  * @param {String} table_name  Name of the table for which to retrieve the
  *                             information. If blank, then information about
@@ -6503,18 +6756,19 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                             is returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> get_sizes: If {@code true} then the
- *                          table sizes will be returned; blank, otherwise.
+ *                                  <li> get_sizes: If <code>true</code> then
+ *                          the table sizes will be returned; blank, otherwise.
  *                          Values: true, false.
- *                                  <li> show_children: If {@code table_name}
- *                          is a collection, then {@code true} will return
- *                          information about the children of the collection,
- *                          and {@code false} will return information about the
- *                          collection itself. If {@code table_name} is a table
- *                          or view, {@code show_children} must be {@code
- *                          false}. If {@code table_name} is empty, then {@code
- *                          show_children} must be {@code true}. Values: true,
- *                          false.
+ *                                  <li> show_children: If
+ *                          <code>table_name</code> is a collection, then
+ *                          <code>true</code> will return information about the
+ *                          children of the collection, and <code>false</code>
+ *                          will return information about the collection
+ *                          itself. If <code>table_name</code> is a table or
+ *                          view, <code>show_children</code> must be
+ *                          <code>false</code>. If <code>table_name</code> is
+ *                          empty, then <code>show_children</code> must be
+ *                          <code>true</code>. Values: true, false.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6625,7 +6879,8 @@ GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
  * allows a look up of the existing tables based on full or partial type
  * information. The operation is synchronous.
  *
- * @param {String} type_id  Type id returned by a call to /create/type.
+ * @param {String} type_id  Type id returned by a call to
+ *                          {@linkcode GPUdb#create_type}.
  * @param {String} label  Optional user supplied label which can be used
  *                        instead of the type_id to retrieve all tables with
  *                        the given label.
@@ -6743,9 +6998,9 @@ GPUdb.prototype.show_types_request = function(request, callback) {
  * match the input criteria.
  *
  * @param {String} type_id  Type Id returned in response to a call to
- *                          /create/type.
+ *                          {@linkcode GPUdb#create_type}.
  * @param {String} label  Option string that was supplied by user in a call to
- *                        /create/type.
+ *                        {@linkcode GPUdb#create_type}.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6771,9 +7026,9 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
 /**
  * Runs multiple predicate-based updates in a single call.  With the list of
  * given expressions, any matching record's column values will be updated as
- * provided in {@code new_values_maps}.  There is also an optional 'upsert'
- * capability where if a particular predicate doesn't match any existing
- * record, then a new record can be inserted.
+ * provided in <code>new_values_maps</code>.  There is also an optional
+ * 'upsert' capability where if a particular predicate doesn't match any
+ * existing record, then a new record can be inserted.
  * <p>
  * Note that this operation can only be run on an original table and not on a
  * collection or a result view.
@@ -6787,7 +7042,8 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
  * 'foo') and (attr2 == 'bar')".  Meaning, all primary key columns must appear
  * in an equality predicate in the expressions.  Furthermore each 'pure primary
  * key' predicate must be unique within a given request.  These restrictions
- * can be removed by utilizing some available options through {@code options}.
+ * can be removed by utilizing some available options through
+ * <code>options</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6819,9 +7075,9 @@ GPUdb.prototype.update_records_request = function(request, callback) {
 /**
  * Runs multiple predicate-based updates in a single call.  With the list of
  * given expressions, any matching record's column values will be updated as
- * provided in {@code new_values_maps}.  There is also an optional 'upsert'
- * capability where if a particular predicate doesn't match any existing
- * record, then a new record can be inserted.
+ * provided in <code>new_values_maps</code>.  There is also an optional
+ * 'upsert' capability where if a particular predicate doesn't match any
+ * existing record, then a new record can be inserted.
  * <p>
  * Note that this operation can only be run on an original table and not on a
  * collection or a result view.
@@ -6835,21 +7091,22 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  * 'foo') and (attr2 == 'bar')".  Meaning, all primary key columns must appear
  * in an equality predicate in the expressions.  Furthermore each 'pure primary
  * key' predicate must be unique within a given request.  These restrictions
- * can be removed by utilizing some available options through {@code options}.
+ * can be removed by utilizing some available options through
+ * <code>options</code>.
  *
  * @param {String} table_name  Table to be updated. Must be a currently
  *                             existing table and not a collection or view.
  * @param {String[]} expressions  A list of the actual predicates, one for each
  *                                update; format should follow the guidelines
- *                                /filter.
+ *                                [here]{@linkcode GPUdb#filter}.
  * @param {Object[]} new_values_maps  List of new values for the matching
  *                                    records.  Each element is a map with
  *                                    (key, value) pairs where the keys are the
  *                                    names of the columns whose values are to
  *                                    be updated; the values are the new
  *                                    values.  The number of elements in the
- *                                    list should match the length of {@code
- *                                    expressions}.
+ *                                    list should match the length of
+ *                                    <code>expressions</code>.
  * @param {Object[]} data  An optional list of new json-avro encoded objects to
  *                         insert, one for each update, to be added to the set
  *                         if the particular update did not affect any objects.
@@ -6857,7 +7114,7 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          <ul>
  *                                  <li> global_expression: An optional global
  *                          expression to reduce the search space of the
- *                          predicates listed in {@code expressions}.
+ *                          predicates listed in <code>expressions</code>.
  *                                  <li> bypass_safety_checks: When set to
  *                          'true', all predicates are available for primary
  *                          key updates.  Keep in mind that it is possible to
@@ -6871,10 +7128,12 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                  <li> update_on_existing_pk: Can be used to
  *                          customize behavior when the updated primary key
  *                          value already exists, as described in
- *                          /insert/records. Values: true, false.
+ *                          {@linkcode GPUdb#insert_records}. Values: true,
+ *                          false.
  *                                  <li> record_id: ID of a single record to be
- *                          updated (returned in the call to /insert/records or
- *                          /get/records/fromcollection).
+ *                          updated (returned in the call to
+ *                          {@linkcode GPUdb#insert_records} or
+ *                          {@linkcode GPUdb#get_records_from_collection}).
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6902,9 +7161,9 @@ GPUdb.prototype.update_records = function(table_name, expressions, new_values_ma
 };
 
 /**
- * Updates the view specified by {@code table_name} to include full series
- * (track) information from the {@code world_table_name} for the series
- * (tracks) present in the {@code view_name}.
+ * Updates the view specified by <code>table_name</code> to include full series
+ * (track) information from the <code>world_table_name</code> for the series
+ * (tracks) present in the <code>view_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6932,9 +7191,9 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
 };
 
 /**
- * Updates the view specified by {@code table_name} to include full series
- * (track) information from the {@code world_table_name} for the series
- * (tracks) present in the {@code view_name}.
+ * Updates the view specified by <code>table_name</code> to include full series
+ * (track) information from the <code>world_table_name</code> for the series
+ * (tracks) present in the <code>view_name</code>.
  *
  * @param {String} table_name  Name of the view on which the update operation
  *                             will be performed. Must be a valid view in
@@ -7434,21 +7693,21 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
 /**
  * Creates raster images of data in the given table based on provided input
  * parameters. Numerous parameters are required to call this function. Some of
- * the important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
- * names on which this function is to be applied, for which shapes (point,
- * polygon, tracks) the images are to be created and a user specified session
- * key. This session key is later used to fetch the generated images stored by
- * GPUdb. The operation is synchronous meaning that GPUdb will not return the
- * request until the images for all the frames of the video are fully
- * available.
+ * the important parameters are the attributes of the generated images
+ * (<code>bg_color</code>, <code>width</code>, <code>height</code>), the
+ * collection of GPUdb table names on which this function is to be applied, for
+ * which shapes (point, polygon, tracks) the images are to be created and a
+ * user specified session key. This session key is later used to fetch the
+ * generated images stored by GPUdb. The operation is synchronous meaning that
+ * GPUdb will not return the request until the images for all the frames of the
+ * video are fully available.
  * <p>
  * Once the request has been processed then the generated video frames are
  * available for download via WMS using STYLES=cached. In this request the
- * LAYERS parameter should be populated with the session key passed in {@code
- * session_key} of the visualize video request and the FRAME parameter
- * indicates which 0-based frame of the video should be returned. All other WMS
- * parameters are ignored for this mode.
+ * LAYERS parameter should be populated with the session key passed in
+ * <code>session_key</code> of the visualize video request and the FRAME
+ * parameter indicates which 0-based frame of the video should be returned. All
+ * other WMS parameters are ignored for this mode.
  * <p>
  * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
  * generated, the first frame could be retrieved with the URL::
@@ -7502,21 +7761,21 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
 /**
  * Creates raster images of data in the given table based on provided input
  * parameters. Numerous parameters are required to call this function. Some of
- * the important parameters are the attributes of the generated images ({@code
- * bg_color}, {@code width}, {@code height}), the collection of GPUdb table
- * names on which this function is to be applied, for which shapes (point,
- * polygon, tracks) the images are to be created and a user specified session
- * key. This session key is later used to fetch the generated images stored by
- * GPUdb. The operation is synchronous meaning that GPUdb will not return the
- * request until the images for all the frames of the video are fully
- * available.
+ * the important parameters are the attributes of the generated images
+ * (<code>bg_color</code>, <code>width</code>, <code>height</code>), the
+ * collection of GPUdb table names on which this function is to be applied, for
+ * which shapes (point, polygon, tracks) the images are to be created and a
+ * user specified session key. This session key is later used to fetch the
+ * generated images stored by GPUdb. The operation is synchronous meaning that
+ * GPUdb will not return the request until the images for all the frames of the
+ * video are fully available.
  * <p>
  * Once the request has been processed then the generated video frames are
  * available for download via WMS using STYLES=cached. In this request the
- * LAYERS parameter should be populated with the session key passed in {@code
- * session_key} of the visualize video request and the FRAME parameter
- * indicates which 0-based frame of the video should be returned. All other WMS
- * parameters are ignored for this mode.
+ * LAYERS parameter should be populated with the session key passed in
+ * <code>session_key</code> of the visualize video request and the FRAME
+ * parameter indicates which 0-based frame of the video should be returned. All
+ * other WMS parameters are ignored for this mode.
  * <p>
  * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
  * generated, the first frame could be retrieved with the URL::
@@ -7533,13 +7792,13 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                various layers of the resulting video.
  * @param {String[]} world_table_names  Optional name of the tables containing
  *                                      the data for the entire track when the
- *                                      {@code table_names} contains only part
- *                                      of the track data, but the entire track
- *                                      has to be rendered. The number of
+ *                                      <code>table_names</code> contains only
+ *                                      part of the track data, but the entire
+ *                                      track has to be rendered. The number of
  *                                      tables should match the number of
- *                                      tables in the {@code table_names}
- * @param {String[][]} track_ids  Tracks from the {@code table_names} to be
- *                                rendered.
+ *                                      tables in the <code>table_names</code>
+ * @param {String[][]} track_ids  Tracks from the <code>table_names</code> to
+ *                                be rendered.
  * @param {String} x_column_name  Name of the column containing the x
  *                                coordinates.
  * @param {String} y_column_name  Name of the column containing the y
