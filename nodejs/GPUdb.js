@@ -186,6 +186,10 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
                         return;
                     }
 
+                    if ("x-request-time-secs" in res.headers) {
+                        data.request_time_secs = Number(res.headers["x-request-time-secs"]);
+                    }
+
                     callback(null, data);
                 } else {
                     callback(new Error(response.message), null);
