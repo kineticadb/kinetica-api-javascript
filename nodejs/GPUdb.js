@@ -11,8 +11,9 @@
  *
  * @class
  * @classdesc GPUdb API object that provides access to GPUdb server functions.
- * @param {String} url The URL of the GPUdb server (e.g.,
-                   <code>http://hostname:9191</code>).
+ * @param {String|String[]} url The URL of the GPUdb server (e.g.,
+                   <code>http://hostname:9191</code>). May also be specified as
+                   a list of urls; all urls in the list must be well formed.
  * @param {Object} [options] A set of configurable options for the GPUdb API.
  * @param {String} [options.username] The username to be used for authentication
  *                 to GPUdb. This username will be sent with every GPUdb request
@@ -34,24 +35,92 @@
  */
 function GPUdb(url, options) {
     /**
-     * The URL of the GPUdb server.
+     * The URLs of the GPUdb servers.
+     *
+     * @name GPUdb#parsedUrls
+     * @type ConnectionToken[]
+     * @readonly
+     */
+	var urls = (url instanceof Array) ? url : [url];
+    var parsedUrls = [];
+
+    urls.forEach(function(elem, index, array) {
+        var parsed_url = require("url").parse(elem);
+        if (parsed_url.protocol !== "http:" && parsed_url.protocol !== "https:") {
+            throw new Error("Invalid URL specified.");
+        }
+
+        parsedUrls.push(new GPUdb.ConnectionToken(parsed_url));
+    });
+
+    var initialIndex = Math.floor(Math.random() * urls.length);
+    Object.defineProperty(this, "urls", {
+        enumerable: true,
+        value: new GPUdb.RingList(parsedUrls, initialIndex)
+    });
+
+    /**
+     * The URL of the current GPUdb server.
      *
      * @name GPUdb#url
      * @type String
      * @readonly
      */
-    Object.defineProperty(this, "url", { enumerable: true, value: url });
+    Object.defineProperty(this, "url", {
+        get: function() {
+            var token = this.urls.getCurrentItem();
+            return token.protocol + '//' + token.host;
+        },
+		enumerable: true
+	});
 
-    var parsed_url = require("url").parse(url);
+    /**
+     * The protocol of the current GPUdb server address.
+     *
+     * @name GPUdb#protocol
+     * @type String
+     * @readonly
+     */
+    Object.defineProperty(this, "protocol", {
+        get: function() { return this.urls.getCurrentItem().protocol; },
+		enumerable: true
+	});
 
-    if (parsed_url.protocol !== "http:" && parsed_url.protocol !== "https:") {
-        throw new Error("Invald URL specified.");
-    }
+    /**
+     * The hostname of the current GPUdb server.
+     *
+     * @name GPUdb#hostname
+     * @type String
+     * @readonly
+     */
+    Object.defineProperty(this, "hostname", {
+        get: function() { return this.urls.getCurrentItem().hostname; },
+		enumerable: true
+	});
 
-    Object.defineProperty(this, "protocol", { value: parsed_url.protocol });
-    Object.defineProperty(this, "hostname", { value: parsed_url.hostname });
-    Object.defineProperty(this, "port", { value: parsed_url.port });
-    Object.defineProperty(this, "pathname", { value: parsed_url.pathname.replace(/\/$/, "") });
+    /**
+     * The port of the current GPUdb server.
+     *
+     * @name GPUdb#port
+     * @type String
+     * @readonly
+     */
+    Object.defineProperty(this, "port", {
+        get: function() { return this.urls.getCurrentItem().port; },
+		enumerable: true
+	});
+
+    /**
+     * The pathname of the current GPUdb server.
+     *
+     * @name GPUdb#pathname
+     * @type String
+     * @readonly
+     */
+    Object.defineProperty(this, "pathname", {
+        get: function() { return this.urls.getCurrentItem().pathname; },
+		enumerable: true
+	});
 
     if (options !== undefined && options !== null) {
         /**
@@ -112,6 +181,27 @@ function GPUdb(url, options) {
 module.exports = GPUdb;
 
 /**
+ * Wrapper struct to tie together the parsed url fields.
+ * @private
+ */
+GPUdb.ConnectionToken = function(parsed_url) {
+    Object.defineProperty(this, "protocol", { value: parsed_url.protocol });
+    Object.defineProperty(this, "hostname", { value: parsed_url.hostname });
+    Object.defineProperty(this, "port", { value: parsed_url.port });
+    Object.defineProperty(this, "pathname", { value: parsed_url.pathname.replace(/\/$/, "") });
+    Object.defineProperty(this, "host", { value: parsed_url.host });
+}
+
+/**
+ * Equality helper for comparing instances.
+ * @private
+ * @param {ConnectionToken} other The instance to compare to.
+ */
+GPUdb.ConnectionToken.prototype.equals = function(other) {
+    return this.host === other.host;
+}
+
+/**
  * Submits an arbitrary request to GPUdb. The response will be returned via the
  * specified callback function, or via a promise if no callback function is
  * provided.
@@ -138,82 +228,109 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
     }
 
     var requestString = JSON.stringify(request);
+    var initialConnToken = this.urls.getCurrentItem();
+    var failureCount = 0;
+    var timeout = this.timeout;
+    var urls = this.urls;
+    var authorization = this.authorization;
 
-    if (this.protocol === "http:") {
-        var http = require("http");
-    } else {
-        var http = require("https");
-    }
+	/// Wraps the async callback with auto-retry logic
+    var failureWrapperCB = function(err, data, url) {
+        failureCount += 1;
+        if (failureCount < urls.getSize()) {
+            // If the current item has changed another request failed and
+            // has already advanced the list. Retry using the new head.
+            if ((url !== urls.getCurrentItem()) ||
+                (!urls.getNextItem().equals(initialConnToken))) {
+                sendRequest();
+            }
+        }
+        else {
+            callback(err, data);
+        }
+    };
 
-    var headers = { "Content-type": "application/json" };
+	var sendRequest = function() {
+        var connToken = urls.getCurrentItem();
 
-    if (this.authorization !== "") {
-        headers["Authorization"] = this.authorization;
-    }
+        if (connToken.protocol === "http:") {
+            var http = require("http");
+        } else {
+            var http = require("https");
+        }
 
-    var got_error = false;
+        var headers = { "Content-type": "application/json" };
 
-    var req = http.request({
-            hostname: this.hostname,
-            port: this.port,
-            path: this.pathname + endpoint,
-            method: "POST",
-            headers: headers
-        }, function(res) {
-            var responseString = "";
+        if (authorization !== "") {
+            headers["Authorization"] = authorization;
+        }
 
-            res.on("data", function(chunk) {
-                responseString += chunk;
-            });
+        var got_error = false;
 
-            res.on("end", function() {
-                if (got_error) {
-                    return;
-                }
+        var req = http.request({
+                hostname: connToken.hostname,
+                port: connToken.port,
+                path: connToken.pathname + endpoint,
+                method: "POST",
+                headers: headers
+            }, function(res) {
+                var responseString = "";
 
-                try {
-                    var response = JSON.parse(responseString);
-                } catch (e) {
-                    callback(new Error("Unable to parse response: " + e), null);
-                    return;
-                }
+                res.on("data", function(chunk) {
+                    responseString += chunk;
+                });
 
-                if (response.status === "OK") {
+                res.on("end", function() {
+                    if (got_error) {
+                        return;
+                    }
+
                     try {
-                        var data = JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                        var response = JSON.parse(responseString);
                     } catch (e) {
                         callback(new Error("Unable to parse response: " + e), null);
                         return;
                     }
 
-                    if ("x-request-time-secs" in res.headers) {
-                        data.request_time_secs = Number(res.headers["x-request-time-secs"]);
+                    if (response.status === "OK") {
+                        try {
+                            var data = JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                        } catch (e) {
+                            callback(new Error("Unable to parse response: " + e), null);
+                            return;
+                        }
+
+                        if ("x-request-time-secs" in res.headers) {
+                            data.request_time_secs = Number(res.headers["x-request-time-secs"]);
+                        }
+
+                        callback(null, data);
+                    } else {
+                        callback(new Error(response.message), null);
                     }
+                });
 
-                    callback(null, data);
-                } else {
-                    callback(new Error(response.message), null);
-                }
+                res.on("error", function(err) {
+                    got_error = true;
+                    failureWrapperCB(new Error(), null, connToken);
+                });
             });
 
-            res.on("error", function(err) {
-                got_error = true;
-                callback(err, null);
-            });
+        req.on("error", function(err) {
+            got_error = true;
+            failureWrapperCB(new Error(), null, connToken);
         });
 
-    req.on("error", function(err) {
-        got_error = true;
-        callback(err, null);
-    });
+        req.setTimeout(timeout, function() {
+            got_error = true;
+            failureWrapperCB(new Error("Request timed out"), null, connToken);
+        });
 
-    req.setTimeout(this.timeout, function() {
-        got_error = true;
-        callback(new Error("Request timed out"), null);
-    });
+        req.write(requestString);
+        req.end();
+    };
 
-    req.write(requestString);
-    req.end();
+    sendRequest();
 };
 
 /**
@@ -242,59 +359,132 @@ GPUdb.prototype.wms_request = function(request, callback) {
     }
 
     var queryString = require("querystring").stringify(request);
+    var initialConnToken = this.urls.getCurrentItem();
+    var failureCount = 0;
+    var timeout = this.timeout;
+    var urls = this.urls;
+    var authorization = this.authorization;
 
-    if (this.protocol === "http:") {
-        var http = require("http");
-    } else {
-        var http = require("https");
-    }
-
-    var headers = {};
-
-    if (this.authorization !== "") {
-        headers["Authorization"] = this.authorization;
-    }
-
-    var got_error = false;
-
-    var req = http.request({
-        hostname: this.hostname,
-        port: this.port,
-        path: this.pathname + "/wms?" + queryString,
-        headers: headers,
-    }, function(res) {
-        var data = [];
-
-        res.on("data", function(chunk) {
-            data.push(chunk);
-        });
-
-        res.on("end", function() {
-            if (got_error) {
-                return;
+	/// Wraps the async callback with auto-retry logic
+    var failureWrapperCB = function(err, data, url) {
+        failureCount += 1;
+        if (failureCount < urls.getSize()) {
+            // If the current item has changed another request failed and
+            // has already advanced the list. Retry using the new head.
+            if ((url !== urls.getCurrentItem()) ||
+                (!urls.getNextItem().equals(initialConnToken))) {
+                sendRequest();
             }
+        }
+        else {
+            callback(err, data);
+        }
+    };
 
-            callback(null, Buffer.concat(data));
+    var sendRequest = function() {
+        var connToken = urls.getCurrentItem();
+
+        if (connToken.protocol === "http:") {
+            var http = require("http");
+        } else {
+            var http = require("https");
+        }
+
+        var headers = { "Content-type": "application/json" };
+
+        if (authorization !== "") {
+            headers["Authorization"] = authorization;
+        }
+
+        var got_error = false;
+
+        var req = http.request({
+            hostname: connToken.hostname,
+            port: connToken.port,
+            path: connToken.pathname + "/wms?" + queryString,
+            headers: headers,
+        }, function(res) {
+            var data = [];
+
+            res.on("data", function(chunk) {
+                data.push(chunk);
+            });
+
+            res.on("end", function() {
+                if (got_error) {
+                    return;
+                }
+
+                callback(null, Buffer.concat(data));
+            });
+
+            res.on("error", function(err) {
+                got_error = true;
+                failureWrapperCB(err, null, connToken);
+            });
         });
 
-        res.on("error", function(err) {
+        req.on("error", function(err) {
             got_error = true;
-            callback(err, null);
+            failureWrapperCB(err, null, connToken);
         });
-    });
 
-    req.on("error", function(err) {
-        got_error = true;
-        callback(err, null);
-    });
+        req.setTimeout(timeout, function() {
+            got_error = true;
+            failureWrapperCB(new Error("Request timed out"), null, connToken);
+        });
 
-    req.setTimeout(this.timeout, function() {
-        got_error = true;
-        callback(new Error("Request timed out"), null);
-    });
+        req.end();
+    };
 
-    req.end();
+    sendRequest();
 }
+/**
+ * A list with only one exposed element at a time, but with N stored elements.
+ * The elements of the list are immutable.
+ * @private
+ */
+GPUdb.RingList = function(items, initialIndex) {
+    Object.defineProperty(this, "items", { enumerable: true, value: items });
+    Object.defineProperty(this, "index", {
+        enumerable: true,
+        value: (initialIndex !== undefined && initialIndex !== null &&
+                initialIndex >= 0 ? initialIndex : 0),
+        writable: true
+    });
+}
+
+/**
+ * @private
+ * @return The currently exposed item
+ */
+GPUdb.RingList.prototype.getCurrentItem = function() {
+    return this.items[this.index];
+}
+
+/**
+ * Increments the current item index, wrapping if necessary.
+ * @private
+ * @return The currently exposed item
+ */
+GPUdb.RingList.prototype.getNextItem = function() {
+    this.index += 1;
+    if (this.index >= this.items.length) {
+        this.index = 0;
+    }
+
+    return this.items[this.index];
+}
+
+/**
+ * @private
+ *
+ * @return The number of elements available within the list.
+ */
+GPUdb.RingList.prototype.getSize = function() {
+    return this.items.length;
+}
+
 /**
  * Callback function used for asynchronous GPUdb calls.
  *
@@ -304,7 +494,6 @@ GPUdb.prototype.wms_request = function(request, callback) {
  * @param {Object} response Object containing any data returned from the call.
  *                 Will be null if an error occurred.
  */
-
 /**
  * Creates a Type object containing metadata about a GPUdb type.
  *
@@ -1245,10 +1434,10 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp',
  * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
  * dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>. If the 'result_table' option is provided then the
- * results are stored in a table with the name given in the option and the
- * results are not returned in the response.
+ * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * documentation</a>. If the 'result_table' option is provided then the results
+ * are stored in a table with the name given in the option and the results are
+ * not returned in the response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1308,10 +1497,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * 'mean', 'stddev', 'stddev_pop', 'stddev_samp', 'var', 'var_pop', 'var_samp',
  * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
  * dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>. If the 'result_table' option is provided then the
- * results are stored in a table with the name given in the option and the
- * results are not returned in the response.
+ * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * documentation</a>. If the 'result_table' option is provided then the results
+ * are stored in a table with the name given in the option and the results are
+ * not returned in the response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing
@@ -1974,10 +2163,10 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>. If the 'result_table' option is provided then the
- * results are stored in a table with the name given in the option and the
- * results are not returned in the response.
+ * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * documentation</a>. If the 'result_table' option is provided then the results
+ * are stored in a table with the name given in the option and the results are
+ * not returned in the response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2034,10 +2223,10 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>. If the 'result_table' option is provided then the
- * results are stored in a table with the name given in the option and the
- * results are not returned in the response.
+ * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * documentation</a>. If the 'result_table' option is provided then the results
+ * are stored in a table with the name given in the option and the results are
+ * not returned in the response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table.
@@ -2344,7 +2533,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          then validate all values. A value too large (or too
  *                          long) for the new type will prevent any change. If
  *                          False, then when a value is too large or long, it
- *                          will be trancated.
+ *                          will be truncated.
  *                                  <li> copy_values_from_column: when adding
  *                          or changing a column: enter column name - from
  *                          where to copy values.
@@ -2757,7 +2946,7 @@ GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
 
 /**
  * Creates a table that is the result of a SQL JOIN.  For details see: <a
- * href="../../concepts/index.html#joins" target="_top">join concept
+ * href="../../concepts/joins.html" target="_top">join concept
  * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -2795,7 +2984,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
 
 /**
  * Creates a table that is the result of a SQL JOIN.  For details see: <a
- * href="../../concepts/index.html#joins" target="_top">join concept
+ * href="../../concepts/joins.html" target="_top">join concept
  * documentation</a>.
  *
  * @param {String} join_table_name  Name of the join table to be created. Must
@@ -2805,15 +2994,20 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  * @param {String[]} table_names  The list of table names making up the joined
  *                                set.  Corresponds to a SQL statement FROM
  *                                clause
- * @param {String[]} column_names  The list of columns to be selected from the
- *                                 input table names. Empty list says to select
- *                                 all the column names.  Empty list is the
- *                                 default.
+ * @param {String[]} column_names  List of columns to be included in the join
+ *                                 table. Can be the column_names from the
+ *                                 member sets if unique or can be prefixed by
+ *                                 the table id as <id>.<column_name> where
+ *                                 <id> is the table name or alias. Can be
+ *                                 specified as aliased via the syntax
+ *                                 '<column_name> as <alias>. Can use wild
+ *                                 cards as '*' (include all columns), or
+ *                                 <id>.* (include all columns from table with
+ *                                 name or alias <id>)
  * @param {String[]} expressions  An optional list of expressions to combine
  *                                and filter the joined set.  Corresponds to a
  *                                SQL statement WHERE clause. For details see:
- *                                <a
- *                                href="../../concepts/index.html#expressions"
+ *                                <a href="../../concepts/expressions.html"
  *                                target="_top">expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -2867,8 +3061,7 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
 /**
  * Creates an instance (proc) of the user-defined function (UDF) specified by
  * the given command, options, and files, and makes it available for execution.
- * For details on UDFs, see: <a
- * href="../../concepts/index.html#user-defined-functions"
+ * For details on UDFs, see: <a href="../../concepts/udf.html"
  * target="_top">User-Defined Functions</a>
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -2908,8 +3101,7 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
 /**
  * Creates an instance (proc) of the user-defined function (UDF) specified by
  * the given command, options, and files, and makes it available for execution.
- * For details on UDFs, see: <a
- * href="../../concepts/index.html#user-defined-functions"
+ * For details on UDFs, see: <a href="../../concepts/udf.html"
  * target="_top">User-Defined Functions</a>
  *
  * @param {String} proc_name  Name of the proc to be created. Must not be the
@@ -3015,10 +3207,11 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * @param {String} projection_name  Name of the projection to be created. Must
  *                                  not be the name of a currently existing
  *                                  table. Cannot be an empty string. Valid
- *                                  characters are 'A-Za-z0-9_-(){}[] .:'
- *                                  (excluding the single quote), with the
- *                                  first character being one of 'A-Za-z0-9_'.
- *                                  The maximum length is 256 characters.
+ *                                  characters are alphanumeric or any of
+ *                                  '_-(){}[] .:' (excluding the single
+ *                                  quotes), with the first character being
+ *                                  alphanumeric or an underscore. The maximum
+ *                                  length is 256 characters.
  * @param {String[]} column_names  List of columns from <code>table_name</code>
  *                                 to be included in the projection. Can
  *                                 include derived columns. Can be specified as
@@ -4412,7 +4605,7 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
  * Filters data based on the specified expression.  The results are stored in a
  * result set with the given <code>view_name</code>.
  * <p>
- * For details see <a href="../../concepts/index.html#expressions"
+ * For details see <a href="../../concepts/expressions.html"
  * target="_top">concepts</a>.
  * <p>
  * The response message contains the number of points for which the expression
@@ -4454,7 +4647,7 @@ GPUdb.prototype.filter_request = function(request, callback) {
  * Filters data based on the specified expression.  The results are stored in a
  * result set with the given <code>view_name</code>.
  * <p>
- * For details see <a href="../../concepts/index.html#expressions"
+ * For details see <a href="../../concepts/expressions.html"
  * target="_top">concepts</a>.
  * <p>
  * The response message contains the number of points for which the expression
@@ -4470,7 +4663,7 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                            already existing collection, table or view .
  * @param {String} expression  The select expression to filter the specified
  *                             table.  For details see <a
- *                             href="../../concepts/index.html#expressions"
+ *                             href="../../concepts/expressions.html"
  *                             target="_top">concepts</a>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -5040,7 +5233,8 @@ GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name
  * added to the view <code>view_name</code> if its column is within
  * [<code>lower_bound</code>, <code>upper_bound</code>] (inclusive). The
  * operation is synchronous. The response provides a count of the number of
- * objects which passed the bound filter.
+ * objects which passed the bound filter.  Although this functionality can also
+ * be accomplished with the standard filter function, it is more efficient.
  * <p>
  * For track objects, the count reflects how many points fall within the given
  * bounds (which may not include all the track points of any given track).
@@ -5085,7 +5279,8 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  * added to the view <code>view_name</code> if its column is within
  * [<code>lower_bound</code>, <code>upper_bound</code>] (inclusive). The
  * operation is synchronous. The response provides a count of the number of
- * objects which passed the bound filter.
+ * objects which passed the bound filter.  Although this functionality can also
+ * be accomplished with the standard filter function, it is more efficient.
  * <p>
  * For track objects, the count reflects how many points fall within the given
  * bounds (which may not include all the track points of any given track).
@@ -5096,9 +5291,8 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Must not be an
  *                            already existing collection, table or view.
- * @param {String} column_name  Name of a column or an expression of one or
- *                              more columns on which the operation would be
- *                              applied.
+ * @param {String} column_name  Name of a column on which the operation would
+ *                              be applied.
  * @param {Number} lower_bound  Value of the lower bound (inclusive).
  * @param {Number} upper_bound  Value of the upper bound (inclusive).
  * @param {Object} options  Optional parameters.
@@ -5286,10 +5480,7 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
  * specified)
  *             ex. justice AND tranquility - will match only those records
  * containing both justice and tranquility
- *         * XOR (specified with -)
- *             ex. justice - peace - will match records containing "justice" or
- * "peace", but not both
- *         * Zero or more char wildcard - (specified with *)
+ *         * Zero or more char wildcard - (specified with '*')
  *             ex, est*is* - will match any records containing a word that
  * starts with "est" and ends with "sh", such as "establish", "establishable",
  * and "establishment"
@@ -5386,10 +5577,7 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  * specified)
  *             ex. justice AND tranquility - will match only those records
  * containing both justice and tranquility
- *         * XOR (specified with -)
- *             ex. justice - peace - will match records containing "justice" or
- * "peace", but not both
- *         * Zero or more char wildcard - (specified with *)
+ *         * Zero or more char wildcard - (specified with '*')
  *             ex, est*is* - will match any records containing a word that
  * starts with "est" and ends with "sh", such as "establish", "establishable",
  * and "establishment"
@@ -5616,7 +5804,9 @@ GPUdb.prototype.filter_by_table = function(table_name, view_name, column_name, s
  * response will not be returned until all the objects are fully available. The
  * response payload provides the count of the resulting set. A new result view
  * which satisfies the input filter restriction specification is also created
- * with a view name passed in as part of the input payload.
+ * with a view name passed in as part of the input payload.  Although this
+ * functionality can also be accomplished with the standard filter function, it
+ * is more efficient.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5661,7 +5851,9 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  * response will not be returned until all the objects are fully available. The
  * response payload provides the count of the resulting set. A new result view
  * which satisfies the input filter restriction specification is also created
- * with a view name passed in as part of the input payload.
+ * with a view name passed in as part of the input payload.  Although this
+ * functionality can also be accomplished with the standard filter function, it
+ * is more efficient.
  *
  * @param {String} table_name  Name of an existing table on which to perform
  *                             the calculation.
@@ -5672,9 +5864,8 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  *                             is string or numeric.
  * @param {Number} value  The value to search for.
  * @param {String} value_str  The string value to search for.
- * @param {String} column_name  Name of a column or an expression of one or
- *                              more columns on which the filter by value would
- *                              be applied.
+ * @param {String} column_name  Name of a column on which the filter by value
+ *                              would be applied.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5798,8 +5989,8 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                          sorting is applied).
  *                                  <li> sort_order: String indicating how the
  *                          returned values should be sorted - ascending or
- *                          descending. Ignored if 'sort_by' option is not
- *                          specified. Values: ascending, descending.
+ *                          descending. If sort_order is provided, sort_by has
+ *                          to be provided. Values: ascending, descending.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5855,8 +6046,8 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * (discontiguous or overlap) based on the type of the update.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>.
+ * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5915,14 +6106,12 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * (discontiguous or overlap) based on the type of the update.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/index.html#dynamic-schemas" target="_top">dynamic
- * schemas documentation</a>.
+ * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * documentation</a>.
  *
  * @param {String} table_name  Name of the table on which this operation will
  *                             be performed. The table cannot be a parent set.
  * @param {String[]} column_names  The list of column values to retrieve.
- *                                 Columns annotated as store only cannot be
- *                                 retrieved.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
  *                         through the results).
@@ -5940,8 +6129,8 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          sorting is applied).
  *                                  <li> sort_order: String indicating how the
  *                          returned values should be sorted - ascending or
- *                          descending. Default is 'ascending'. Ignored if
- *                          'sort_by' option is not specified. Values:
+ *                          descending. Default is 'ascending'. If sort_order
+ *                          is provided, sort_by has to be provided. Values:
  *                          ascending, descending.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -7065,10 +7254,9 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a> or
- * {@linkcode GPUdb#visualize_image}) if the 'dosymbology' parameter is
- * 'true' then the value of the 'SYMBOLCODE' column is used to pick the symbol
- * displayed for each point.
+ * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
+ * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
+ * pick the symbol displayed for each point.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -7109,10 +7297,9 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a> or
- * {@linkcode GPUdb#visualize_image}) if the 'dosymbology' parameter is
- * 'true' then the value of the 'SYMBOLCODE' column is used to pick the symbol
- * displayed for each point.
+ * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
+ * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
+ * pick the symbol displayed for each point.
  *
  * @param {String} symbol_id  The id of the symbol being added. This is the
  *                            same id that should be in the 'SYMBOLCODE' column
@@ -8066,6 +8253,11 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                          <code>false</code>. If <code>table_name</code> is
  *                          empty, then <code>show_children</code> must be
  *                          <code>true</code>.
+ *                                  <li> no_error_if_not_exists: If
+ *                          <code>false</code> will return an error if the
+ *                          provided <code>table_name</code> does not exist. If
+ *                          <code>true</code> then it will return an empty
+ *                          result.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -9158,13 +9350,16 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * other WMS parameters are ignored for this mode.
  * <p>
  * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
- * generated, the first frame could be retrieved with the URL::
+ * generated, the first frame could be retrieved with the URL:
  * <p>
- * http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=0
+ *     <a href="../rest/wms_rest.html"
+ * target="_top">http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=0</a>
  * <p>
- * and the last frame could be retrieved with::
+ * and the last frame could be retrieved with:
  * <p>
- * http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=19
+ *     <a href="../rest/wms_rest.html"
+ * target="_top">http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=19</a>
+ * <p>
  * The response payload provides, among other things, the number of frames
  * which were created.
  *
@@ -9234,13 +9429,16 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  * other WMS parameters are ignored for this mode.
  * <p>
  * For instance, if a 20 frame video with the session key 'MY-SESSION-KEY' was
- * generated, the first frame could be retrieved with the URL::
+ * generated, the first frame could be retrieved with the URL:
  * <p>
- * http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=0
+ *     <a href="../rest/wms_rest.html"
+ * target="_top">http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=0</a>
  * <p>
- * and the last frame could be retrieved with::
+ * and the last frame could be retrieved with:
  * <p>
- * http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=19
+ *     <a href="../rest/wms_rest.html"
+ * target="_top">http://<hostname/ipAddress>:9191/wms?REQUEST=GetMap&STYLES=cached&LAYERS=MY-SESSION-KEY&FRAME=19</a>
+ * <p>
  * The response payload provides, among other things, the number of frames
  * which were created.
  *

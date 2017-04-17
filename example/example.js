@@ -35,7 +35,10 @@ function main()
 	var group_id = "group_id";
 	
 	console.log( "Establishing a connection with the database..." );
-	var gpudb = new GPUdb( "http://localhost:9191" );
+	var gpudb = new GPUdb( "http://localhost:9191" ); // One host
+    var gpudbHA = new GPUdb( ["http://localhost:9191",
+                              "http://localhost:9192"
+                             ] ); // Multiple hosts as a single list
 	
 	// Declare the data type for the table
 	var my_type = {

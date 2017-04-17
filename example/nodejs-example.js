@@ -1,7 +1,10 @@
 var GPUdb = require("../nodejs/GPUdb.js");
 
 console.log("Establishing a connection with the database...");
-var gpudb = new GPUdb("http://localhost:9191");
+var gpudb = new GPUdb("http://localhost:9191"); // Single host
+var gpudbHA = new GPUdb( ["http://localhost:9191",
+                          "http://localhost:9192"
+                         ] ); // Multiple hosts as a single list
 
 var operation_number = 0;
 
