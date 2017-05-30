@@ -1519,6 +1519,14 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                        returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> collection_name: Name of a collection
+ *                          which is to contain the table specified in
+ *                          'result_table', otherwise the table will be a
+ *                          top-level table. If the collection does not allow
+ *                          duplicate types and it contains a table of the same
+ *                          type as the given one, then this table creation
+ *                          request will fail. Additionally this option is
+ *                          invalid if @input{table_name} is a collection.
  *                                  <li> expression: Filter expression to apply
  *                          to the table prior to computing the aggregate group
  *                          by.
@@ -1530,13 +1538,19 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> sort_by: String determining how the
  *                          results are sorted. Values: key, value.
  *                                  <li> result_table: The name of the table
- *                          used to store the results. Column names (group-by
+ *                          used to store the results. Has the same naming
+ *                          restrictions as <a
+ *                          href="../../concepts/tables.html"
+ *                          target="_top">tables</a>. Column names (group-by
  *                          and aggregate fields) need to be given aliases e.g.
  *                          ["FChar256 as fchar256", "sum(FDouble) as sfd"].
  *                          If present, no results are returned in the
  *                          response.  This option is not available if one of
  *                          the grouping attributes is an unrestricted string
  *                          (i.e.; not charN) type.
+ *                                  <li> ttl: Sets the TTL of the table
+ *                          specified in 'result_table'. The value must be the
+ *                          desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -2242,13 +2256,26 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                        returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> collection_name: Name of a collection
+ *                          which is to contain the table specified in
+ *                          'result_table', otherwise the table will be a
+ *                          top-level table. If the collection does not allow
+ *                          duplicate types and it contains a table of the same
+ *                          type as the given one, then this table creation
+ *                          request will fail.
  *                                  <li> expression: Optional filter expression
  *                          to apply to the table.
  *                                  <li> sort_order: String indicating how the
  *                          returned values should be sorted.
  *                                  <li> result_table: The name of the table
  *                          used to store the results. If present no results
- *                          are returned in the response.
+ *                          are returned in the response. Has the same naming
+ *                          restrictions as <a
+ *                          href="../../concepts/tables.html"
+ *                          target="_top">tables</a>.
+ *                                  <li> ttl: Sets the TTL of the table
+ *                          specified in 'result_table'. The value must be the
+ *                          desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -2290,11 +2317,12 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
 };
 
 /**
- * The alter_system_properties endpoint is primarily used to simplify the
- * testing of the system and is not expected to be used during normal
- * execution.  Commands are given through the properties_update_map whose keys
- * are commands and values are strings representing integer values (for example
- * '8000') or boolean values ('true' or 'false').
+ * The {@linkcode GPUdb#alter_system_properties} endpoint is primarily used
+ * to simplify the testing of the system and is not expected to be used during
+ * normal execution.  Commands are given through the
+ * <code>property_updates_map</code> whose keys are commands and values are
+ * strings representing integer values (for example '8000') or boolean values
+ * ('true' or 'false').
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2327,26 +2355,30 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
 };
 
 /**
- * The alter_system_properties endpoint is primarily used to simplify the
- * testing of the system and is not expected to be used during normal
- * execution.  Commands are given through the properties_update_map whose keys
- * are commands and values are strings representing integer values (for example
- * '8000') or boolean values ('true' or 'false').
+ * The {@linkcode GPUdb#alter_system_properties} endpoint is primarily used
+ * to simplify the testing of the system and is not expected to be used during
+ * normal execution.  Commands are given through the
+ * <code>property_updates_map</code> whose keys are commands and values are
+ * strings representing integer values (for example '8000') or boolean values
+ * ('true' or 'false').
  *
  * @param {Object} property_updates_map  Map containing the properties of the
  *                                       system to be updated. Error if empty.
  *                                       <ul>
  *                                               <li> sm_omp_threads: Set the
- *                                       number of sm_omp_threads to the
+ *                                       number of OpenMP threads that will be
+ *                                       used to service filter & aggregation
+ *                                       requests against collections to the
  *                                       specified integer value.
  *                                               <li> kernel_omp_threads: Set
- *                                       the number of kernel_omp_threads to
+ *                                       the number of kernel OpenMP threads to
  *                                       the specified integer value.
  *                                               <li>
  *                                       concurrent_kernel_execution: Enables
  *                                       concurrent kernel execution if the
- *                                       value is 'true' and disables it if the
- *                                       value is 'false'.
+ *                                       value is <code>true</code> and
+ *                                       disables it if the value is
+ *                                       <code>false</code>.
  *                                               <li> chunk_size: Sets the
  *                                       chunk size of all new sets to the
  *                                       specified integer value.
@@ -2365,45 +2397,50 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       timing results. Value string is is a
  *                                       comma separated list of <key>=<value>
  *                                       expressions.  Expressions are:
- *                                       num_transactions = <num> where <num>
- *                                       is the number of request reply
+ *                                       num_transactions=<num> where num is
+ *                                       the number of request reply
  *                                       transactions to invoke per test;
- *                                       message_size = <bytes> where bytes is
+ *                                       message_size=<bytes> where bytes is
  *                                       the size of the messages to send in
- *                                       bytes; check_values = <enabled> where
- *                                       if enabled is true the value of the
+ *                                       bytes; check_values=<enabled> where if
+ *                                       enabled is true the value of the
  *                                       messages received are verified.
  *                                               <li>
  *                                       set_message_timers_enabled: Enables
  *                                       the communicator test to collect
  *                                       additional timing statistics when the
- *                                       value string is 'true'. Disables the
- *                                       collection when the value string is
- *                                       'false'
+ *                                       value string is <code>true</code>.
+ *                                       Disables the collection when the value
+ *                                       string is <code>false</code>
  *                                               <li> bulk_add_test: Invoke the
- *                                       bulk_add test and report timing
+ *                                       bulk add test and report timing
  *                                       results. Value string is ignored.
  *                                               <li> network_speed: Invoke the
  *                                       network speed test and report timing
- *                                       results. Value string is a comma
- *                                       separated list of <key>=<value>
- *                                       expressions.  Expressions are: seconds
- *                                       = <time> where time is the time in
- *                                       seconds to run the test; data_size =
- *                                       <size> where <size> is the size in
- *                                       bytes of the block to be transferred;
- *                                       threads = <number of threads>;
- *                                       to_ranks = <comma separated list of
- *                                       ranks> where the list of ranks is the
- *                                       ranks that rank 0 will send data to
- *                                       and get data from. If to_ranks is
- *                                       unspecified then all worker ranks are
- *                                       used.
+ *                                       results. Value string is a
+ *                                       semicolon-separated list of
+ *                                       <key>=<value> expressions.  Valid
+ *                                       expressions are: seconds=<time> where
+ *                                       time is the time in seconds to run the
+ *                                       test; data_size=<size> where size is
+ *                                       the size in bytes of the block to be
+ *                                       transferred; threads=<number of
+ *                                       threads>; to_ranks=<space-separated
+ *                                       list of ranks> where the list of ranks
+ *                                       is the ranks that rank 0 will send
+ *                                       data to and get data from. If to_ranks
+ *                                       is unspecified then all worker ranks
+ *                                       are used.
  *                                               <li> request_timeout: Number
- *                                       of minutes after which /filter/* and
- *                                       /aggregate/* queries will timeout.
- *                                               <li> max_get_records_size: set
- *                                       max_get_records_size. default 20000
+ *                                       of minutes after which filtering
+ *                                       (e.g., {@linkcode GPUdb#filter}) and
+ *                                       aggregating (e.g.,
+ *                                       {@linkcode GPUdb#aggregate_group_by})
+ *                                       queries will timeout.
+ *                                               <li> max_get_records_size: The
+ *                                       maximum number of records the database
+ *                                       will serve for a given data retrieval
+ *                                       call
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -2987,10 +3024,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  * href="../../concepts/joins.html" target="_top">join concept
  * documentation</a>.
  *
- * @param {String} join_table_name  Name of the join table to be created. Must
- *                                  not be the name of a currently existing
- *                                  table or join table. Cannot be an empty
- *                                  string.
+ * @param {String} join_table_name  Name of the join table to be created.  Has
+ *                                  the same naming restrictions as <a
+ *                                  href="../../concepts/tables.html"
+ *                                  target="_top">tables</a>.
  * @param {String[]} table_names  The list of table names making up the joined
  *                                set.  Corresponds to a SQL statement FROM
  *                                clause
@@ -3026,6 +3063,9 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          tables have changed.
  *                                  <li> refresh: Do a manual refresh of the
  *                          join table if it exists - throws an error otherwise
+ *                                  <li> ttl: Sets the TTL of the table
+ *                          specified in <code>join_table_name</code>. The
+ *                          value must be the desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3163,7 +3203,7 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
 };
 
 /**
- * Creates a new projection of an existing table. A projection represents a
+ * Creates a new projection of an existing table.  A projection represents a
  * subset of the columns (potentially including derived columns) of a table.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -3199,19 +3239,15 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
 };
 
 /**
- * Creates a new projection of an existing table. A projection represents a
+ * Creates a new projection of an existing table.  A projection represents a
  * subset of the columns (potentially including derived columns) of a table.
  *
  * @param {String} table_name  Name of the existing table on which the
  *                             projection is to be applied.
- * @param {String} projection_name  Name of the projection to be created. Must
- *                                  not be the name of a currently existing
- *                                  table. Cannot be an empty string. Valid
- *                                  characters are alphanumeric or any of
- *                                  '_-(){}[] .:' (excluding the single
- *                                  quotes), with the first character being
- *                                  alphanumeric or an underscore. The maximum
- *                                  length is 256 characters.
+ * @param {String} projection_name  Name of the projection to be created. Has
+ *                                  the same naming restrictions as <a
+ *                                  href="../../concepts/tables.html"
+ *                                  target="_top">tables</a>.
  * @param {String[]} column_names  List of columns from <code>table_name</code>
  *                                 to be included in the projection. Can
  *                                 include derived columns. Can be specified as
@@ -3227,8 +3263,17 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          to the projection.
  *                                  <li> limit: The number of records to keep.
  *                                  <li> order_by: Comma-separated list of the
- *                          columns to be sorted by; i.e 'timestamp asc, x
- *                          desc'.
+ *                          columns to be sorted by; e.g. 'timestamp asc, x
+ *                          desc'.  The columns specified must be present in
+ *                          <code>column_names</code>.  If any alias is given
+ *                          for any column name, the alias must be used, rather
+ *                          than the original column name.
+ *                                  <li> materialize_on_gpu: If 'true' then the
+ *                          columns of the projection will be cached on the
+ *                          GPU.
+ *                                  <li> ttl: Sets the TTL of the table, view,
+ *                          or collection specified in <code>table_name</code>.
+ *                          The value must be the desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3384,17 +3429,13 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  * <code>table_name</code> and set the <code>is_collection</code> option to
  * <code>true</code>; <code>type_id</code> will be ignored.
  *
- * @param {String} table_name  Name of the table to be created. Must not be the
- *                             name of a currently existing table of a
- *                             different type.  Error for requests with
- *                             existing table of the same name and type id may
- *                             be suppressed by using the
- *                             <code>no_error_if_exists</code> option.  Cannot
- *                             be an empty string.  Valid characters are
- *                             alphanumeric or any of '_-(){}[] .:' (excluding
- *                             the single quotes), with the first character
- *                             being alphanumeric or an underscore.  The
- *                             maximum length is 256 characters.
+ * @param {String} table_name  Name of the table to be created. Error for
+ *                             requests with existing table of the same name
+ *                             and type id may be suppressed by using the
+ *                             <code>no_error_if_exists</code> option.  See <a
+ *                             href="../../concepts/tables.html"
+ *                             target="_top">Tables</a> for naming
+ *                             restrictions.
  * @param {String} type_id  ID of a currently registered type. All objects
  *                          added to the newly created table will be of this
  *                          type.  Ignored if <code>is_collection</code> is
@@ -3430,6 +3471,13 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          of foreign key constraints, of the format
  *                          'source_column references
  *                          target_table(primary_key_column)'.
+ *                                  <li> foreign_shard_key: Foreign shard key
+ *                          description of the format: <fk_foreign_key>
+ *                          references <pk_column_name> from
+ *                          <pk_table_name>(<pk_primary_key>)
+ *                                  <li> ttl: Sets the TTL of the table or
+ *                          collection specified in <code>table_name</code>.
+ *                          The value must be the desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3962,9 +4010,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  * column types cannot be included in a union, neither can columns with the
  * property 'store_only'.
  *
- * @param {String} table_name  Name of the table to be created. Must not be the
- *                             name of a currently existing table. Cannot be an
- *                             empty string.
+ * @param {String} table_name  Name of the table to be created. Has the same
+ *                             naming restrictions as <a
+ *                             href="../../concepts/tables.html"
+ *                             target="_top">tables</a>.
  * @param {String[]} table_names  The list of table names making up the union.
  *                                Must contain the names of one or more
  *                                existing tables.
@@ -3977,10 +4026,15 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> collection_name: Name of a collection
  *                          which is to contain the union. If empty, then the
  *                          union will be a top-level table.
+ *                                  <li> materialize_on_gpu: If 'true' then the
+ *                          columns of the union will be cached on the GPU.
  *                                  <li> mode: If 'merge_views' then this
  *                          operation will merge (i.e. union) the provided
  *                          views. All 'table_names' must be views from the
  *                          same underlying base table.
+ *                                  <li> ttl: Sets the TTL of the table
+ *                          specified in <code>table_name</code>. The value
+ *                          must be the desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4659,13 +4713,26 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                             only if all tables within the collection have
  *                             the same type ID.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view .
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} expression  The select expression to filter the specified
  *                             table.  For details see <a
  *                             href="../../concepts/expressions.html"
  *                             target="_top">concepts</a>.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> collection_name: Name of a collection
+ *                          which is to contain the newly created view,
+ *                          otherwise the view will be a top-level table. If
+ *                          the collection does not allow duplicate types and
+ *                          it contains a table of the same type as the given
+ *                          one, then this table creation request will fail.
+ *                                  <li> ttl: Sets the TTL of the view
+ *                          specified in <code>view_name</code>. The value must
+ *                          be the desired TTL in minutes.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4753,8 +4820,10 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  *                             only if all tables within the collection have
  *                             the same type ID.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} x_column_name  Name of the column containing the x values to
  *                                be filtered.
  * @param {Number[]} x_vector  List of x coordinates of the vertices of the
@@ -4854,9 +4923,10 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                             operation will be performed. Must be an existing
  *                             table.
  * @param {String} view_name  Optional name of the result view that will be
- *                            created containing the results of the query. Must
- *                            not be an already existing collection, table or
- *                            view.
+ *                            created containing the results of the query. Has
+ *                            the same naming restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} x_column_name  Name of the column on which to perform the
  *                                bounding box query. If the table's data type
  *                                is not a shape type, must be a valid numeric
@@ -4959,8 +5029,10 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  *                             table, collection or view containing a column
  *                             named WKT.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} column_name  Name of the column to be used in the filter.
  *                              Must be 'WKT'
  * @param {String} input_wkt  A geometry in WKT format that will be used to
@@ -5069,8 +5141,10 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *                             only if all tables within the collection have
  *                             the same type ID.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {Object} column_values_map  List of values for the corresponding
  *                                    column in the table
  * @param {Object} options  Optional parameters.
@@ -5178,8 +5252,10 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                             operation will be performed.  Must be an
  *                             existing table.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} x_column_name  Name of the column to be used for the
  *                                x-coordinate (the longitude) of the center.
  * @param {Number} x_center  Value of the longitude of the center. Must be
@@ -5289,8 +5365,10 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  *                             operation will be performed.  Must be an
  *                             existing table.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} column_name  Name of a column on which the operation would
  *                              be applied.
  * @param {Number} lower_bound  Value of the lower bound (inclusive).
@@ -5397,8 +5475,10 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                             operation will be performed. Must be a currently
  *                             existing table with track semantic type.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} track_id  The ID of the track which will act as the
  *                           filtering points. Must be an existing track within
  *                           the given table.
@@ -5620,8 +5700,10 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                             will be performed.  Must be an existing table,
  *                             collection or view.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} expression  The expression with which to filter the table.
  * @param {String} mode  The string filtering mode to apply. See above for
  *                       details. Values: search, equals, contains,
@@ -5725,8 +5807,10 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table whose data will be filtered.
  *                             Must be an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {String} column_name  Name of the column by whose value the data will
  *                              be filtered from the table designated by
  *                              <code>table_name</code>.
@@ -5744,25 +5828,27 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> filter_mode: String indicating the
- *                          filter mode, either 'in_table' or 'not_in_table'.
+ *                          filter mode, either <code>in_table</code> or
+ *                          <code>not_in_table</code>.
  *                                  <li> mode: Mode - should be either
- *                          'spatial' or 'normal'.
+ *                          <code>spatial</code> or <code>normal</code>.
  *                                  <li> buffer: Buffer size, in meters. Only
- *                          relevant for 'spatial' mode.
+ *                          relevant for <code>spatial</code> mode.
  *                                  <li> buffer_method: Method used to buffer
- *                          polygons.  Only relevant for 'spatial' mode.
- *                                  <li> max_partition_size: Maximum number of
- *                          points in a partition. Only relevant for 'spatial'
+ *                          polygons.  Only relevant for <code>spatial</code>
  *                          mode.
+ *                                  <li> max_partition_size: Maximum number of
+ *                          points in a partition. Only relevant for
+ *                          <code>spatial</code> mode.
  *                                  <li> max_partition_score: Maximum number of
  *                          points * edges in a partition. Only relevant for
- *                          'spatial' mode.
+ *                          <code>spatial</code> mode.
  *                                  <li> x_column_name: Name of column
  *                          containing x value of point being filtered in
- *                          spatial mode.
+ *                          <code>spatial</code> mode.
  *                                  <li> y_column_name: Name of column
- *                          containing x value of point being filtered in
- *                          spatial mode.
+ *                          containing y value of point being filtered in
+ *                          <code>spatial</code> mode.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5858,8 +5944,10 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  * @param {String} table_name  Name of an existing table on which to perform
  *                             the calculation.
  * @param {String} view_name  If provided, then this will be the name of the
- *                            view containing the results. Must not be an
- *                            already existing collection, table or view.
+ *                            view containing the results. Has the same naming
+ *                            restrictions as <a
+ *                            href="../../concepts/tables.html"
+ *                            target="_top">tables</a>.
  * @param {Boolean} is_string  Indicates whether the value being searched for
  *                             is string or numeric.
  * @param {Number} value  The value to search for.
@@ -5911,9 +5999,6 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
  * the table (or the underlying table in case of a view) is updated (records
  * are inserted, deleted or modified) the records retrieved may differ between
  * calls based on the updates applied.
- * <p>
- * Note that when using the Java API, it is not possible to retrieve records
- * from join tables using this operation.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5966,9 +6051,6 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  * the table (or the underlying table in case of a view) is updated (records
  * are inserted, deleted or modified) the records retrieved may differ between
  * calls based on the updates applied.
- * <p>
- * Note that when using the Java API, it is not possible to retrieve records
- * from join tables using this operation.
  *
  * @param {String} table_name  Name of the table from which the records will be
  *                             fetched. Must be a table, view or homogeneous
@@ -5984,6 +6066,13 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                          <ul>
  *                                  <li> expression: Optional filter expression
  *                          to apply to the table.
+ *                                  <li> fast_index_lookup: Indicates if
+ *                          indexes should be used to perform the lookup for a
+ *                          given expression if possible. Only applicable if
+ *                          there is no sorting, the expression contains only
+ *                          equivalence comparisons based on existing tables
+ *                          indexes and the range of requested values is from
+ *                          [0 to END_OF_SET]. The default value is true.
  *                                  <li> sort_by: Optional column that the data
  *                          should be sorted by. Empty by default (i.e. no
  *                          sorting is applied).
@@ -6132,6 +6221,12 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          descending. Default is 'ascending'. If sort_order
  *                          is provided, sort_by has to be provided. Values:
  *                          ascending, descending.
+ *                                  <li> order_by: Comma-separated list of the
+ *                          columns to be sorted by; e.g. 'timestamp asc, x
+ *                          desc'.  The columns specified must be present in
+ *                          <code>column_names</code>.  If any alias is given
+ *                          for any column name, the alias must be used, rather
+ *                          than the original column name.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7254,9 +7349,9 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
- * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
- * pick the symbol displayed for each point.
+ * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
+ * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
+ * is used to pick the symbol displayed for each point.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -7297,9 +7392,9 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
- * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
- * pick the symbol displayed for each point.
+ * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
+ * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
+ * is used to pick the symbol displayed for each point.
  *
  * @param {String} symbol_id  The id of the symbol being added. This is the
  *                            same id that should be in the 'SYMBOLCODE' column
