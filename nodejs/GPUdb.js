@@ -659,7 +659,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "6.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "6.0.1" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1435,9 +1435,9 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
  * dynamic schema. For details see: <a
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
- * documentation</a>. If the 'result_table' option is provided then the results
- * are stored in a table with the name given in the option and the results are
- * not returned in the response.
+ * documentation</a>. If the <code>result_table</code> option is provided then
+ * the results are stored in a table with the name given in the option and the
+ * results are not returned in the response.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1498,9 +1498,9 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * 'arg_min', 'arg_max' and 'count_distinct'. The response is returned as a
  * dynamic schema. For details see: <a
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
- * documentation</a>. If the 'result_table' option is provided then the results
- * are stored in a table with the name given in the option and the results are
- * not returned in the response.
+ * documentation</a>. If the <code>result_table</code> option is provided then
+ * the results are stored in a table with the name given in the option and the
+ * results are not returned in the response.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing
@@ -1521,12 +1521,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          <ul>
  *                                  <li> collection_name: Name of a collection
  *                          which is to contain the table specified in
- *                          'result_table', otherwise the table will be a
- *                          top-level table. If the collection does not allow
- *                          duplicate types and it contains a table of the same
- *                          type as the given one, then this table creation
- *                          request will fail. Additionally this option is
- *                          invalid if @input{table_name} is a collection.
+ *                          <code>result_table</code>, otherwise the table will
+ *                          be a top-level table. If the collection does not
+ *                          allow duplicate types and it contains a table of
+ *                          the same type as the given one, then this table
+ *                          creation request will fail. Additionally this
+ *                          option is invalid if <code>table_name</code> is a
+ *                          collection.
  *                                  <li> expression: Filter expression to apply
  *                          to the table prior to computing the aggregate group
  *                          by.
@@ -1549,8 +1550,8 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          the grouping attributes is an unrestricted string
  *                          (i.e.; not charN) type.
  *                                  <li> ttl: Sets the TTL of the table
- *                          specified in 'result_table'. The value must be the
- *                          desired TTL in minutes.
+ *                          specified in <code>result_table</code>. The value
+ *                          must be the desired TTL in minutes.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3049,8 +3050,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> collection_name: Name of a collection
- *                          which is to contain the join table. If empty, then
- *                          the join table will be a top-level table.
+ *                          which is to contain the join table. If the
+ *                          collection provided is non-existent, the collection
+ *                          will be automatically created. If empty, then the
+ *                          join table will be a top-level table.
  *                                  <li> max_query_dimensions: The maximum
  *                          number of tables in a joined table that can be
  *                          accessed by a query and are not equated by a
@@ -3257,7 +3260,8 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          <ul>
  *                                  <li> collection_name: Name of a collection
  *                          to which the projection is to be assigned as a
- *                          child.
+ *                          child. If the collection provided is non-existent,
+ *                          the collection will be automatically created.
  *                                  <li> expression: An optional filter
  *                          expression to be applied to the source table prior
  *                          to the projection.
@@ -3660,7 +3664,9 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
  * The output returns the trigger handle as well as indicating success or
  * failure of the trigger activation.
  *
- * @param {String} request_id  ID for the trigger to be activated.
+ * @param {String} request_id  User-created ID for the trigger. The ID can be
+ *                             alphanumeric, contain symbols, and must contain
+ *                             at least one character.
  * @param {String[]} table_names  Names of the tables on which the trigger will
  *                                be activated and maintained.
  * @param {String} x_column_name  Name of a numeric column on which the trigger
@@ -3773,7 +3779,9 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
  * The output returns the trigger handle as well as indicating success or
  * failure of the trigger activation.
  *
- * @param {String} request_id  ID for the trigger request.
+ * @param {String} request_id  User-created ID for the trigger. The ID can be
+ *                             alphanumeric, contain symbols, and must contain
+ *                             at least one character.
  * @param {String[]} table_names  Tables on which the trigger will be active.
  * @param {String} column_name  Name of a numeric column_name on which the
  *                              trigger is activated.
@@ -4024,8 +4032,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> collection_name: Name of a collection
- *                          which is to contain the union. If empty, then the
- *                          union will be a top-level table.
+ *                          which is to contain the union. If the collection
+ *                          provided is non-existent, the collection will be
+ *                          automatically created. If empty, then the union
+ *                          will be a top-level table.
  *                                  <li> materialize_on_gpu: If 'true' then the
  *                          columns of the union will be cached on the GPU.
  *                                  <li> mode: If 'merge_views' then this
@@ -5538,66 +5548,10 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
 
 /**
  * Calculates which objects from a table, collection, or view match a string
- * expression for the given string columns. The 'mode' may be:
-
- * * search : full text search query with wildcards and boolean operators, e.g.
- * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
- * specified in <code>column_names</code>; all string columns of the table that
- * have text search enabled will be searched. Also, the first character of a
- * search term cannot be a wildcard (* or ?), and search terms cannot be any of
- * the following:  "a", "an", "and", "are", "as", "at", "be", "but", "by",
- * "for", "if", "in", "into", "is", "it", "no", "not", "of", "on", "or",
- * "such", "that", "the", "their", "then", "there", "these", "they", "this",
- * "to", "was", "will", "with".
- *     Search query types:
- *         * Multiple search terms
- *             ex. perfect union - will match any record containing "perfect",
- * "union", or both.
- *         * Exact phrases
- *             ex. "Perfect Union" - will only match the exact phrase "Perfect
- * Union"
- *         * Boolean (NOT, AND, OR, parentheses. OR assumed if no operator
- * specified)
- *             ex. justice AND tranquility - will match only those records
- * containing both justice and tranquility
- *         * Zero or more char wildcard - (specified with '*')
- *             ex, est*is* - will match any records containing a word that
- * starts with "est" and ends with "sh", such as "establish", "establishable",
- * and "establishment"
- *         * Exactly one char wildcard - (specified with ?)
- *             ex. est???is* - will only match strings that start with "est",
- * followed by exactly three letters, followed by "is", followed by one more
- * letter.  This would only match "establish"
- *         * Fuzzy search (term~)
- *             ex. rear~ will match rear,fear,bear,read,etc.
- *         * Proximity - match two words within a specified distance of
- * eachother
- *             ex. "Union Tranquility"~10 will match any record that has the
- * words Union and Tranquility within 10 words of eachother
- *         * Range - inclusive [<term1> TO <term2>] and exclusive {<term1> TO
- * <term2>}.  Note: This is a string search, so numbers will be seen as a
- * string of numeric characters, not as a number.  Ex. 2 > 123
- *             ex. [100 TO 200] will find all strings between 100 and 200
- * inclusive.
- *             ex. {alpha to beta} will find all strings between alpha and
- * beta, but not the words alpha or beta
- *         * escaping special characters - Special characters are escaped with
- * a backslash(\), special characters are: + - && || ! ( ) { } [ ] ^ " ~ * ? :
- * \
- * <p>
- * * equals: exact whole-string match (accelerated)
- * * contains: partial substring match (not accelerated).  If the column is a
- * string type (non-charN) and the number of records is too large, it will
- * return 0.
- * * starts_with: strings that start with the given expression (not
- * accelerated), If the column is a string type (non-charN) and the number of
- * records is too large, it will return 0.
- * * regex: full regular expression search (not accelerated). If the column is
- * a string type (non-charN) and the number of records is too large, it will
- * return 0.
- * <p>
- * The options 'case_sensitive' can be used to modify the behavior for all
- * modes except 'search'
+ * expression for the given string columns. The options 'case_sensitive' can be
+ * used to modify the behavior for all modes except 'search'. For 'search' mode
+ * details and limitations, see <a href="../../concepts/full_text_search.html"
+ * target="_top">Full Text Search</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5635,66 +5589,10 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
 
 /**
  * Calculates which objects from a table, collection, or view match a string
- * expression for the given string columns. The 'mode' may be:
-
- * * search : full text search query with wildcards and boolean operators, e.g.
- * '(bob* OR sue) AND NOT jane'. Note that for this mode, no column can be
- * specified in <code>column_names</code>; all string columns of the table that
- * have text search enabled will be searched. Also, the first character of a
- * search term cannot be a wildcard (* or ?), and search terms cannot be any of
- * the following:  "a", "an", "and", "are", "as", "at", "be", "but", "by",
- * "for", "if", "in", "into", "is", "it", "no", "not", "of", "on", "or",
- * "such", "that", "the", "their", "then", "there", "these", "they", "this",
- * "to", "was", "will", "with".
- *     Search query types:
- *         * Multiple search terms
- *             ex. perfect union - will match any record containing "perfect",
- * "union", or both.
- *         * Exact phrases
- *             ex. "Perfect Union" - will only match the exact phrase "Perfect
- * Union"
- *         * Boolean (NOT, AND, OR, parentheses. OR assumed if no operator
- * specified)
- *             ex. justice AND tranquility - will match only those records
- * containing both justice and tranquility
- *         * Zero or more char wildcard - (specified with '*')
- *             ex, est*is* - will match any records containing a word that
- * starts with "est" and ends with "sh", such as "establish", "establishable",
- * and "establishment"
- *         * Exactly one char wildcard - (specified with ?)
- *             ex. est???is* - will only match strings that start with "est",
- * followed by exactly three letters, followed by "is", followed by one more
- * letter.  This would only match "establish"
- *         * Fuzzy search (term~)
- *             ex. rear~ will match rear,fear,bear,read,etc.
- *         * Proximity - match two words within a specified distance of
- * eachother
- *             ex. "Union Tranquility"~10 will match any record that has the
- * words Union and Tranquility within 10 words of eachother
- *         * Range - inclusive [<term1> TO <term2>] and exclusive {<term1> TO
- * <term2>}.  Note: This is a string search, so numbers will be seen as a
- * string of numeric characters, not as a number.  Ex. 2 > 123
- *             ex. [100 TO 200] will find all strings between 100 and 200
- * inclusive.
- *             ex. {alpha to beta} will find all strings between alpha and
- * beta, but not the words alpha or beta
- *         * escaping special characters - Special characters are escaped with
- * a backslash(\), special characters are: + - && || ! ( ) { } [ ] ^ " ~ * ? :
- * \
- * <p>
- * * equals: exact whole-string match (accelerated)
- * * contains: partial substring match (not accelerated).  If the column is a
- * string type (non-charN) and the number of records is too large, it will
- * return 0.
- * * starts_with: strings that start with the given expression (not
- * accelerated), If the column is a string type (non-charN) and the number of
- * records is too large, it will return 0.
- * * regex: full regular expression search (not accelerated). If the column is
- * a string type (non-charN) and the number of records is too large, it will
- * return 0.
- * <p>
- * The options 'case_sensitive' can be used to modify the behavior for all
- * modes except 'search'
+ * expression for the given string columns. The options 'case_sensitive' can be
+ * used to modify the behavior for all modes except 'search'. For 'search' mode
+ * details and limitations, see <a href="../../concepts/full_text_search.html"
+ * target="_top">Full Text Search</a>.
  *
  * @param {String} table_name  Name of the table on which the filter operation
  *                             will be performed.  Must be an existing table,
@@ -5705,7 +5603,7 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                            href="../../concepts/tables.html"
  *                            target="_top">tables</a>.
  * @param {String} expression  The expression with which to filter the table.
- * @param {String} mode  The string filtering mode to apply. See above for
+ * @param {String} mode  The string filtering mode to apply. See below for
  *                       details. Values: search, equals, contains,
  *                       starts_with, regex.
  * @param {String[]} column_names  List of columns on which to apply the
@@ -8569,8 +8467,9 @@ GPUdb.prototype.show_triggers_request = function(request, callback) {
  * triggers currently active.
  *
  * @param {String[]} trigger_ids  List of IDs of the triggers whose information
- *                                to be retrieved. Empty list means retrieve
- *                                information on all active triggers.
+ *                                is to be retrieved. An empty list means
+ *                                information will be retrieved on all active
+ *                                triggers.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
