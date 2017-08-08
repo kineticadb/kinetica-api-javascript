@@ -163,6 +163,30 @@ function GPUdb(url, options) {
             enumerable: true,
             value: options.timeout !== undefined && options.timeout !== null && options.timeout >= 0 ? options.timeout : 0
         });
+
+        /**
+         * Function to get request cookie
+         *
+         * @name GPUdb#getCookie
+         * @type Function
+         * @readonly
+         */
+        Object.defineProperty(this, "getCookie", {
+            enumerable: true,
+            value: options.getCookie
+        });
+
+        /**
+         * Function to set responce cookie
+         *
+         * @name GPUdb#setCookie
+         * @type Function
+         * @readonly
+         */
+        Object.defineProperty(this, "setCookie", {
+            enumerable: true,
+            value: options.setCookie
+        });
     } else {
         Object.defineProperty(this, "username", { enumerable: true, value: "" });
         Object.defineProperty(this, "password", { enumerable: true, value: "" });
@@ -265,8 +289,13 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
             headers["Authorization"] = authorization;
         }
 
+        if (this.getCookie && typeof this.getCookie === "function") {
+            headers["Cookie"] = this.getCookie();
+        }
+
         var got_error = false;
 
+        var self = this;
         var req = http.request({
                 hostname: connToken.hostname,
                 port: connToken.port,
@@ -275,6 +304,9 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
                 headers: headers
             }, function(res) {
                 var responseString = "";
+                if (self.setCookie && typeof self.setCookie === "function") {
+                    self.setCookie(res.headers["set-cookie"]);
+                }
 
                 res.on("data", function(chunk) {
                     responseString += chunk;
@@ -396,8 +428,13 @@ GPUdb.prototype.wms_request = function(request, callback) {
             headers["Authorization"] = authorization;
         }
 
+        if (this.getCookie && typeof this.getCookie === "function") {
+            headers["Cookie"] = this.getCookie();
+        }
+
         var got_error = false;
 
+        var self = this;
         var req = http.request({
             hostname: connToken.hostname,
             port: connToken.port,
@@ -405,6 +442,9 @@ GPUdb.prototype.wms_request = function(request, callback) {
             headers: headers,
         }, function(res) {
             var data = [];
+            if (self.setCookie && typeof self.setCookie === "function") {
+                self.setCookie(res.headers["set-cookie"]);
+            }
 
             res.on("data", function(chunk) {
                 data.push(chunk);
