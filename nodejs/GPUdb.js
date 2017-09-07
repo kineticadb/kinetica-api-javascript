@@ -415,7 +415,12 @@ GPUdb.prototype.wms_request = function(request, callback) {
                     return;
                 }
 
-                callback(null, Buffer.concat(data));
+                var dataBuffer = Buffer.concat(data);
+                if ("x-request-time-secs" in res.headers) {
+                    dataBuffer.request_time_secs = Number(res.headers["x-request-time-secs"]);
+                }
+
+                callback(null, dataBuffer);
             });
 
             res.on("error", function(err) {
