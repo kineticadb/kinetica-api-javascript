@@ -1564,7 +1564,10 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
  * Any column(s) can be grouped on, and all column types except
- * unrestricted-length strings may be used for computing applicable aggregates.
+ * unrestricted-length strings may be used for computing applicable aggregates;
+ * columns marked as <a href="../../concepts/types.html#data-handling"
+ * target="_top">store-only</a> are unable to be used in grouping or
+ * aggregation.
  * <p>
  * The results can be paged via the <code>offset</code> and <code>limit</code>
  * parameters. For example, to get 10 groups with the largest counts the inputs
@@ -1588,14 +1591,19 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
- * If a <code>result_table</code> name is specified in the options, the results
- * are stored in a new table with that name.  No results are returned in the
- * response.  If the source table's <a
- * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> is
- * used as the grouping column(s), the result table will be sharded, in all
- * other cases it will be replicated.  Sorting will properly function only if
- * the result table is replicated or if there is only one processing node and
- * should not be relied upon in other cases.
+ * If a <code>result_table</code> name is specified in the
+ * <code>options</code>, the results are stored in a new table with that
+ * name--no results are returned in the response.  Both the table name and
+ * resulting column names must adhere to <a
+ * href="../../concepts/tables.html#table" target="_top">standard naming
+ * conventions</a>; column/aggregation expressions will need to be aliased.  If
+ * the source table's <a href="../../concepts/tables.html#shard-keys"
+ * target="_top">shard key</a> is used as the grouping column(s), the result
+ * table will be sharded, in all other cases it will be replicated.  Sorting
+ * will properly function only if the result table is replicated or if there is
+ * only one processing node and should not be relied upon in other cases.  Not
+ * available when any of the values of <code>column_names</code> is an
+ * unrestricted-length string.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1638,7 +1646,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
  * Any column(s) can be grouped on, and all column types except
- * unrestricted-length strings may be used for computing applicable aggregates.
+ * unrestricted-length strings may be used for computing applicable aggregates;
+ * columns marked as <a href="../../concepts/types.html#data-handling"
+ * target="_top">store-only</a> are unable to be used in grouping or
+ * aggregation.
  * <p>
  * The results can be paged via the <code>offset</code> and <code>limit</code>
  * parameters. For example, to get 10 groups with the largest counts the inputs
@@ -1662,23 +1673,25 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
- * If a <code>result_table</code> name is specified in the options, the results
- * are stored in a new table with that name.  No results are returned in the
- * response.  If the source table's <a
- * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> is
- * used as the grouping column(s), the result table will be sharded, in all
- * other cases it will be replicated.  Sorting will properly function only if
- * the result table is replicated or if there is only one processing node and
- * should not be relied upon in other cases.
+ * If a <code>result_table</code> name is specified in the
+ * <code>options</code>, the results are stored in a new table with that
+ * name--no results are returned in the response.  Both the table name and
+ * resulting column names must adhere to <a
+ * href="../../concepts/tables.html#table" target="_top">standard naming
+ * conventions</a>; column/aggregation expressions will need to be aliased.  If
+ * the source table's <a href="../../concepts/tables.html#shard-keys"
+ * target="_top">shard key</a> is used as the grouping column(s), the result
+ * table will be sharded, in all other cases it will be replicated.  Sorting
+ * will properly function only if the result table is replicated or if there is
+ * only one processing node and should not be relied upon in other cases.  Not
+ * available when any of the values of <code>column_names</code> is an
+ * unrestricted-length string.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing
  *                             table/view/collection.
  * @param {String[]} column_names  List of one or more column names,
- *                                 expressions, and aggregate expressions. Must
- *                                 include at least one 'grouping' column or
- *                                 expression.  If no aggregate is included,
- *                                 count(*) will be computed as a default.
+ *                                 expressions, and aggregate expressions.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
  *                         through the results).
@@ -1746,12 +1759,12 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          (i.e.; not charN) type.
  *                                  <li> 'result_table_persist': If
  *                          <code>true</code> then the result table specified
- *                          in {result_table}@{key of input.options} will be
- *                          persisted as a regular table (it will not be
- *                          automatically cleared unless a <code>ttl</code> is
- *                          provided, and the table data can be modified in
- *                          subsequent operations). If <code>false</code> (the
- *                          default) then the result table will be a read-only,
+ *                          in <code>result_table</code> will be persisted as a
+ *                          regular table (it will not be automatically cleared
+ *                          unless a <code>ttl</code> is provided, and the
+ *                          table data can be modified in subsequent
+ *                          operations). If <code>false</code> (the default)
+ *                          then the result table will be a read-only,
  *                          memory-only temporary table.
  *                          Supported values:
  *                          <ul>
@@ -2107,29 +2120,43 @@ GPUdb.prototype.aggregate_min_max_geometry = function(table_name, column_name, o
 };
 
 /**
- * Calculates the requested statistics of a given column in a given table.
+ * Calculates the requested statistics of the given column(s) in a given table.
  * <p>
- * The available statistics are count (number of total objects), mean, stdv
- * (standard deviation), variance, skew, kurtosis, sum, sum_of_squares, min,
- * max, weighted_average, cardinality (unique count), estimated cardinality,
- * percentile and percentile_rank.
+ * The available statistics are <code>count</code> (number of total objects),
+ * <code>mean</code>, <code>stdv</code> (standard deviation),
+ * <code>variance</code>, <code>skew</code>, <code>kurtosis</code>,
+ * <code>sum</code>, <code>min</code>, <code>max</code>,
+ * <code>weighted_average</code>, <code>cardinality</code> (unique count),
+ * <code>estimated_cardinality</code>, <code>percentile</code> and
+ * <code>percentile_rank</code>.
  * <p>
  * Estimated cardinality is calculated by using the hyperloglog approximation
  * technique.
  * <p>
- * Percentiles and percentile_ranks are approximate and are calculated using
+ * Percentiles and percentile ranks are approximate and are calculated using
  * the t-digest algorithm. They must include the desired
- * percentile/percentile_rank. To compute multiple percentiles each value must
- * be specified separately (i.e.
+ * <code>percentile</code>/<code>percentile_rank</code>. To compute multiple
+ * percentiles each value must be specified separately (i.e.
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
- * The weighted average statistic requires a weight_attribute to be specified
- * in <code>options</code>. The weighted average is then defined as the sum of
- * the products of <code>column_name</code> times the weight attribute divided
- * by the sum of the weight attribute.
+ * The weighted average statistic requires a <code>weight_column_name</code> to
+ * be specified in <code>options</code>. The weighted average is then defined
+ * as the sum of the products of <code>column_name</code> times the
+ * <code>weight_column_name</code> values divided by the sum of the
+ * <code>weight_column_name</code> values.
  * <p>
- * The response includes a list of the statistics requested along with the
- * count of the number of items in the given set.
+ * Additional columns can be used in the calculation of statistics via the
+ * <code>additional_column_names</code> option.  Values in these columns will
+ * be included in the overall aggregate calculation--individual aggregates will
+ * not be calculated per additional column.  For instance, requesting the
+ * <code>count</code> & <code>mean</code> of <code>column_name</code> x and
+ * <code>additional_column_names</code> y & z, where x holds the numbers 1-10,
+ * y holds 11-20, and z holds 21-30, would return the total number of x, y, & z
+ * values (30), and the single average value across all x, y, & z values
+ * (15.5).
+ * <p>
+ * The response includes a list of key/value pairs of each statistic requested
+ * and its corresponding value.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2156,40 +2183,54 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
 };
 
 /**
- * Calculates the requested statistics of a given column in a given table.
+ * Calculates the requested statistics of the given column(s) in a given table.
  * <p>
- * The available statistics are count (number of total objects), mean, stdv
- * (standard deviation), variance, skew, kurtosis, sum, sum_of_squares, min,
- * max, weighted_average, cardinality (unique count), estimated cardinality,
- * percentile and percentile_rank.
+ * The available statistics are <code>count</code> (number of total objects),
+ * <code>mean</code>, <code>stdv</code> (standard deviation),
+ * <code>variance</code>, <code>skew</code>, <code>kurtosis</code>,
+ * <code>sum</code>, <code>min</code>, <code>max</code>,
+ * <code>weighted_average</code>, <code>cardinality</code> (unique count),
+ * <code>estimated_cardinality</code>, <code>percentile</code> and
+ * <code>percentile_rank</code>.
  * <p>
  * Estimated cardinality is calculated by using the hyperloglog approximation
  * technique.
  * <p>
- * Percentiles and percentile_ranks are approximate and are calculated using
+ * Percentiles and percentile ranks are approximate and are calculated using
  * the t-digest algorithm. They must include the desired
- * percentile/percentile_rank. To compute multiple percentiles each value must
- * be specified separately (i.e.
+ * <code>percentile</code>/<code>percentile_rank</code>. To compute multiple
+ * percentiles each value must be specified separately (i.e.
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
- * The weighted average statistic requires a weight_attribute to be specified
- * in <code>options</code>. The weighted average is then defined as the sum of
- * the products of <code>column_name</code> times the weight attribute divided
- * by the sum of the weight attribute.
+ * The weighted average statistic requires a <code>weight_column_name</code> to
+ * be specified in <code>options</code>. The weighted average is then defined
+ * as the sum of the products of <code>column_name</code> times the
+ * <code>weight_column_name</code> values divided by the sum of the
+ * <code>weight_column_name</code> values.
  * <p>
- * The response includes a list of the statistics requested along with the
- * count of the number of items in the given set.
+ * Additional columns can be used in the calculation of statistics via the
+ * <code>additional_column_names</code> option.  Values in these columns will
+ * be included in the overall aggregate calculation--individual aggregates will
+ * not be calculated per additional column.  For instance, requesting the
+ * <code>count</code> & <code>mean</code> of <code>column_name</code> x and
+ * <code>additional_column_names</code> y & z, where x holds the numbers 1-10,
+ * y holds 11-20, and z holds 21-30, would return the total number of x, y, & z
+ * values (30), and the single average value across all x, y, & z values
+ * (15.5).
+ * <p>
+ * The response includes a list of key/value pairs of each statistic requested
+ * and its corresponding value.
  *
  * @param {String} table_name  Name of the table on which the statistics
  *                             operation will be performed.
- * @param {String} column_name  Name of the column for which the statistics are
- *                              to be calculated.
+ * @param {String} column_name  Name of the primary column for which the
+ *                              statistics are to be calculated.
  * @param {String} stats  Comma separated list of the statistics to calculate,
  *                        e.g. "sum,mean".
  *                        Supported values:
  *                        <ul>
  *                                <li> 'count': Number of objects (independent
- *                        of the given column).
+ *                        of the given column(s)).
  *                                <li> 'mean': Arithmetic mean (average),
  *                        equivalent to sum/count.
  *                                <li> 'stdv': Sample standard deviation
@@ -2200,26 +2241,27 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                        moment).
  *                                <li> 'kurtosis': Kurtosis (fourth
  *                        standardized moment).
- *                                <li> 'sum': Sum of all values in the column.
- *                                <li> 'sum_of_squares': Sum of the squares of
- *                        all values in the column.
- *                                <li> 'min': Minimum value of the column.
- *                                <li> 'max': Maximum value of the column.
+ *                                <li> 'sum': Sum of all values in the
+ *                        column(s).
+ *                                <li> 'min': Minimum value of the column(s).
+ *                                <li> 'max': Maximum value of the column(s).
  *                                <li> 'weighted_average': Weighted arithmetic
- *                        mean (using the option 'weight_column_name' as the
- *                        weighting column).
+ *                        mean (using the option
+ *                        <code>weight_column_name</code> as the weighting
+ *                        column).
  *                                <li> 'cardinality': Number of unique values
- *                        in the column.
+ *                        in the column(s).
  *                                <li> 'estimated_cardinality': Estimate (via
  *                        hyperloglog technique) of the number of unique values
- *                        in the column.
+ *                        in the column(s).
  *                                <li> 'percentile': Estimate (via t-digest) of
- *                        the given percentile of the column (percentile(50.0)
- *                        will be an approximation of the median).
+ *                        the given percentile of the column(s)
+ *                        (percentile(50.0) will be an approximation of the
+ *                        median).
  *                                <li> 'percentile_rank': Estimate (via
  *                        t-digest) of the percentile rank of the given value
- *                        in the column (if the given value is the median of
- *                        the column, percentile_rank([median]) will return
+ *                        in the column(s) (if the given value is the median of
+ *                        the column(s), percentile_rank(<median>) will return
  *                        approximately 50.0).
  *                        </ul>
  * @param {Object} options  Optional parameters.
@@ -2227,6 +2269,10 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                                  <li> 'additional_column_names': A list of
  *                          comma separated column names over which statistics
  *                          can be accumulated along with the primary column.
+ *                          All columns listed and <code>column_name</code>
+ *                          must be of the same type.  Must not include the
+ *                          column specified in <code>column_name</code> and no
+ *                          column can be listed twice.
  *                                  <li> 'weight_column_name': Name of column
  *                          used as weighting attribute for the weighted
  *                          average statistic.
@@ -2396,10 +2442,14 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * <code>table_name</code>). If <code>column_name</code> is a numeric column
  * the values will be in <code>binary_encoded_response</code>. Otherwise if
  * <code>column_name</code> is a string column the values will be in
- * <code>json_encoded_response</code>.  <code>offset</code> and
- * <code>limit</code> are used to page through the results if there are large
- * numbers of unique values. To get the first 10 unique values sorted in
- * descending order <code>options</code> would be::
+ * <code>json_encoded_response</code>.  The results can be paged via the
+ * <code>offset</code> and <code>limit</code> parameters.
+ * <p>
+ * Columns marked as <a href="../../concepts/types.html#data-handling"
+ * target="_top">store-only</a> are unable to be used with this function.
+ * <p>
+ * To get the first 10 unique values sorted in descending order
+ * <code>options</code> would be::
  * <p>
  * {"limit":"10","sort_order":"descending"}.
  * <p>
@@ -2407,14 +2457,19 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
- * If a <code>result_table</code> name is specified in the options, the results
- * are stored in a new table with that name.  No results are returned in the
- * response.  If the source table's <a
- * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> is
- * used as the <code>column_name</code>, the result table will be sharded, in
- * all other cases it will be replicated.  Sorting will properly function only
- * if the result table is replicated or if there is only one processing node
- * and should not be relied upon in other cases.
+ * If a <code>result_table</code> name is specified in the
+ * <code>options</code>, the results are stored in a new table with that
+ * name--no results are returned in the response.  Both the table name and
+ * resulting column name must adhere to <a
+ * href="../../concepts/tables.html#table" target="_top">standard naming
+ * conventions</a>; any column expression will need to be aliased.  If the
+ * source table's <a href="../../concepts/tables.html#shard-keys"
+ * target="_top">shard key</a> is used as the <code>column_name</code>, the
+ * result table will be sharded, in all other cases it will be replicated.
+ * Sorting will properly function only if the result table is replicated or if
+ * there is only one processing node and should not be relied upon in other
+ * cases.  Not available when the value of <code>column_name</code> is an
+ * unrestricted-length string.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2457,10 +2512,14 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * <code>table_name</code>). If <code>column_name</code> is a numeric column
  * the values will be in <code>binary_encoded_response</code>. Otherwise if
  * <code>column_name</code> is a string column the values will be in
- * <code>json_encoded_response</code>.  <code>offset</code> and
- * <code>limit</code> are used to page through the results if there are large
- * numbers of unique values. To get the first 10 unique values sorted in
- * descending order <code>options</code> would be::
+ * <code>json_encoded_response</code>.  The results can be paged via the
+ * <code>offset</code> and <code>limit</code> parameters.
+ * <p>
+ * Columns marked as <a href="../../concepts/types.html#data-handling"
+ * target="_top">store-only</a> are unable to be used with this function.
+ * <p>
+ * To get the first 10 unique values sorted in descending order
+ * <code>options</code> would be::
  * <p>
  * {"limit":"10","sort_order":"descending"}.
  * <p>
@@ -2468,14 +2527,19 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
- * If a <code>result_table</code> name is specified in the options, the results
- * are stored in a new table with that name.  No results are returned in the
- * response.  If the source table's <a
- * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> is
- * used as the <code>column_name</code>, the result table will be sharded, in
- * all other cases it will be replicated.  Sorting will properly function only
- * if the result table is replicated or if there is only one processing node
- * and should not be relied upon in other cases.
+ * If a <code>result_table</code> name is specified in the
+ * <code>options</code>, the results are stored in a new table with that
+ * name--no results are returned in the response.  Both the table name and
+ * resulting column name must adhere to <a
+ * href="../../concepts/tables.html#table" target="_top">standard naming
+ * conventions</a>; any column expression will need to be aliased.  If the
+ * source table's <a href="../../concepts/tables.html#shard-keys"
+ * target="_top">shard key</a> is used as the <code>column_name</code>, the
+ * result table will be sharded, in all other cases it will be replicated.
+ * Sorting will properly function only if the result table is replicated or if
+ * there is only one processing node and should not be relied upon in other
+ * cases.  Not available when the value of <code>column_name</code> is an
+ * unrestricted-length string.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table.
@@ -2509,7 +2573,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'ascending'.
  *                                  <li> 'result_table': The name of the table
- *                          used to store the results. If present no results
+ *                          used to store the results. If present, no results
  *                          are returned in the response. Has the same naming
  *                          restrictions as <a
  *                          href="../../concepts/tables.html"
@@ -2910,7 +2974,7 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
 };
 
 /**
- * Apply various modifications to a table, view, or collection.  The availble
+ * Apply various modifications to a table, view, or collection.  The available
  * modifications include the following:
  * <p>
  * Create or delete an index on a particular column. This can speed up certain
@@ -2968,7 +3032,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
 };
 
 /**
- * Apply various modifications to a table, view, or collection.  The availble
+ * Apply various modifications to a table, view, or collection.  The available
  * modifications include the following:
  * <p>
  * Create or delete an index on a particular column. This can speed up certain
@@ -3849,10 +3913,12 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
  * the same processing node, so it won't make sense to use
  * <code>order_by</code> without moving average.
  * <p>
- * Also, a projection can be created with a different shard key than the source
- * table.  By specifying <code>shard_key</code>, the projection will be sharded
- * according to the specified columns, regardless of how the source table is
- * sharded.  The source table can even be unsharded or replicated.
+ * Also, a projection can be created with a different <a
+ * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
+ * than the source table.  By specifying <code>shard_key</code>, the projection
+ * will be sharded according to the specified columns, regardless of how the
+ * source table is sharded.  The source table can even be unsharded or
+ * replicated.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3900,10 +3966,12 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * the same processing node, so it won't make sense to use
  * <code>order_by</code> without moving average.
  * <p>
- * Also, a projection can be created with a different shard key than the source
- * table.  By specifying <code>shard_key</code>, the projection will be sharded
- * according to the specified columns, regardless of how the source table is
- * sharded.  The source table can even be unsharded or replicated.
+ * Also, a projection can be created with a different <a
+ * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
+ * than the source table.  By specifying <code>shard_key</code>, the projection
+ * will be sharded according to the specified columns, regardless of how the
+ * source table is sharded.  The source table can even be unsharded or
+ * replicated.
  *
  * @param {String} table_name  Name of the existing table on which the
  *                             projection is to be applied.
@@ -4154,14 +4222,13 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'foreign_keys': Semicolon-separated
- *                          list of foreign key constraints, of the format
- *                          'source_column references
- *                          target_table(primary_key_column) [ as
+ *                          list of foreign keys, of the format 'source_column
+ *                          references target_table(primary_key_column) [ as
  *                          <foreign_key_name> ]'.
  *                                  <li> 'foreign_shard_key': Foreign shard key
- *                          description of the format: <fk_foreign_key>
- *                          references <pk_column_name> from
- *                          <pk_table_name>(<pk_primary_key>)
+ *                          of the format 'source_column references
+ *                          shard_by_column from
+ *                          target_table(primary_key_column)'
  *                                  <li> 'ttl': Sets the TTL of the table or
  *                          collection specified in <code>table_name</code>.
  *                          The value must be the desired TTL in minutes.
@@ -10071,6 +10138,7 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
         x_column_name: request.x_column_name,
         y_column_name: request.y_column_name,
         value_column_name: request.value_column_name,
+        geometry_column_name: request.geometry_column_name,
         min_x: request.min_x,
         max_x: request.max_x,
         min_y: request.min_y,
@@ -10096,6 +10164,7 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  * @param {String} x_column_name
  * @param {String} y_column_name
  * @param {String} value_column_name
+ * @param {String} geometry_column_name
  * @param {Number} min_x
  * @param {Number} max_x
  * @param {Number} min_y
@@ -10147,12 +10216,13 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  * 
  * @private
  */
-GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
+GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, geometry_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         x_column_name: x_column_name,
         y_column_name: y_column_name,
         value_column_name: value_column_name,
+        geometry_column_name: geometry_column_name,
         min_x: min_x,
         max_x: max_x,
         min_y: min_y,
