@@ -1246,6 +1246,15 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  *                                   <li> 'false'
  *                           </ul>
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'flush_to_disk': Flush to disk when
+ *                          going offline
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2060,11 +2069,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
  *                          collection which is to contain the table specified
- *                          in <code>result_table</code>, otherwise the table
- *                          will be a top-level table. If the collection does
- *                          not allow duplicate types and it contains a table
- *                          of the same type as the given one, then this table
- *                          creation request will fail. Additionally this
+ *                          in <code>result_table</code>. If the collection
+ *                          provided is non-existent, the collection will be
+ *                          automatically created. If empty, then the table
+ *                          will be a top-level table.  Additionally this
  *                          option is invalid if <code>table_name</code> is a
  *                          collection.
  *                                  <li> 'expression': Filter expression to
@@ -2115,14 +2123,12 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          the grouping attributes is an unrestricted string
  *                          (i.e.; not charN) type.
  *                                  <li> 'result_table_persist': If
- *                          <code>true</code> then the result table specified
- *                          in <code>result_table</code> will be persisted as a
- *                          regular table (it will not be automatically cleared
- *                          unless a <code>ttl</code> is provided, and the
- *                          table data can be modified in subsequent
- *                          operations). If <code>false</code> (the default)
- *                          then the result table will be a read-only,
- *                          memory-only temporary table.
+ *                          <code>true</code>, then the result table specified
+ *                          in <code>result_table</code> will be persisted and
+ *                          will not expire unless a <code>ttl</code> is
+ *                          specified.   If <code>false</code>, then the result
+ *                          table will be an in-memory table and will expire
+ *                          unless a <code>ttl</code> is specified otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -2137,13 +2143,25 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          then set a primary key for the result table. Must
  *                          be used in combination with the
  *                          <code>result_table</code> option.
- *                                  <li> 'ttl': Sets the TTL of the table
- *                          specified in <code>result_table</code>. The value
- *                          must be the desired TTL in minutes.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for the result
- *                          table. Must be used in combination with the
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the table specified in
+ *                          <code>result_table</code>.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for the result table. Must be used in
+ *                          combination with the <code>result_table</code>
+ *                          option.
+ *                                  <li> 'materialize_on_gpu': If
+ *                          <code>true</code> then the columns of the groupby
+ *                          result table will be cached on the GPU. Must be
+ *                          used in combination with the
  *                          <code>result_table</code> option.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3022,11 +3040,12 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
  *                          collection which is to contain the table specified
- *                          in 'result_table', otherwise the table will be a
- *                          top-level table. If the collection does not allow
- *                          duplicate types and it contains a table of the same
- *                          type as the given one, then this table creation
- *                          request will fail.
+ *                          in <code>result_table</code>. If the collection
+ *                          provided is non-existent, the collection will be
+ *                          automatically created. If empty, then the table
+ *                          will be a top-level table.  Additionally this
+ *                          option is invalid if <code>table_name</code> is a
+ *                          collection.
  *                                  <li> 'expression': Optional filter
  *                          expression to apply to the table.
  *                                  <li> 'sort_order': String indicating how
@@ -3044,14 +3063,12 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          href="../../concepts/tables.html"
  *                          target="_top">tables</a>.
  *                                  <li> 'result_table_persist': If
- *                          <code>true</code> then the result table specified
- *                          in <code>result_table</code> will be persisted as a
- *                          regular table (it will not be automatically cleared
- *                          unless a <code>ttl</code> is provided, and the
- *                          table data can be modified in subsequent
- *                          operations). If <code>false</code> (the default)
- *                          then the result table will be a read-only,
- *                          memory-only temporary table.
+ *                          <code>true</code>, then the result table specified
+ *                          in <code>result_table</code> will be persisted and
+ *                          will not expire unless a <code>ttl</code> is
+ *                          specified.   If <code>false</code>, then the result
+ *                          table will be an in-memory table and will expire
+ *                          unless a <code>ttl</code> is specified otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -3061,18 +3078,19 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                                  <li> 'result_table_force_replicated': Force
  *                          the result table to be replicated (ignores any
  *                          sharding). Must be used in combination with the
- *                          'result_table' option.
+ *                          <code>result_table</code> option.
  *                                  <li> 'result_table_generate_pk': If 'true'
  *                          then set a primary key for the result table. Must
- *                          be used in combination with the 'result_table'
- *                          option.
- *                                  <li> 'ttl': Sets the TTL of the table
- *                          specified in 'result_table'. The value must be the
- *                          desired TTL in minutes.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for the result
- *                          table. Must be used in combination with the
+ *                          be used in combination with the
  *                          <code>result_table</code> option.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the table specified in
+ *                          <code>result_table</code>.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for the result table. Must be used in
+ *                          combination with the <code>result_table</code>
+ *                          option.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3195,13 +3213,10 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
  *                          collection which is to contain the table specified
- *                          in <code>result_table</code>, otherwise the table
- *                          will be a top-level table. If the collection does
- *                          not allow duplicate types and it contains a table
- *                          of the same type as the given one, then this table
- *                          creation request will fail. Additionally this
- *                          option is invalid if <code>table_name</code> is a
- *                          collection.
+ *                          in <code>result_table</code>. If the collection
+ *                          provided is non-existent, the collection will be
+ *                          automatically created. If empty, then the table
+ *                          will be a top-level table.
  *                                  <li> 'result_table': The name of the table
  *                          used to store the results. Has the same naming
  *                          restrictions as <a
@@ -3209,14 +3224,12 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          target="_top">tables</a>. If present, no results
  *                          are returned in the response.
  *                                  <li> 'result_table_persist': If
- *                          <code>true</code> then the result table specified
- *                          in {result_table}@{key of input.options} will be
- *                          persisted as a regular table (it will not be
- *                          automatically cleared unless a <code>ttl</code> is
- *                          provided, and the table data can be modified in
- *                          subsequent operations). If <code>false</code> (the
- *                          default) then the result table will be a read-only,
- *                          memory-only temporary table.
+ *                          <code>true</code>, then the result table specified
+ *                          in <code>result_table</code> will be persisted and
+ *                          will not expire unless a <code>ttl</code> is
+ *                          specified.   If <code>false</code>, then the result
+ *                          table will be an in-memory table and will expire
+ *                          unless a <code>ttl</code> is specified otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -3231,15 +3244,16 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          input table.  If any alias is given for any column
  *                          name, the alias must be used, rather than the
  *                          original column name.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for the result
- *                          table. Must be used in combination with the
- *                          <code>result_table</code> option.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for the result table. Must be used in
+ *                          combination with the <code>result_table</code>
+ *                          option.
  *                                  <li> 'limit': The number of records to
  *                          keep.
- *                                  <li> 'ttl': Sets the TTL of the table
- *                          specified in <code>result_table</code>. The value
- *                          must be the desired TTL in minutes.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the table specified in
+ *                          <code>result_table</code>.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3476,27 +3490,27 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * Apply various modifications to a table, view, or collection.  The available
  * modifications include the following:
  * <p>
- * Create or delete an index on a particular column. This can speed up certain
- * search queries
- * (such as {@linkcode GPUdb#get_records},
- * {@linkcode GPUdb#delete_records}, {@linkcode GPUdb#update_records})
- * when using expressions containing equality or relational operators on
- * indexed columns. This
- * only applies to tables.
+ * Create or delete an <a href="../../concepts/indexes.html#column-index"
+ * target="_top">index</a> on a
+ * particular column. This can speed up certain operations when using
+ * expressions
+ * containing equality or relational operators on indexed columns. This only
+ * applies to tables.
  * <p>
- * Set the time-to-live (TTL). This can be applied to tables, views, or
- * collections.  When
- * applied to collections, every table & view within the collection will have
- * its TTL set to the
- * given value.
+ * Set the <a href="../../concepts/ttl.html" target="_top">time-to-live
+ * (TTL)</a>. This can be applied
+ * to tables, views, or collections.  When applied to collections, every
+ * contained
+ * table & view that is not protected will have its TTL set to the given value.
  * <p>
  * Set the global access mode (i.e. locking) for a table. The mode can be set
- * to 'no-access', 'read-only',
- * 'write-only' or 'read-write'.
+ * to
+ * 'no_access', 'read_only', 'write_only' or 'read_write'.
  * <p>
- * Make a table protected or not. Protected tables have their TTLs set to not
- * automatically
- * expire. This can be applied to tables, views, and collections.
+ * Change the <a href="../../concepts/protection.html"
+ * target="_top">protection</a> mode to prevent or
+ * allow automatic expiration. This can be applied to tables, views, and
+ * collections.
  * <p>
  * Allow homogeneous tables within a collection.
  * <p>
@@ -3504,7 +3518,8 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * <a href="../../concepts/types.html" target="_top">type and properties</a>
  * modified.
  * <p>
- * Set or unset compression for a column.
+ * Set or unset <a href="../../concepts/compression.html"
+ * target="_top">compression</a> for a column.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3542,27 +3557,27 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * Apply various modifications to a table, view, or collection.  The available
  * modifications include the following:
  * <p>
- * Create or delete an index on a particular column. This can speed up certain
- * search queries
- * (such as {@linkcode GPUdb#get_records},
- * {@linkcode GPUdb#delete_records}, {@linkcode GPUdb#update_records})
- * when using expressions containing equality or relational operators on
- * indexed columns. This
- * only applies to tables.
+ * Create or delete an <a href="../../concepts/indexes.html#column-index"
+ * target="_top">index</a> on a
+ * particular column. This can speed up certain operations when using
+ * expressions
+ * containing equality or relational operators on indexed columns. This only
+ * applies to tables.
  * <p>
- * Set the time-to-live (TTL). This can be applied to tables, views, or
- * collections.  When
- * applied to collections, every table & view within the collection will have
- * its TTL set to the
- * given value.
+ * Set the <a href="../../concepts/ttl.html" target="_top">time-to-live
+ * (TTL)</a>. This can be applied
+ * to tables, views, or collections.  When applied to collections, every
+ * contained
+ * table & view that is not protected will have its TTL set to the given value.
  * <p>
  * Set the global access mode (i.e. locking) for a table. The mode can be set
- * to 'no-access', 'read-only',
- * 'write-only' or 'read-write'.
+ * to
+ * 'no_access', 'read_only', 'write_only' or 'read_write'.
  * <p>
- * Make a table protected or not. Protected tables have their TTLs set to not
- * automatically
- * expire. This can be applied to tables, views, and collections.
+ * Change the <a href="../../concepts/protection.html"
+ * target="_top">protection</a> mode to prevent or
+ * allow automatic expiration. This can be applied to tables, views, and
+ * collections.
  * <p>
  * Allow homogeneous tables within a collection.
  * <p>
@@ -3570,7 +3585,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * <a href="../../concepts/types.html" target="_top">type and properties</a>
  * modified.
  * <p>
- * Set or unset compression for a column.
+ * Set or unset <a href="../../concepts/compression.html"
+ * target="_top">compression</a> for a column.
  *
  * @param {String} table_name  Table on which the operation will be performed.
  *                             Must be an existing table, view, or collection.
@@ -3582,62 +3598,70 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         collection. This action is only valid if
  *                         <code>table_name</code> is a collection. The
  *                         <code>value</code> must be either 'true' or 'false'.
- *                                 <li> 'create_index': Creates an index on the
- *                         column name specified in <code>value</code>. If this
- *                         column is already indexed, an error will be
- *                         returned.
- *                                 <li> 'delete_index': Deletes an existing
- *                         index on the column name specified in
- *                         <code>value</code>. If this column does not have
+ *                                 <li> 'create_index': Creates an <a
+ *                         href="../../concepts/indexes.html#column-index"
+ *                         target="_top">index</a> on the column name specified
+ *                         in <code>value</code>. If this column is already
+ *                         indexed, an error will be returned.
+ *                                 <li> 'delete_index': Deletes an existing <a
+ *                         href="../../concepts/indexes.html#column-index"
+ *                         target="_top">index</a> on the column name specified
+ *                         in <code>value</code>. If this column does not have
  *                         indexing turned on, an error will be returned.
- *                                 <li> 'move_to_collection': Move a table into
- *                         a collection <code>value</code>.
+ *                                 <li> 'move_to_collection': Moves a table
+ *                         into a collection <code>value</code>.
  *                                 <li> 'protected': Sets whether the given
- *                         <code>table_name</code> should be protected or not.
- *                         The <code>value</code> must be either 'true' or
- *                         'false'.
- *                                 <li> 'rename_table': Rename a table, view or
- *                         collection to <code>value</code>. Has the same
+ *                         <code>table_name</code> should be <a
+ *                         href="../../concepts/protection.html"
+ *                         target="_top">protected</a> or not. The
+ *                         <code>value</code> must be either 'true' or 'false'.
+ *                                 <li> 'rename_table': Renames a table, view
+ *                         or collection to <code>value</code>. Has the same
  *                         naming restrictions as <a
  *                         href="../../concepts/tables.html"
  *                         target="_top">tables</a>.
- *                                 <li> 'ttl': Sets the TTL of the table, view,
- *                         or collection specified in <code>table_name</code>.
- *                         The <code>value</code> must be the desired TTL in
- *                         minutes.
- *                                 <li> 'add_column': Add the column specified
+ *                                 <li> 'ttl': Sets the <a
+ *                         href="../../concepts/ttl.html" target="_top">TTL</a>
+ *                         of the table, view, or collection specified in
+ *                         <code>table_name</code>.
+ *                                 <li> 'add_column': Adds the column specified
  *                         in <code>value</code> to the table specified in
  *                         <code>table_name</code>.  Use
  *                         <code>column_type</code> and
  *                         <code>column_properties</code> in
  *                         <code>options</code> to set the column's type and
  *                         properties, respectively.
- *                                 <li> 'change_column': Change type and
+ *                                 <li> 'change_column': Changes type and
  *                         properties of the column specified in
  *                         <code>value</code>.  Use <code>column_type</code>
  *                         and <code>column_properties</code> in
  *                         <code>options</code> to set the column's type and
  *                         properties, respectively.
- *                                 <li> 'set_column_compression': Modify the
- *                         compression setting on the column specified in
- *                         <code>value</code>.
- *                                 <li> 'delete_column': Delete the column
+ *                                 <li> 'set_column_compression': Modifies the
+ *                         <a href="../../concepts/compression.html"
+ *                         target="_top">compression</a> setting on the column
+ *                         specified in <code>value</code>.
+ *                                 <li> 'delete_column': Deletes the column
  *                         specified in <code>value</code> from the table
  *                         specified in <code>table_name</code>.
- *                                 <li> 'create_foreign_key': Create a foreign
- *                         key using the format 'source_column references
+ *                                 <li> 'create_foreign_key': Creates a <a
+ *                         href="../../concepts/tables.html#foreign-key"
+ *                         target="_top">foreign key</a> using the format
+ *                         'source_column references
  *                         target_table(primary_key_column) [ as
  *                         <foreign_key_name> ]'.
- *                                 <li> 'delete_foreign_key': Delete a foreign
- *                         key.  The <code>value</code> should be the
- *                         <foreign_key_name> or the string used to define the
- *                         foreign key.
- *                                 <li> 'set_global_access_mode': Set the
+ *                                 <li> 'delete_foreign_key': Deletes a <a
+ *                         href="../../concepts/tables.html#foreign-key"
+ *                         target="_top">foreign key</a>.  The
+ *                         <code>value</code> should be the <foreign_key_name>
+ *                         specified when creating the key or the complete
+ *                         string used to define it.
+ *                                 <li> 'set_global_access_mode': Sets the
  *                         global access mode (i.e. locking) for the table
  *                         specified in <code>table_name</code>. Specify the
  *                         access mode in <code>value</code>. Valid modes are
- *                         'no-access', 'read-only', 'write-only' and
- *                         'read-write'.
+ *                         'no_access', 'read_only', 'write_only' and
+ *                         'read_write'.
  *                         </ul>
  * @param {String} value  The value of the modification. May be a column name,
  *                        'true' or 'false', a TTL, or the global access mode
@@ -3950,8 +3974,7 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          source table (specified by
  *                          <code>source_table_name</code>). Or END_OF_SET
  *                          (-9999) to indicate that the max number of results
- *                          should be returned. Default value is END_OF_SET
- *                          (-9999).
+ *                          should be returned.
  *                                  <li> 'expression': Optional filter
  *                          expression to apply to the source table (specified
  *                          by <code>source_table_name</code>). Empty by
@@ -4297,7 +4320,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  href="../../concepts/tables.html"
  *                                  target="_top">tables</a>.
  * @param {String[]} table_names  The list of table names composing the join.
- *                                Corresponds to a SQL statement FROM clause
+ *                                Corresponds to a SQL statement FROM clause.
  * @param {String[]} column_names  List of member table columns or column
  *                                 expressions to be included in the join.
  *                                 Columns can be prefixed with
@@ -4379,9 +4402,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          since the last refresh.
  *                          </ul>
  *                          The default value is 'no_refresh'.
- *                                  <li> 'ttl': Sets the TTL of the table
- *                          specified in <code>join_table_name</code>. The
- *                          value must be the desired TTL in minutes.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the join table specified
+ *                          in <code>join_table_name</code>.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4642,7 +4666,8 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          target="_top">collection</a> to which the
  *                          projection is to be assigned as a child. If the
  *                          collection provided is non-existent, the collection
- *                          will be automatically created.
+ *                          will be automatically created. If empty, then the
+ *                          projection will be at the top level.
  *                                  <li> 'expression': An optional filter <a
  *                          href="../../concepts/expressions.html"
  *                          target="_top">expression</a> to be applied to the
@@ -4664,25 +4689,26 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for this table.
- *                                  <li> 'ttl': Sets the TTL of the table,
- *                          view, or collection specified in
- *                          <code>projection_name</code>. The value must be the
- *                          desired TTL in minutes.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for this table.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the projection specified
+ *                          in <code>projection_name</code>.
  *                                  <li> 'shard_key': Comma-separated list of
  *                          the columns to be sharded on; e.g. 'column1,
  *                          column2'.  The columns specified must be present in
  *                          <code>column_names</code>.  If any alias is given
  *                          for any column name, the alias must be used, rather
  *                          than the original column name.
- *                                  <li> 'persist': If <code>true</code> then
- *                          the projection will be persisted as a regular table
- *                          (it will not be automatically cleared unless a
- *                          <code>ttl</code> is provided, and the table data
- *                          can be modified in subsequent operations). If
- *                          <code>false</code> then the projection will be a
- *                          read-only, memory-only temporary table.
+ *                                  <li> 'persist': If <code>true</code>, then
+ *                          the projection specified in
+ *                          <code>projection_name</code> will be persisted and
+ *                          will not expire unless a <code>ttl</code> is
+ *                          specified.   If <code>false</code>, then the
+ *                          projection will be an in-memory table and will
+ *                          expire unless a <code>ttl</code> is specified
+ *                          otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -4870,11 +4896,10 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'collection_name': Name of a
  *                          collection which is to contain the newly created
- *                          table. If empty, then the newly created table will
- *                          be a top-level table. If the collection does not
- *                          allow duplicate types and it contains a table of
- *                          the same type as the given one, then this table
- *                          creation request will fail.
+ *                          table. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created table will be a
+ *                          top-level table.
  *                                  <li> 'is_collection': Indicates whether the
  *                          new table to be created will be a collection.
  *                          Supported values:
@@ -4894,10 +4919,21 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'is_replicated': For a table,
- *                          indicates whether the table is to be replicated to
- *                          all the database ranks. This may be necessary when
- *                          the table is to be joined with other tables in a
- *                          query.
+ *                          indicates the <a
+ *                          href="../../concepts/tables.html#distribution"
+ *                          target="_top">distribution scheme</a> for the
+ *                          table's data.  If true, the table will be <a
+ *                          href="../../concepts/tables.html#replication"
+ *                          target="_top">replicated</a>.  If false, the table
+ *                          will be <a
+ *                          href="../../concepts/tables.html#sharding"
+ *                          target="_top">sharded</a> according to the <a
+ *                          href="../../concepts/tables.html#shard-keys"
+ *                          target="_top">shard key</a> specified in the given
+ *                          <code>type_id</code>, or <a
+ *                          href="../../concepts/tables.html#random-sharding"
+ *                          target="_top">randomly sharded</a>, if no shard key
+ *                          is specified.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -4905,27 +4941,28 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'foreign_keys': Semicolon-separated
- *                          list of foreign keys, of the format 'source_column
- *                          references target_table(primary_key_column) [ as
+ *                          list of <a
+ *                          href="../../concepts/tables.html#foreign-keys"
+ *                          target="_top">foreign keys</a>, of the format
+ *                          'source_column references
+ *                          target_table(primary_key_column) [ as
  *                          <foreign_key_name> ]'.
  *                                  <li> 'foreign_shard_key': Foreign shard key
  *                          of the format 'source_column references
  *                          shard_by_column from
  *                          target_table(primary_key_column)'
- *                                  <li> 'ttl': Sets the TTL of the table or
- *                          collection specified in <code>table_name</code>.
- *                          The value must be the desired TTL in minutes.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for this table.
+ *                                  <li> 'ttl': For a table, sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the table specified in
+ *                          <code>table_name</code>.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for this table.
  *                                  <li> 'is_result_table': For a table,
- *                          indicates whether the table is a non-persistent,
- *                          memory-only table that will store the output of a
- *                          proc executed with
- *                          {@linkcode GPUdb#execute_proc}. A result table
- *                          cannot contain store_only, text_search, or string
- *                          columns (char columns are acceptable), records
- *                          cannot be inserted into it directly, and it will
- *                          not be retained if the server is restarted.
+ *                          indicates whether the table is an in-memory table.
+ *                          A result table cannot contain store_only,
+ *                          text_search, or string columns (charN columns are
+ *                          acceptable), and it will not be retained if the
+ *                          server is restarted.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5581,7 +5618,7 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
 /**
  * Performs a <a href="../../concepts/unions.html" target="_top">union</a>
  * (concatenation) of one or more existing tables or views, the results of
- * which are stored in a new view. It is equivalent to the SQL UNION ALL
+ * which are stored in a new table. It is equivalent to the SQL UNION ALL
  * operator.  Non-charN 'string' and 'bytes' column types cannot be included in
  * a union, neither can columns with the property 'store_only'. Though not
  * explicitly unions, <a href="../../concepts/intersect.html"
@@ -5624,7 +5661,7 @@ GPUdb.prototype.create_union_request = function(request, callback) {
 /**
  * Performs a <a href="../../concepts/unions.html" target="_top">union</a>
  * (concatenation) of one or more existing tables or views, the results of
- * which are stored in a new view. It is equivalent to the SQL UNION ALL
+ * which are stored in a new table. It is equivalent to the SQL UNION ALL
  * operator.  Non-charN 'string' and 'bytes' column types cannot be included in
  * a union, neither can columns with the property 'store_only'. Though not
  * explicitly unions, <a href="../../concepts/intersect.html"
@@ -5678,26 +5715,30 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          works on 2 tables).
  *                                  <li> 'merge_views': Merge two or more views
  *                          (or views of views) of the same base data set into
- *                          a new view. The resulting view would match the
- *                          results of a SQL OR operation, e.g., if filter 1
- *                          creates a view using the expression 'x = 10' and
- *                          filter 2 creates a view using the expression 'x <=
- *                          10', then the merge views operation creates a new
- *                          view using the expression 'x = 10 OR x <= 10'.
+ *                          a new view. If this mode is selected
+ *                          <code>input_column_names</code> AND
+ *                          <code>output_column_names</code> are ignored The
+ *                          resulting view would match the results of a SQL OR
+ *                          operation, e.g., if filter 1 creates a view using
+ *                          the expression 'x = 10' and filter 2 creates a view
+ *                          using the expression 'x <= 10', then the merge
+ *                          views operation creates a new view using the
+ *                          expression 'x = 10 OR x <= 10'.
  *                          </ul>
  *                          The default value is 'union_all'.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for this table.
- *                                  <li> 'ttl': Sets the TTL of the table
- *                          specified in <code>table_name</code>. The value
- *                          must be the desired TTL in minutes.
- *                                  <li> 'persist': If <code>true</code> then
- *                          the union will be persisted as a regular table (it
- *                          will not be automatically cleared unless a
- *                          <code>ttl</code> is provided, and the table data
- *                          can be modified in subsequent operations). If
- *                          <code>false</code> (the default) then the union
- *                          will be a read-only, memory-only temporary table.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for this table.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the table specified in
+ *                          <code>table_name</code>.
+ *                                  <li> 'persist': If <code>true</code>, then
+ *                          the union specified in <code>table_name</code> will
+ *                          be persisted and will not expire unless a
+ *                          <code>ttl</code> is specified.   If
+ *                          <code>false</code>, then the union will be an
+ *                          in-memory table and will expire unless a
+ *                          <code>ttl</code> is specified otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -6396,14 +6437,14 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
  *                          collection which is to contain the newly created
- *                          view, otherwise the view will be a top-level table.
- *                          If the collection does not allow duplicate types
- *                          and it contains a table of the same type as the
- *                          given one, then this table creation request will
- *                          fail.
- *                                  <li> 'ttl': Sets the TTL of the view
- *                          specified in <code>view_name</code>. The value must
- *                          be the desired TTL in minutes.
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the view specified in
+ *                          <code>view_name</code>.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -8078,19 +8119,16 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
 };
 
 /**
- * For a given table, retrieves the values of the given columns within a given
- * range. It returns maps of column name to the vector of values for each
- * supported data type (double, float, long, int and string). This operation
- * supports pagination feature, i.e. values that are retrieved are those
- * associated with the indices between the start (offset) and end value (offset
- * + limit) parameters (inclusive). If there are num_points values in the table
- * then each of the indices between 0 and num_points-1 retrieves a unique
- * value.
+ * For a given table, retrieves the values from the requested column(s). Maps
+ * of column name to the array of values as well as the column data type are
+ * returned. This endpoint supports pagination with the <code>offset</code> and
+ * <code>limit</code> parameters.
  * <p>
- * Note that when using the pagination feature, if the table (or the underlying
- * table in case of a view) is updated (records are inserted, deleted or
- * modified) the records or values retrieved may differ between calls
- * (discontiguous or overlap) based on the type of the update.
+ * When using pagination, if the table (or the underlying table in the case of
+ * a view) is modified (records are inserted, updated, or deleted) during a
+ * call to the endpoint, the records or values retrieved may differ between
+ * calls based on the type of the update, e.g., the contiguity across pages
+ * cannot be relied upon.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
@@ -8138,19 +8176,16 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
 };
 
 /**
- * For a given table, retrieves the values of the given columns within a given
- * range. It returns maps of column name to the vector of values for each
- * supported data type (double, float, long, int and string). This operation
- * supports pagination feature, i.e. values that are retrieved are those
- * associated with the indices between the start (offset) and end value (offset
- * + limit) parameters (inclusive). If there are num_points values in the table
- * then each of the indices between 0 and num_points-1 retrieves a unique
- * value.
+ * For a given table, retrieves the values from the requested column(s). Maps
+ * of column name to the array of values as well as the column data type are
+ * returned. This endpoint supports pagination with the <code>offset</code> and
+ * <code>limit</code> parameters.
  * <p>
- * Note that when using the pagination feature, if the table (or the underlying
- * table in case of a view) is updated (records are inserted, deleted or
- * modified) the records or values retrieved may differ between calls
- * (discontiguous or overlap) based on the type of the update.
+ * When using pagination, if the table (or the underlying table in the case of
+ * a view) is modified (records are inserted, updated, or deleted) during a
+ * call to the endpoint, the records or values retrieved may differ between
+ * calls based on the type of the update, e.g., the contiguity across pages
+ * cannot be relied upon.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
@@ -9224,8 +9259,9 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          The value must be greater than 0. This option is
  *                          disabled by default.
  *                          </ul>
- *                                  <li> 'attr_name': Set the following
- *                          parameters for the column specified by the key.
+ *                                  <li> 'attr_name': Use the desired column
+ *                          name in place of <code>attr_name</code>, and set
+ *                          the following parameters for the column specified.
  *                          This overrides any parameter set by
  *                          <code>all</code>.
  *                          <ul>
@@ -9524,11 +9560,11 @@ GPUdb.prototype.kill_proc = function(run_id, options, callback) {
 
 /**
  * Manages global access to a table's data.  By default a table has a
- * <code>lock_type</code> of <code>read-write</code>, indicating all operations
- * are permitted.  A user may request a <code>read-only</code> or a
- * <code>write-only</code> lock, after which only read or write operations,
+ * <code>lock_type</code> of <code>read_write</code>, indicating all operations
+ * are permitted.  A user may request a <code>read_only</code> or a
+ * <code>write_only</code> lock, after which only read or write operations,
  * respectively, are permitted on the table until the lock is removed.  When
- * <code>lock_type</code> is <code>no-access</code> then no operations are
+ * <code>lock_type</code> is <code>no_access</code> then no operations are
  * permitted on the table.  The lock status can be queried by setting
  * <code>lock_type</code> to <code>status</code>.
  *
@@ -9565,11 +9601,11 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
 
 /**
  * Manages global access to a table's data.  By default a table has a
- * <code>lock_type</code> of <code>read-write</code>, indicating all operations
- * are permitted.  A user may request a <code>read-only</code> or a
- * <code>write-only</code> lock, after which only read or write operations,
+ * <code>lock_type</code> of <code>read_write</code>, indicating all operations
+ * are permitted.  A user may request a <code>read_only</code> or a
+ * <code>write_only</code> lock, after which only read or write operations,
  * respectively, are permitted on the table until the lock is removed.  When
- * <code>lock_type</code> is <code>no-access</code> then no operations are
+ * <code>lock_type</code> is <code>no_access</code> then no operations are
  * permitted on the table.  The lock status can be queried by setting
  * <code>lock_type</code> to <code>status</code>.
  *
@@ -9582,13 +9618,13 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
  *                            Supported values:
  *                            <ul>
  *                                    <li> 'status': Show locked status
- *                                    <li> 'no-access': Allow no read/write
+ *                                    <li> 'no_access': Allow no read/write
  *                            operations
- *                                    <li> 'read-only': Allow only read
+ *                                    <li> 'read_only': Allow only read
  *                            operations
- *                                    <li> 'write-only': Allow only write
+ *                                    <li> 'write_only': Allow only write
  *                            operations
- *                                    <li> 'read-write': Allow all read/write
+ *                                    <li> 'read_write': Allow all read/write
  *                            operations
  *                            </ul>
  *                            The default value is 'status'.
@@ -9628,7 +9664,11 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  * <code>source_table_names</code>) based on the field mapping information
  * (specified by <code>field_maps</code>). The field map (specified by
  * <code>field_maps</code>) holds the user specified maps of target table
- * column names to source table columns.
+ * column names to source table columns. The array of <code>field_maps</code>
+ * must match one-to-one with the <code>source_table_names</code>, e.g.,
+ * there's a map present in <code>field_maps</code> for each table listed in
+ * <code>source_table_names</code>. Read more about Merge Records <a
+ * href="../../concepts/merge_records.html" target="_top">here</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9668,49 +9708,61 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  * <code>source_table_names</code>) based on the field mapping information
  * (specified by <code>field_maps</code>). The field map (specified by
  * <code>field_maps</code>) holds the user specified maps of target table
- * column names to source table columns.
+ * column names to source table columns. The array of <code>field_maps</code>
+ * must match one-to-one with the <code>source_table_names</code>, e.g.,
+ * there's a map present in <code>field_maps</code> for each table listed in
+ * <code>source_table_names</code>. Read more about Merge Records <a
+ * href="../../concepts/merge_records.html" target="_top">here</a>.
  *
  * @param {String} table_name  The new result table name for the records to be
  *                             merged.  Must NOT be an existing table.
  * @param {String[]} source_table_names  The list of source table names to get
  *                                       the records from. Must be existing
  *                                       table names.
- * @param {Object[]} field_maps  Contains the mapping of column names from
- *                               result table (specified by
- *                               <code>table_name</code>) as the keys, and
- *                               corresponding column names from a table from
- *                               source tables (specified by
- *                               <code>source_table_names</code>). Must be
- *                               existing column names in source table and
- *                               target table, and their types must be matched.
+ * @param {Object[]} field_maps  Contains a list of source/target column
+ *                               mappings, one mapping for each source table
+ *                               listed in <code>source_table_names</code>
+ *                               being merged into the target table specified
+ *                               by <code>table_name</code>.  Each mapping
+ *                               contains the target column names (as keys)
+ *                               that the data in the mapped source columns (as
+ *                               values) will be merged into.  All of the
+ *                               source columns being merged into a given
+ *                               target column must match in type, as that type
+ *                               will determine the type of the new target
+ *                               column.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
  *                          collection which is to contain the newly created
- *                          merged table (specified by
- *                          <code>table_name</code>). If empty, then the newly
- *                          created merged table will be a top-level table. If
- *                          the collection does not allow duplicate types and
- *                          it contains a table of the same type as the given
- *                          one, then this table creation request will fail.
- *                                  <li> 'is_replicated': For a merged table
- *                          (specified by <code>table_name</code>), indicates
- *                          whether the table is to be replicated to all the
- *                          database ranks. This may be necessary when the
- *                          table is to be joined with other tables in a query.
+ *                          merged table specified by <code>table_name</code>.
+ *                          If the collection provided is non-existent, the
+ *                          collection will be automatically created. If empty,
+ *                          then the newly created merged table will be a
+ *                          top-level table.
+ *                                  <li> 'is_replicated': Indicates the <a
+ *                          href="../../concepts/tables.html#distribution"
+ *                          target="_top">distribution scheme</a> for the data
+ *                          of the merged table specified in
+ *                          <code>table_name</code>.  If true, the table will
+ *                          be <a href="../../concepts/tables.html#replication"
+ *                          target="_top">replicated</a>.  If false, the table
+ *                          will be <a
+ *                          href="../../concepts/tables.html#random-sharding"
+ *                          target="_top">randomly sharded</a>.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'ttl': Sets the TTL of the merged
- *                          table or collection (specified by
- *                          <code>table_name</code>). The value must be the
- *                          desired TTL in minutes.
- *                                  <li> 'chunk_size': If provided this
- *                          indicates the chunk size to be used for the merged
- *                          table.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the merged table specified
+ *                          in <code>table_name</code>.
+ *                                  <li> 'chunk_size': Indicates the chunk size
+ *                          to be used for the merged table specified in
+ *                          <code>table_name</code>.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -10509,9 +10561,8 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  * For a collection, setting the <code>show_children</code> option to
  * <code>false</code> returns only information about the collection itself;
  * setting <code>show_children</code> to <code>true</code> returns a list of
- * tables and views contained in the collection, along with their description,
- * type id, schema, type label, type properties, and additional information
- * including TTL.
+ * tables and views contained in the collection, along with their corresponding
+ * detail.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -10560,9 +10611,8 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  * For a collection, setting the <code>show_children</code> option to
  * <code>false</code> returns only information about the collection itself;
  * setting <code>show_children</code> to <code>true</code> returns a list of
- * tables and views contained in the collection, along with their description,
- * type id, schema, type label, type properties, and additional information
- * including TTL.
+ * tables and views contained in the collection, along with their corresponding
+ * detail.
  *
  * @param {String} table_name  Name of the table for which to retrieve the
  *                             information. If blank, then information about
@@ -11294,6 +11344,8 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                The default value is 'false'.
  *                                        <li> 'pointcolors':
  *                                        <li> 'pointsizes':
+ *                                        <li> 'pointoffset_x':
+ *                                        <li> 'pointoffset_y':
  *                                        <li> 'pointshapes':
  *                                Supported values:
  *                                <ul>
@@ -11307,8 +11359,11 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
  *                                The default value is 'square'.
+ *                                        <li> 'symbolrotations':
  *                                        <li> 'shapelinewidths':
  *                                        <li> 'shapelinecolors':
+ *                                        <li> 'shapelinepatterns':
+ *                                        <li> 'shapelinepatternlen':
  *                                        <li> 'shapefillcolors':
  *                                        <li> 'tracklinewidths':
  *                                        <li> 'tracklinecolors':
@@ -11607,10 +11662,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         y_column_name: request.y_column_name,
         geometry_column_name: request.geometry_column_name,
         track_ids: request.track_ids,
-        cb_column_name1: request.cb_column_name1,
-        cb_vals1: request.cb_vals1,
-        cb_column_name2: request.cb_column_name2,
-        cb_vals2: request.cb_vals2,
+        cb_column_name: request.cb_column_name,
+        cb_vals: request.cb_vals,
         min_x: request.min_x,
         max_x: request.max_x,
         min_y: request.min_y,
@@ -11634,10 +11687,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {String} y_column_name
  * @param {String} geometry_column_name
  * @param {String[][]} track_ids
- * @param {String} cb_column_name1
- * @param {String[]} cb_vals1
- * @param {String[]} cb_column_name2
- * @param {String[][]} cb_vals2
+ * @param {String} cb_column_name
+ * @param {String[]} cb_vals
  * @param {Number} min_x
  * @param {Number} max_x
  * @param {Number} min_y
@@ -11691,6 +11742,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                The default value is 'false'.
  *                                        <li> 'pointcolors':
  *                                        <li> 'pointsizes':
+ *                                        <li> 'pointoffset_x':
+ *                                        <li> 'pointoffset_y':
  *                                        <li> 'pointshapes':
  *                                Supported values:
  *                                <ul>
@@ -11706,6 +11759,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                The default value is 'none'.
  *                                        <li> 'shapelinewidths':
  *                                        <li> 'shapelinecolors':
+ *                                        <li> 'shapelinepatterns':
+ *                                        <li> 'shapelinepatternlen':
  *                                        <li> 'shapefillcolors':
  *                                        <li> 'tracklinewidths':
  *                                        <li> 'tracklinecolors':
@@ -11747,12 +11802,12 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                    object, if no callback function is provided.
  * @private
  */
-GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
+GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_column_name, cb_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_column_name1, cb_vals1, cb_column_name2, cb_vals2, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, function(err, response) {
+            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_column_name, cb_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -11769,10 +11824,8 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
         y_column_name: y_column_name,
         geometry_column_name: geometry_column_name,
         track_ids: track_ids,
-        cb_column_name1: cb_column_name1,
-        cb_vals1: cb_vals1,
-        cb_column_name2: cb_column_name2,
-        cb_vals2: cb_vals2,
+        cb_column_name: cb_column_name,
+        cb_vals: cb_vals,
         min_x: min_x,
         max_x: max_x,
         min_y: min_y,
