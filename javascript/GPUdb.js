@@ -719,7 +719,7 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
 
 /**
  * Add a new node to the GPUdb cluster. By default this will only add the node
- * to the cluster, but will not be assigned any data shards. Set the
+ * to the cluster but will not be assigned any data shards. Set the
  * <code>reshard</code> option to <code>true</code> to move some shards from
  * the other nodes in the cluster to this node.
  *
@@ -748,7 +748,7 @@ GPUdb.prototype.admin_add_node_request = function(request, callback) {
 
 /**
  * Add a new node to the GPUdb cluster. By default this will only add the node
- * to the cluster, but will not be assigned any data shards. Set the
+ * to the cluster but will not be assigned any data shards. Set the
  * <code>reshard</code> option to <code>true</code> to move some shards from
  * the other nodes in the cluster to this node.
  *
@@ -843,11 +843,12 @@ GPUdb.prototype.admin_alter_configuration = function(config_string, options, cal
 };
 
 /**
- * Perform the requested action on a list of one or more job(s) . Currently
- * only cancelling filter, aggregate and get records reqeusts are supported.
- * Based on the type of job and the current state of execution, the action may
- * not be successfully executed. The final result of the attempted actions for
- * each specified job is returned in the status array of the response.
+ * Perform the requested action on a list of one or more job(s). Based on the
+ * type of job and the current state of execution, the action may not be
+ * successfully executed. The final result of the attempted actions for each
+ * specified job is returned in the status array of the response. See <a
+ * href="../../gpudbAdmin/job_manager.html" target="_top">Job Manager</a> for
+ * more information.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -873,11 +874,12 @@ GPUdb.prototype.admin_alter_jobs_request = function(request, callback) {
 };
 
 /**
- * Perform the requested action on a list of one or more job(s) . Currently
- * only cancelling filter, aggregate and get records reqeusts are supported.
- * Based on the type of job and the current state of execution, the action may
- * not be successfully executed. The final result of the attempted actions for
- * each specified job is returned in the status array of the response.
+ * Perform the requested action on a list of one or more job(s). Based on the
+ * type of job and the current state of execution, the action may not be
+ * successfully executed. The final result of the attempted actions for each
+ * specified job is returned in the status array of the response. See <a
+ * href="../../gpudbAdmin/job_manager.html" target="_top">Job Manager</a> for
+ * more information.
  *
  * @param {Number[]} job_ids  Jobs to be modified.
  * @param {String} action  Action to be performed on the jobs specified by
@@ -960,10 +962,10 @@ GPUdb.prototype.admin_alter_shards_request = function(request, callback) {
  *                             indicate the shards being moved.
  * @param {Number[]} rank  node to which the shard will be moved.
  * @param {Number[]} tom  Toms to which the shard will be moved.
- * @param {Number[]} index  the shard which is being moved.  When use_index is
- *                          set to true, size of this array must equal the size
- *                          of rank/tom array.
- * @param {Number[]} backup_map_list  List of rank_tom integers, for which
+ * @param {Number[]} index  The shard being moved.  When use_index is set to
+ *                          true, size of this array must equal the size of
+ *                          rank/tom array.
+ * @param {Number[]} backup_map_list  List of rank_tom integers for which
  *                                    backup toms are defined
  * @param {Number[][]} backup_map_values  List of the backup rank_tom(s) for
  *                                        each rank_tom in backup_map_list
@@ -1097,7 +1099,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  * may move any shards that were moved by system administrator using
  * {@linkcode GPUdb#admin_alter_shards}
  *
- * @param {String[]} table_names  Sepcify the tables here if only specific
+ * @param {String[]} table_names  Specify the tables here if only specific
  *                                tables have to be rebalanced.  Leave this
  *                                empty to rebalance all the tables.  Note that
  *                                only the tables which have no primary or
@@ -1535,9 +1537,9 @@ GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
  * Calculates and returns the convex hull for the values in a table specified
  * by <code>table_name</code>.
  *
- * @param {String} table_name  Name of Table on which the operation will be
- *                             performed. Must be an existing table.  It can
- *                             not be a collection.
+ * @param {String} table_name  Name of table on which the operation will be
+ *                             performed. Must be an existing table.  It cannot
+ *                             be a collection.
  * @param {String} x_column_name  Name of the column containing the x
  *                                coordinates of the points for the operation
  *                                being performed.
@@ -1753,7 +1755,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          the first aggregate, then the second aggregate,
  *                          etc.
  *                          </ul>
- *                          The default value is 'key'.
+ *                          The default value is 'value'.
  *                                  <li> 'result_table': The name of the table
  *                          used to store the results. Has the same naming
  *                          restrictions as <a
@@ -4384,7 +4386,7 @@ GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
  * activated, any record added to the listed tables(s) via
  * {@linkcode GPUdb#insert_records} with the chosen columns' values falling
  * within the specified region will trip the trigger. All such records will be
- * queued at the trigger port (by default '9001', but able to be retrieved via
+ * queued at the trigger port (by default '9001' but able to be retrieved via
  * {@linkcode GPUdb#show_system_status}) for any listening client to collect.
  * Active triggers can be cancelled by using the
  * {@linkcode GPUdb#clear_trigger} endpoint or by clearing all relevant
@@ -4427,7 +4429,7 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
  * activated, any record added to the listed tables(s) via
  * {@linkcode GPUdb#insert_records} with the chosen columns' values falling
  * within the specified region will trip the trigger. All such records will be
- * queued at the trigger port (by default '9001', but able to be retrieved via
+ * queued at the trigger port (by default '9001' but able to be retrieved via
  * {@linkcode GPUdb#show_system_status}) for any listening client to collect.
  * Active triggers can be cancelled by using the
  * {@linkcode GPUdb#clear_trigger} endpoint or by clearing all relevant
@@ -4487,7 +4489,7 @@ GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_col
  * tables(s) via {@linkcode GPUdb#insert_records} with the chosen
  * column_name's value falling within the specified range will trip the
  * trigger. All such records will be queued at the trigger port (by default
- * '9001', but able to be retrieved via {@linkcode GPUdb#show_system_status})
+ * '9001' but able to be retrieved via {@linkcode GPUdb#show_system_status})
  * for any listening client to collect. Active triggers can be cancelled by
  * using the {@linkcode GPUdb#clear_trigger} endpoint or by clearing all
  * relevant tables.
@@ -4527,7 +4529,7 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
  * tables(s) via {@linkcode GPUdb#insert_records} with the chosen
  * column_name's value falling within the specified range will trip the
  * trigger. All such records will be queued at the trigger port (by default
- * '9001', but able to be retrieved via {@linkcode GPUdb#show_system_status})
+ * '9001' but able to be retrieved via {@linkcode GPUdb#show_system_status})
  * for any listening client to collect. Active triggers can be cancelled by
  * using the {@linkcode GPUdb#clear_trigger} endpoint or by clearing all
  * relevant tables.
@@ -4693,9 +4695,9 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             *data* and *store_only*.
  *                                     <li> 'store_only': Persist the column
  *                             value but do not make it available to queries
- *                             (e.g. {@linkcode GPUdb#filter_by_box})-i.e. it
- *                             is mutually exclusive to the 'data' property.
- *                             Any 'bytes' type column must have a 'store_only'
+ *                             (e.g. {@linkcode GPUdb#filter})-i.e. it is
+ *                             mutually exclusive to the 'data' property. Any
+ *                             'bytes' type column must have a 'store_only'
  *                             property. This property reduces system memory
  *                             usage.
  *                                     <li> 'disk_optimized': Works in
@@ -4954,7 +4956,7 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          (or views of views) of the same base data set into
  *                          a new view. If this mode is selected
  *                          <code>input_column_names</code> AND
- *                          <code>output_column_names</code> are ignored The
+ *                          <code>output_column_names</code> must be empty. The
  *                          resulting view would match the results of a SQL OR
  *                          operation, e.g., if filter 1 creates a view using
  *                          the expression 'x = 10' and filter 2 creates a view
@@ -5218,9 +5220,10 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                             not a collection or a view.
  * @param {String[]} expressions  A list of the actual predicates, one for each
  *                                select; format should follow the guidelines
- *                                provided [here]{@linkcode GPUdb#filter}.
- *                                Specifying one or more
- *                                <code>expressions</code> is mutually
+ *                                provided <a
+ *                                href="../../concepts/expressions.html"
+ *                                target="_top">here</a>. Specifying one or
+ *                                more <code>expressions</code> is mutually
  *                                exclusive to specifying
  *                                <code>record_id</code> in the
  *                                <code>options</code>.
@@ -5486,10 +5489,11 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
 
 /**
  * Filters data based on the specified expression.  The results are stored in a
- * result set with the given <code>view_name</code>.
+ * <a href="../../concepts/filtered_views.html" target="_top">result set</a>
+ * with the given <code>view_name</code>.
  * <p>
  * For details see <a href="../../concepts/expressions.html"
- * target="_top">concepts</a>.
+ * target="_top">Expressions</a>.
  * <p>
  * The response message contains the number of points for which the expression
  * evaluated to be true, which is equivalent to the size of the result view.
@@ -5520,10 +5524,11 @@ GPUdb.prototype.filter_request = function(request, callback) {
 
 /**
  * Filters data based on the specified expression.  The results are stored in a
- * result set with the given <code>view_name</code>.
+ * <a href="../../concepts/filtered_views.html" target="_top">result set</a>
+ * with the given <code>view_name</code>.
  * <p>
  * For details see <a href="../../concepts/expressions.html"
- * target="_top">concepts</a>.
+ * target="_top">Expressions</a>.
  * <p>
  * The response message contains the number of points for which the expression
  * evaluated to be true, which is equivalent to the size of the result view.
@@ -5541,7 +5546,7 @@ GPUdb.prototype.filter_request = function(request, callback) {
  * @param {String} expression  The select expression to filter the specified
  *                             table.  For details see <a
  *                             href="../../concepts/expressions.html"
- *                             target="_top">concepts</a>.
+ *                             target="_top">Expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
@@ -8102,9 +8107,9 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
- * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
- * is used to pick the symbol displayed for each point.
+ * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
+ * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
+ * pick the symbol displayed for each point.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -8137,9 +8142,9 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
- * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
- * is used to pick the symbol displayed for each point.
+ * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
+ * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
+ * pick the symbol displayed for each point.
  *
  * @param {String} symbol_id  The id of the symbol being added. This is the
  *                            same id that should be in the 'SYMBOLCODE' column
@@ -9513,7 +9518,7 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'update_on_existing_pk': Can be used
  *                          to customize behavior when the updated primary key
- *                          value already exists, as described in
+ *                          value already exists as described in
  *                          {@linkcode GPUdb#insert_records}.
  *                          Supported values:
  *                          <ul>
@@ -9738,6 +9743,11 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'shapelinepatterns':
  *                                        <li> 'shapelinepatternlen':
  *                                        <li> 'shapefillcolors':
+ *                                        <li> 'hashlineintervals':
+ *                                        <li> 'hashlinecolors':
+ *                                        <li> 'hashlineangles':
+ *                                        <li> 'hashlinelens':
+ *                                        <li> 'hashlinewidths':
  *                                        <li> 'tracklinewidths':
  *                                        <li> 'tracklinecolors':
  *                                        <li> 'trackmarkersizes':
@@ -9933,10 +9943,12 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                class-break style option string.
  *                                        <li> 'x_order_by': An expression or
  *                                aggregate expression by which non-numeric x
- *                                column values are sorted, e.g. avg(price).
+ *                                column values are sorted, e.g. "avg(price)
+ *                                descending".
  *                                        <li> 'y_order_by': An expression or
  *                                aggregate expression by which non-numeric y
- *                                column values are sorted, e.g. avg(price).
+ *                                column values are sorted, e.g. "avg(price)",
+ *                                which defaults to "avg(price) ascending".
  *                                        <li> 'jitter_x': Amplitude of
  *                                horizontal jitter applied to non-numaric x
  *                                column values.
@@ -10103,6 +10115,11 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'shapelinepatterns':
  *                                        <li> 'shapelinepatternlen':
  *                                        <li> 'shapefillcolors':
+ *                                        <li> 'hashlineintervals':
+ *                                        <li> 'hashlinecolors':
+ *                                        <li> 'hashlineangles':
+ *                                        <li> 'hashlinelens':
+ *                                        <li> 'hashlinewidths':
  *                                        <li> 'tracklinewidths':
  *                                        <li> 'tracklinecolors':
  *                                        <li> 'trackmarkersizes':
