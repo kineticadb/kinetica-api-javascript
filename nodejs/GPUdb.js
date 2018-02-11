@@ -665,7 +665,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "6.1.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "6.2.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1762,6 +1762,8 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          to be used for the result table. Must be used in
  *                          combination with the <code>result_table</code>
  *                          option.
+ *                                  <li> 'view_id': view this result table is
+ *                          part of
  *                                  <li> 'materialize_on_gpu': If
  *                          <code>true</code> then the columns of the groupby
  *                          result table will be cached on the GPU. Must be
@@ -2705,6 +2707,8 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          to be used for the result table. Must be used in
  *                          combination with the <code>result_table</code>
  *                          option.
+ *                                  <li> 'view_id': view this result table is
+ *                          part of
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3276,6 +3280,22 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         access mode in <code>value</code>. Valid modes are
  *                         'no_access', 'read_only', 'write_only' and
  *                         'read_write'.
+ *                                 <li> 'refresh': Replay all the table
+ *                         creation commands required to create this view.
+ *                         Endpoints supported are filter, create_join_table,
+ *                         create_projection, create_union, aggregate_group_by,
+ *                         and aggregate_unique.
+ *                                 <li> 'set_refresh_method': Set the method by
+ *                         which this view is refreshed - one of manual,
+ *                         periodic, on_change, on_query.
+ *                                 <li> 'set_refresh_start_time': Set the time
+ *                         to start periodic refreshes to datetime string with
+ *                         format YYYY-MM-DD HH:MM:SS at which refresh is to be
+ *                         done.  Next refresh occurs at refresh_start_time +
+ *                         N*refresh_period
+ *                                 <li> 'set_refresh_period': Set the time
+ *                         interval at which to refresh this view - set refresh
+ *                         method to periodic if not alreay set.
  *                         </ul>
  * @param {String} value  The value of the modification. May be a column name,
  *                        'true' or 'false', a TTL, or the global access mode
@@ -3284,6 +3304,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'column_default_value': When adding a
  *                          column, set a default value for existing records.
+ *                          For nullable columns, the default value will be
+ *                          null, regardless of data type.
  *                                  <li> 'column_properties': When adding or
  *                          changing a column, set the column properties
  *                          (strings, separated by a comma: data, store_only,
@@ -3305,12 +3327,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                  <li> 'lz4hc'
  *                          </ul>
  *                          The default value is 'snappy'.
- *                                  <li> 'copy_values_from_column': When adding
- *                          or changing a column, enter a column name from the
- *                          same table being altered to use as a source for the
- *                          column being added/changed; values will be copied
- *                          from this source column into the new/modified
- *                          column.
+ *                                  <li> 'copy_values_from_column': please see
+ *                          add_column_expression instead.
  *                                  <li> 'rename_column': When changing a
  *                          column, specify new column name.
  *                                  <li> 'validate_change_column': When
@@ -3326,6 +3344,9 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                  <li> 'false': false
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'add_column_expression': expression
+ *                          for new column's values (optional with add_column).
+ *                          Any valid expressions including existing columns.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3468,7 +3489,7 @@ GPUdb.prototype.alter_user_request = function(request, callback) {
         name: request.name,
         action: request.action,
         value: request.value,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/alter/user", actual_request, callback);
@@ -3512,7 +3533,7 @@ GPUdb.prototype.alter_user = function(name, action, value, options, callback) {
         name: name,
         action: action,
         value: value,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/alter/user", actual_request, callback);
@@ -3653,6 +3674,78 @@ GPUdb.prototype.append_records = function(table_name, source_table_name, field_m
     };
 
     this.submit_request("/append/records", actual_request, callback);
+};
+
+/**
+ * Clears (drops) one or all column statistics of a tables.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.clear_statistics_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_statistics_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: (request.table_name !== undefined && request.table_name !== null) ? request.table_name : "",
+        column_name: (request.column_name !== undefined && request.column_name !== null) ? request.column_name : "",
+        options: request.options
+    };
+
+    this.submit_request("/clear/statistics", actual_request, callback);
+};
+
+/**
+ * Clears (drops) one or all column statistics of a tables.
+ *
+ * @param {String} table_name  Name of the table to clear the statistics. Must
+ *                             be an existing table.
+ * @param {String} column_name  Name of the column to be cleared. Must be an
+ *                              existing table. Empty string clears all
+ *                              available statistics of the table.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.clear_statistics = function(table_name, column_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_statistics(table_name, column_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: (table_name !== undefined && table_name !== null) ? table_name : "",
+        column_name: (column_name !== undefined && column_name !== null) ? column_name : "",
+        options: options
+    };
+
+    this.submit_request("/clear/statistics", actual_request, callback);
 };
 
 /**
@@ -3887,6 +3980,181 @@ GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
 };
 
 /**
+ * Collect the requested statistics of the given column(s) in a given table.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.collect_statistics_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.collect_statistics_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: request.table_name,
+        column_names: request.column_names,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/collect/statistics", actual_request, callback);
+};
+
+/**
+ * Collect the requested statistics of the given column(s) in a given table.
+ *
+ * @param {String} table_name  Name of the table on which the statistics
+ *                             operation will be performed.
+ * @param {String[]} column_names  List of one or more column names.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.collect_statistics = function(table_name, column_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.collect_statistics(table_name, column_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: table_name,
+        column_names: column_names,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/collect/statistics", actual_request, callback);
+};
+
+/**
+ * Create a job which will run asynchronously. The response returns a job ID,
+ * which can be used to query the status and result of the job. The status and
+ * the result of the job upon completion can be requested by
+ * {@linkcode GPUdb#get_job}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_job_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_job_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        endpoint: request.endpoint,
+        request_encoding: (request.request_encoding !== undefined && request.request_encoding !== null) ? request.request_encoding : "binary",
+        data: request.data,
+        data_str: request.data_str,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/create/job", actual_request, callback);
+};
+
+/**
+ * Create a job which will run asynchronously. The response returns a job ID,
+ * which can be used to query the status and result of the job. The status and
+ * the result of the job upon completion can be requested by
+ * {@linkcode GPUdb#get_job}.
+ *
+ * @param {String} endpoint  Indicates which endpoint to execute, e.g.
+ *                           '/alter/table'.
+ * @param {String} request_encoding  The encoding of the request payload for
+ *                                   the job.
+ *                                   Supported values:
+ *                                   <ul>
+ *                                           <li> 'binary'
+ *                                           <li> 'json'
+ *                                           <li> 'snappy'
+ *                                   </ul>
+ *                                   The default value is 'binary'.
+ * @param {String} data  Binary-encoded payload for the job to be run
+ *                       asynchronously.  The payload must contain the relevant
+ *                       input parameters for the endpoint indicated in
+ *                       <code>endpoint</code>.  Please see the documentation
+ *                       for the appropriate endpoint to see what values must
+ *                       (or can) be specified.  If this parameter is used,
+ *                       then <code>request_encoding</code> must be
+ *                       <code>binary</code> or <code>snappy</code>.
+ * @param {String} data_str  JSON-encoded payload for the job to be run
+ *                           asynchronously.  The payload must contain the
+ *                           relevant input parameters for the endpoint
+ *                           indicated in <code>endpoint</code>.  Please see
+ *                           the documentation for the appropriate endpoint to
+ *                           see what values must (or can) be specified.  If
+ *                           this parameter is used, then
+ *                           <code>request_encoding</code> must be
+ *                           <code>json</code>.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_job = function(endpoint, request_encoding, data, data_str, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_job(endpoint, request_encoding, data, data_str, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        endpoint: endpoint,
+        request_encoding: (request_encoding !== undefined && request_encoding !== null) ? request_encoding : "binary",
+        data: data,
+        data_str: data_str,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/create/job", actual_request, callback);
+};
+
+/**
  * Creates a table that is the result of a SQL JOIN.  For details see: <a
  * href="../../concepts/joins.html" target="_top">join concept
  * documentation</a>.
@@ -4020,6 +4288,8 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the join table specified
  *                          in <code>join_table_name</code>.
+ *                                  <li> 'view_id': view this projection is
+ *                          part of
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4050,6 +4320,137 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
     };
 
     this.submit_request("/create/jointable", actual_request, callback);
+};
+
+/**
+ * The create materialized view request does not create the actual table that
+ * will be the toplevel table of the view but instead registers the table name
+ * so no other views or tables can be created with that name.  The response
+ * contains a a view_id that is used to label the table creation requests
+ * (projection, union, group-by, filter, or join) that describes the view.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_materialized_view_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_materialized_view_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: request.table_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/create/materializedview", actual_request, callback);
+};
+
+/**
+ * The create materialized view request does not create the actual table that
+ * will be the toplevel table of the view but instead registers the table name
+ * so no other views or tables can be created with that name.  The response
+ * contains a a view_id that is used to label the table creation requests
+ * (projection, union, group-by, filter, or join) that describes the view.
+ *
+ * @param {String} table_name  Name of the table to be created that is the
+ *                             top-level table of the materialized view.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created table will be a
+ *                          top-level table.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> of the table specified in
+ *                          <code>table_name</code>.
+ *                                  <li> 'persist': If <code>true</code>, then
+ *                          the materialized view specified in
+ *                          <code>table_name</code> will be persisted and will
+ *                          not expire unless a <code>ttl</code> is specified.
+ *                          If <code>false</code>, then the materialized view
+ *                          will be an in-memory table and will expire unless a
+ *                          <code>ttl</code> is specified otherwise.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'refresh_method': Method by which the
+ *                          join can be refreshed when the data in underlying
+ *                          member tables have changed.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'manual': Refresh only occurs when
+ *                          manually requested by calling alter_table with
+ *                          action refresh_view
+ *                                  <li> 'on_query': Incrementally refresh
+ *                          (refresh just those records added) whenever a new
+ *                          query is issued and new data is inserted into the
+ *                          base table.  A full refresh of all the records
+ *                          occurs when a new query is issued and there have
+ *                          been inserts to any non-base-tables since the last
+ *                          query
+ *                                  <li> 'on_change': If possible,
+ *                          incrementally refresh (refresh just those records
+ *                          added) whenever an insert, update, delete or
+ *                          refresh of input table is done.  A full refresh
+ *                          on_query is done if an incremental refresh is not
+ *                          possible.
+ *                                  <li> 'periodic': Refresh table periodically
+ *                          at rate specified by refresh_period option
+ *                          </ul>
+ *                          The default value is 'manual'.
+ *                                  <li> 'refresh_period': When refresh_method
+ *                          is periodic specifies the period in seconds at
+ *                          which refresh occurs
+ *                                  <li> 'refresh_start_time': First time at
+ *                          which a periodic refresh is to be done.  Value is a
+ *                          datatime string with format YYYY-MM-DD HH:MM:SS.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_materialized_view = function(table_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_materialized_view(table_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: table_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/create/materializedview", actual_request, callback);
 };
 
 /**
@@ -4140,6 +4541,12 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                         passed to <code>command</code> when the proc is
  *                         executed.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'max_concurrency_per_node': The
+ *                          maximum number of concurrent instances of the proc
+ *                          that will be executed per node. 0 allows unlimited
+ *                          concurrency.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4329,6 +4736,8 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'view_id': view this projection is
+ *                          part of
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5359,6 +5768,8 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'view_id': view this union table is
+ *                          part of
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5419,7 +5830,7 @@ GPUdb.prototype.create_user_external_request = function(request, callback) {
 
     var actual_request = {
         name: request.name,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/create/user/external", actual_request, callback);
@@ -5455,7 +5866,7 @@ GPUdb.prototype.create_user_external = function(name, options, callback) {
 
     var actual_request = {
         name: name,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/create/user/external", actual_request, callback);
@@ -5490,7 +5901,7 @@ GPUdb.prototype.create_user_internal_request = function(request, callback) {
     var actual_request = {
         name: request.name,
         password: request.password,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/create/user/internal", actual_request, callback);
@@ -5530,7 +5941,7 @@ GPUdb.prototype.create_user_internal = function(name, password, options, callbac
     var actual_request = {
         name: name,
         password: password,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/create/user/internal", actual_request, callback);
@@ -5734,7 +6145,7 @@ GPUdb.prototype.delete_role_request = function(request, callback) {
 
     var actual_request = {
         name: request.name,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/delete/role", actual_request, callback);
@@ -5768,7 +6179,7 @@ GPUdb.prototype.delete_role = function(name, options, callback) {
 
     var actual_request = {
         name: name,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/delete/role", actual_request, callback);
@@ -5801,7 +6212,7 @@ GPUdb.prototype.delete_user_request = function(request, callback) {
 
     var actual_request = {
         name: request.name,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/delete/user", actual_request, callback);
@@ -5835,7 +6246,7 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
 
     var actual_request = {
         name: name,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/delete/user", actual_request, callback);
@@ -6058,6 +6469,8 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                          the collection will be automatically created. If
  *                          empty, then the newly created view will be
  *                          top-level.
+ *                                  <li> 'view_id': view this filtered-view is
+ *                          part of
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the view specified in
@@ -7593,6 +8006,71 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.get_job_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_job_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        job_id: request.job_id,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/get/job", actual_request, callback);
+};
+
+/**
+ *
+ * @param {Number} job_id  A unique identifier for the job whose status and
+ *                         result is to be fetched.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.get_job = function(job_id, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_job(job_id, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        job_id: job_id,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/get/job", actual_request, callback);
+};
+
+/**
  * Retrieves records from a given table, optionally filtered by an expression
  * and/or sorted by a column. This operation can be performed on tables, views,
  * or on homogeneous collections (collections containing tables of all the same
@@ -8159,7 +8637,7 @@ GPUdb.prototype.grant_permission_system_request = function(request, callback) {
     var actual_request = {
         name: request.name,
         permission: request.permission,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/grant/permission/system", actual_request, callback);
@@ -8204,7 +8682,7 @@ GPUdb.prototype.grant_permission_system = function(name, permission, options, ca
     var actual_request = {
         name: name,
         permission: permission,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/grant/permission/system", actual_request, callback);
@@ -8240,7 +8718,7 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
         permission: request.permission,
         table_name: request.table_name,
         filter_expression: (request.filter_expression !== undefined && request.filter_expression !== null) ? request.filter_expression : "",
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/grant/permission/table", actual_request, callback);
@@ -8296,7 +8774,7 @@ GPUdb.prototype.grant_permission_table = function(name, permission, table_name, 
         permission: permission,
         table_name: table_name,
         filter_expression: (filter_expression !== undefined && filter_expression !== null) ? filter_expression : "",
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/grant/permission/table", actual_request, callback);
@@ -8330,7 +8808,7 @@ GPUdb.prototype.grant_role_request = function(request, callback) {
     var actual_request = {
         role: request.role,
         member: request.member,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/grant/role", actual_request, callback);
@@ -8368,7 +8846,7 @@ GPUdb.prototype.grant_role = function(role, member, options, callback) {
     var actual_request = {
         role: role,
         member: member,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/grant/role", actual_request, callback);
@@ -9505,7 +9983,7 @@ GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
     var actual_request = {
         name: request.name,
         permission: request.permission,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/revoke/permission/system", actual_request, callback);
@@ -9550,7 +10028,7 @@ GPUdb.prototype.revoke_permission_system = function(name, permission, options, c
     var actual_request = {
         name: name,
         permission: permission,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/revoke/permission/system", actual_request, callback);
@@ -9585,7 +10063,7 @@ GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
         name: request.name,
         permission: request.permission,
         table_name: request.table_name,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/revoke/permission/table", actual_request, callback);
@@ -9638,7 +10116,7 @@ GPUdb.prototype.revoke_permission_table = function(name, permission, table_name,
         name: name,
         permission: permission,
         table_name: table_name,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/revoke/permission/table", actual_request, callback);
@@ -9672,7 +10150,7 @@ GPUdb.prototype.revoke_role_request = function(request, callback) {
     var actual_request = {
         role: request.role,
         member: request.member,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/revoke/role", actual_request, callback);
@@ -9710,7 +10188,7 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
     var actual_request = {
         role: role,
         member: member,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/revoke/role", actual_request, callback);
@@ -9915,7 +10393,7 @@ GPUdb.prototype.show_security_request = function(request, callback) {
 
     var actual_request = {
         names: request.names,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/show/security", actual_request, callback);
@@ -9953,10 +10431,78 @@ GPUdb.prototype.show_security = function(names, options, callback) {
 
     var actual_request = {
         names: names,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/show/security", actual_request, callback);
+};
+
+/**
+ * Retrieves the collected column statistics for the specified table.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_statistics_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_statistics_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_names: request.table_names,
+        options: request.options
+    };
+
+    this.submit_request("/show/statistics", actual_request, callback);
+};
+
+/**
+ * Retrieves the collected column statistics for the specified table.
+ *
+ * @param {String[]} table_names  Tables whose metadata will be fetched. All
+ *                                provided tables must exist, or an error is
+ *                                returned.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_statistics = function(table_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_statistics(table_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_names: table_names,
+        options: options
+    };
+
+    this.submit_request("/show/statistics", actual_request, callback);
 };
 
 /**
