@@ -718,79 +718,6 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
 };
 
 /**
- * Add a new node to the GPUdb cluster. By default this will only add the node
- * to the cluster but will not be assigned any data shards. Set the
- * <code>reshard</code> option to <code>true</code> to move some shards from
- * the other nodes in the cluster to this node.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_add_node_request = function(request, callback) {
-    var actual_request = {
-        host_name: request.host_name,
-        gpu_index: request.gpu_index,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/add/node", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/add/node", actual_request);
-        return data;
-    }
-};
-
-/**
- * Add a new node to the GPUdb cluster. By default this will only add the node
- * to the cluster but will not be assigned any data shards. Set the
- * <code>reshard</code> option to <code>true</code> to move some shards from
- * the other nodes in the cluster to this node.
- *
- * @param {String} host_name  host name of the node being added to the system.
- * @param {Number} gpu_index
- * @param {Object} options  Optional parameters.
- *                          <ul>
- *                                  <li> 'reshard': If <code>true</code>, then
- *                          some of the shards from all the existing nodes will
- *                          be moved to the new node being added. Note that for
- *                          big clusters, this data transfer could be time
- *                          consuming and also result in delay in responding to
- *                          queries for busy clusters.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                          </ul>
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_add_node = function(host_name, gpu_index, options, callback) {
-    var actual_request = {
-        host_name: host_name,
-        gpu_index: gpu_index,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/add/node", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/add/node", actual_request);
-        return data;
-    }
-};
-
-/**
  * Update the system config file.  Updates to the config file are only
  * permitted when the system is stopped.
  *
@@ -911,92 +838,6 @@ GPUdb.prototype.admin_alter_jobs = function(job_ids, action, options, callback) 
 };
 
 /**
- * Specify the mapping of the shards to the various ranks in the cluster. In
- * most cases, it should be sufficient to let the system automatically
- * distribute the shards evenly across the available ranks. However, this
- * endpoint can be used to move shards for various administrative reasons, say
- * in case of heterogeneous node clusters.  It should be noted that the system
- * may reassign the shards the when the number of nodes in the cluster changes
- * or the cluster is rebalanced.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_alter_shards_request = function(request, callback) {
-    var actual_request = {
-        version: request.version,
-        use_index: request.use_index,
-        rank: request.rank,
-        tom: request.tom,
-        index: request.index,
-        backup_map_list: request.backup_map_list,
-        backup_map_values: request.backup_map_values,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/alter/shards", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/alter/shards", actual_request);
-        return data;
-    }
-};
-
-/**
- * Specify the mapping of the shards to the various ranks in the cluster. In
- * most cases, it should be sufficient to let the system automatically
- * distribute the shards evenly across the available ranks. However, this
- * endpoint can be used to move shards for various administrative reasons, say
- * in case of heterogeneous node clusters.  It should be noted that the system
- * may reassign the shards the when the number of nodes in the cluster changes
- * or the cluster is rebalanced.
- *
- * @param {Number} version
- * @param {Boolean} use_index  Set to true when only the shards being moved are
- *                             specified in the request.  The index must
- *                             indicate the shards being moved.
- * @param {Number[]} rank  node to which the shard will be moved.
- * @param {Number[]} tom  Toms to which the shard will be moved.
- * @param {Number[]} index  The shard being moved.  When use_index is set to
- *                          true, size of this array must equal the size of
- *                          rank/tom array.
- * @param {Number[]} backup_map_list  List of rank_tom integers for which
- *                                    backup toms are defined
- * @param {Number[][]} backup_map_values  List of the backup rank_tom(s) for
- *                                        each rank_tom in backup_map_list
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_alter_shards = function(version, use_index, rank, tom, index, backup_map_list, backup_map_values, options, callback) {
-    var actual_request = {
-        version: version,
-        use_index: use_index,
-        rank: rank,
-        tom: tom,
-        index: index,
-        backup_map_list: backup_map_list,
-        backup_map_values: backup_map_values,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/alter/shards", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/alter/shards", actual_request);
-        return data;
-    }
-};
-
-/**
  * Take the system offline. When the system is offline, no user operations can
  * be performed with the exception of a system shutdown.
  *
@@ -1058,174 +899,6 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
         this.submit_request("/admin/offline", actual_request, callback);
     } else {
         var data = this.submit_request("/admin/offline", actual_request);
-        return data;
-    }
-};
-
-/**
- * Rebalance the cluster so that all the nodes contain approximately equal
- * number of records.  The rebalance will also cause the shards to be (as much
- * as possible) equally distributed across all the ranks. Note that the system
- * may move any shards that were moved by system administrator using
- * {@linkcode GPUdb#admin_alter_shards}
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_rebalance_request = function(request, callback) {
-    var actual_request = {
-        table_names: request.table_names,
-        action: request.action,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/rebalance", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/rebalance", actual_request);
-        return data;
-    }
-};
-
-/**
- * Rebalance the cluster so that all the nodes contain approximately equal
- * number of records.  The rebalance will also cause the shards to be (as much
- * as possible) equally distributed across all the ranks. Note that the system
- * may move any shards that were moved by system administrator using
- * {@linkcode GPUdb#admin_alter_shards}
- *
- * @param {String[]} table_names  Specify the tables here if only specific
- *                                tables have to be rebalanced.  Leave this
- *                                empty to rebalance all the tables.  Note that
- *                                only the tables which have no primary or
- *                                shard key can be rebalanced.
- * @param {String} action  Specify 'start' to start rebalancing the cluster or
- *                         'stop' to prematurely stop a previsouly issued
- *                         rebalance request.
- *                         Supported values:
- *                         <ul>
- *                                 <li> 'start'
- *                                 <li> 'stop'
- *                         </ul>
- * @param {Object} options  Optional parameters.
- *                          <ul>
- *                                  <li> 'reshard': If <code>true</code>, then
- *                          all the nodes in the cluster will be assigned
- *                          approximately the same number of shards. Note that
- *                          for big clusters, this data transfer could be time
- *                          consuming and also result in delay in responding to
- *                          queries for busy clusters.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
- *                          </ul>
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_rebalance = function(table_names, action, options, callback) {
-    var actual_request = {
-        table_names: table_names,
-        action: action,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/rebalance", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/rebalance", actual_request);
-        return data;
-    }
-};
-
-/**
- * Remove a node from the cluster.  Note that this operation could take a long
- * time to complete for big clusters.  The data is transferred to other nodes
- * in the cluster before the node is removed.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_remove_node_request = function(request, callback) {
-    var actual_request = {
-        rank: request.rank,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/remove/node", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/remove/node", actual_request);
-        return data;
-    }
-};
-
-/**
- * Remove a node from the cluster.  Note that this operation could take a long
- * time to complete for big clusters.  The data is transferred to other nodes
- * in the cluster before the node is removed.
- *
- * @param {Number} rank  Rank number of the node being removed from the
- *                       cluster.
- * @param {Object} options  Optional parameters.
- *                          <ul>
- *                                  <li> 'reshard': When <code>true</code>,
- *                          then the shards from nodes will be moved to the
- *                          other nodes in the cluster. When false, then the
- *                          node will only be removed from the cluster if the
- *                          node does not contain any data shards, otherwise an
- *                          error is returned.  Note that for big clusters,
- *                          this data transfer could be time consuming and also
- *                          result in delay in responding to queries for busy
- *                          clusters.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
- *                                  <li> 'force': When <code>true</code>, the
- *                          rank is immediately shutdown and removed from the
- *                          cluster.  This will result in loss of any data that
- *                          is present in the node at the time of the request.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                          </ul>
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * 
- */
-GPUdb.prototype.admin_remove_node = function(rank, options, callback) {
-    var actual_request = {
-        rank: rank,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/admin/remove/node", actual_request, callback);
-    } else {
-        var data = this.submit_request("/admin/remove/node", actual_request);
         return data;
     }
 };
@@ -1599,7 +1272,7 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * arg_max and count_distinct.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -1681,7 +1354,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * arg_max and count_distinct.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -2458,7 +2131,7 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
 
 /**
  * Returns all the unique values from a particular column (specified by
- * <code>column_name</code>) of a particular table (specified by
+ * <code>column_name</code>) of a particular table or collection (specified by
  * <code>table_name</code>). If <code>column_name</code> is a numeric column
  * the values will be in <code>binary_encoded_response</code>. Otherwise if
  * <code>column_name</code> is a string column the values will be in
@@ -2474,7 +2147,7 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -2488,8 +2161,8 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * result table will be sharded, in all other cases it will be replicated.
  * Sorting will properly function only if the result table is replicated or if
  * there is only one processing node and should not be relied upon in other
- * cases.  Not available when the value of <code>column_name</code> is an
- * unrestricted-length string.
+ * cases.  Not available if <code>table_name</code> is a collection or when the
+ * value of <code>column_name</code> is an unrestricted-length string.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2528,7 +2201,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
 
 /**
  * Returns all the unique values from a particular column (specified by
- * <code>column_name</code>) of a particular table (specified by
+ * <code>column_name</code>) of a particular table or collection (specified by
  * <code>table_name</code>). If <code>column_name</code> is a numeric column
  * the values will be in <code>binary_encoded_response</code>. Otherwise if
  * <code>column_name</code> is a string column the values will be in
@@ -2544,7 +2217,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -2558,11 +2231,11 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * result table will be sharded, in all other cases it will be replicated.
  * Sorting will properly function only if the result table is replicated or if
  * there is only one processing node and should not be relied upon in other
- * cases.  Not available when the value of <code>column_name</code> is an
- * unrestricted-length string.
+ * cases.  Not available if <code>table_name</code> is a collection or when the
+ * value of <code>column_name</code> is an unrestricted-length string.
  *
- * @param {String} table_name  Name of the table on which the operation will be
- *                             performed. Must be an existing table.
+ * @param {String} table_name  Name of an existing table/collection on which
+ *                             the operation will be performed.
  * @param {String} column_name  Name of the column or an expression containing
  *                              one or more column names on which the unique
  *                              function would be applied.
@@ -2598,7 +2271,10 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          are returned in the response. Has the same naming
  *                          restrictions as <a
  *                          href="../../concepts/tables.html"
- *                          target="_top">tables</a>.
+ *                          target="_top">tables</a>.  Not available if
+ *                          <code>table_name</code> is a collection or when
+ *                          <code>column_name</code> is an unrestricted-length
+ *                          string.
  *                                  <li> 'result_table_persist': If
  *                          <code>true</code>, then the result table specified
  *                          in <code>result_table</code> will be persisted and
@@ -2673,7 +2349,7 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
  * indicate the pivoted column name and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -2722,7 +2398,7 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  * indicate the pivoted column name and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {String} table_name  Name of the table on which the operation will be
@@ -7017,7 +6693,7 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * cannot be relied upon.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -7068,7 +6744,7 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * cannot be relied upon.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../concepts/dynamic_schemas.html" target="_top">dynamic schemas
+ * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {String} table_name  Name of the table on which this operation will
@@ -7091,8 +6767,8 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          sorting is applied).
  *                                  <li> 'sort_order': String indicating how
  *                          the returned values should be sorted - ascending or
- *                          descending. Default is 'ascending'. If sort_order
- *                          is provided, sort_by has to be provided.
+ *                          descending. If sort_order is provided, sort_by has
+ *                          to be provided.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'ascending'
