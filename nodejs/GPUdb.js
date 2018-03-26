@@ -1095,6 +1095,79 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
 };
 
 /**
+ * Retrieves a list of the most recent alerts generated.  The number of alerts
+ * to retrieve is specified in this request.
+ * Returns lists of alert data, earliest to latest
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_show_alerts_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        num_alerts: request.num_alerts,
+        options: request.options
+    };
+
+    this.submit_request("/admin/show/alerts", actual_request, callback);
+};
+
+/**
+ * Retrieves a list of the most recent alerts generated.  The number of alerts
+ * to retrieve is specified in this request.
+ * Returns lists of alert data, earliest to latest
+ *
+ * @param {Number} num_alerts  Number of most recent alerts to request. The
+ *                             response will return <code>num_alerts</code>
+ *                             alerts, or less if there are less in the system.
+ *                             A value of 0 returns all stored alerts.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_show_alerts = function(num_alerts, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_show_alerts(num_alerts, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        num_alerts: num_alerts,
+        options: options
+    };
+
+    this.submit_request("/admin/show/alerts", actual_request, callback);
+};
+
+/**
  * Show the current system configuration file.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -1534,6 +1607,11 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * given table/view/collection and computes aggregates on each unique
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
+ * For aggregation details and examples, see <a
+ * href="../../concepts/aggregation.html" target="_top">Aggregation</a>.  For
+ * limitations, see <a href="../../concepts/aggregation.html#limitations"
+ * target="_top">Aggregation Limitations</a>.
+ * <p>
  * Any column(s) can be grouped on, and all column types except
  * unrestricted-length strings may be used for computing applicable aggregates;
  * columns marked as <a href="../../concepts/types.html#data-handling"
@@ -1557,6 +1635,18 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * target="_top">aggregation functions</a> are: count(*), sum, min, max, avg,
  * mean, stddev, stddev_pop, stddev_samp, var, var_pop, var_samp, arg_min,
  * arg_max and count_distinct.
+ * <p>
+ * Available grouping functions are <a href="../../concepts/rollup.html"
+ * target="_top">Rollup</a>, <a href="../../concepts/cube.html"
+ * target="_top">Cube</a>, and <a href="../../concepts/grouping_sets.html"
+ * target="_top">Grouping Sets</a>
+ * <p>
+ * This service also provides support for <a href="../../concepts/pivot.html"
+ * target="_top">Pivot</a> operations.
+ * <p>
+ * Filtering on aggregates is supported via expressions using <a
+ * href="../../concepts/expressions.html#aggregate-expressions"
+ * target="_top">aggregation functions</a> supplied to <code>having</code>.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
@@ -1622,6 +1712,11 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * given table/view/collection and computes aggregates on each unique
  * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
+ * For aggregation details and examples, see <a
+ * href="../../concepts/aggregation.html" target="_top">Aggregation</a>.  For
+ * limitations, see <a href="../../concepts/aggregation.html#limitations"
+ * target="_top">Aggregation Limitations</a>.
+ * <p>
  * Any column(s) can be grouped on, and all column types except
  * unrestricted-length strings may be used for computing applicable aggregates;
  * columns marked as <a href="../../concepts/types.html#data-handling"
@@ -1645,6 +1740,18 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * target="_top">aggregation functions</a> are: count(*), sum, min, max, avg,
  * mean, stddev, stddev_pop, stddev_samp, var, var_pop, var_samp, arg_min,
  * arg_max and count_distinct.
+ * <p>
+ * Available grouping functions are <a href="../../concepts/rollup.html"
+ * target="_top">Rollup</a>, <a href="../../concepts/cube.html"
+ * target="_top">Cube</a>, and <a href="../../concepts/grouping_sets.html"
+ * target="_top">Grouping Sets</a>
+ * <p>
+ * This service also provides support for <a href="../../concepts/pivot.html"
+ * target="_top">Pivot</a> operations.
+ * <p>
+ * Filtering on aggregates is supported via expressions using <a
+ * href="../../concepts/expressions.html#aggregate-expressions"
+ * target="_top">aggregation functions</a> supplied to <code>having</code>.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
@@ -1775,6 +1882,21 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'pivot': pivot column
+ *                                  <li> 'pivot_values': The value list
+ *                          provided will become the column headers in the
+ *                          output. Should be the values from the pivot_column.
+ *                                  <li> 'grouping_sets': Customize the
+ *                          grouping attribute sets to compute the aggregates.
+ *                          These sets can include ROLLUP or CUBE operartors.
+ *                          The attribute sets should be enclosed in
+ *                          paranthesis and can include composite attributes.
+ *                          All attributes specified in the grouping sets must
+ *                          present in the groupby attributes.
+ *                                  <li> 'rollup': This option is used to
+ *                          specify the multilevel aggregates.
+ *                                  <li> 'cube': This option is used to specify
+ *                          the multidimensional aggregates.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -2197,6 +2319,10 @@ GPUdb.prototype.aggregate_min_max_geometry = function(table_name, column_name, o
  * percentiles each value must be specified separately (i.e.
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
+ * A second, comma-separated value can be added to the {percentile}@{choise of
+ * input stats} statistic to calculate percentile resolution, e.g., a 50th
+ * percentile with 200 resolution would be 'percentile(50,200)'.
+ * <p>
  * The weighted average statistic requires a <code>weight_column_name</code> to
  * be specified in <code>options</code>. The weighted average is then defined
  * as the sum of the products of <code>column_name</code> times the
@@ -2268,6 +2394,10 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  * percentiles each value must be specified separately (i.e.
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
+ * A second, comma-separated value can be added to the {percentile}@{choise of
+ * input stats} statistic to calculate percentile resolution, e.g., a 50th
+ * percentile with 200 resolution would be 'percentile(50,200)'.
+ * <p>
  * The weighted average statistic requires a <code>weight_column_name</code> to
  * be specified in <code>options</code>. The weighted average is then defined
  * as the sum of the products of <code>column_name</code> times the
@@ -2323,7 +2453,9 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                                <li> 'percentile': Estimate (via t-digest) of
  *                        the given percentile of the column(s)
  *                        (percentile(50.0) will be an approximation of the
- *                        median).
+ *                        median). Add a second, comma-separated value to
+ *                        calculate percentile resolution, e.g.,
+ *                        'percentile(75,150)'
  *                                <li> 'percentile_rank': Estimate (via
  *                        t-digest) of the percentile rank of the given value
  *                        in the column(s) (if the given value is the median of
@@ -2752,12 +2884,17 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
 /**
  * Rotate the column values into rows values.
  * <p>
- * The aggregate unpivot is used to normalize tables that are built for cross
- * tabular reporting purposes. The unpivot operator rotates the column values
- * for all the pivoted columns. A variable column, value column and all columns
- * from the source table except the unpivot columns are projected into the
- * result table. The variable column and value columns in the result table
- * indicate the pivoted column name and values respectively.
+ * For unpivot details and examples, see <a href="../../concepts/unpivot.html"
+ * target="_top">Unpivot</a>.  For limitations, see <a
+ * href="../../concepts/unpivot.html#limitations" target="_top">Unpivot
+ * Limitations</a>.
+ * <p>
+ * Unpivot is used to normalize tables that are built for cross tabular
+ * reporting purposes. The unpivot operator rotates the column values for all
+ * the pivoted columns. A variable column, value column and all columns from
+ * the source table except the unpivot columns are projected into the result
+ * table. The variable column and value columns in the result table indicate
+ * the pivoted column name and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
@@ -2807,12 +2944,17 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
 /**
  * Rotate the column values into rows values.
  * <p>
- * The aggregate unpivot is used to normalize tables that are built for cross
- * tabular reporting purposes. The unpivot operator rotates the column values
- * for all the pivoted columns. A variable column, value column and all columns
- * from the source table except the unpivot columns are projected into the
- * result table. The variable column and value columns in the result table
- * indicate the pivoted column name and values respectively.
+ * For unpivot details and examples, see <a href="../../concepts/unpivot.html"
+ * target="_top">Unpivot</a>.  For limitations, see <a
+ * href="../../concepts/unpivot.html#limitations" target="_top">Unpivot
+ * Limitations</a>.
+ * <p>
+ * Unpivot is used to normalize tables that are built for cross tabular
+ * reporting purposes. The unpivot operator rotates the column values for all
+ * the pivoted columns. A variable column, value column and all columns from
+ * the source table except the unpivot columns are projected into the result
+ * table. The variable column and value columns in the result table indicate
+ * the pivoted column name and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
@@ -2872,6 +3014,17 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
  *                          <code>result_table</code>.
+ *                                  <li> 'view_id': view this result table is
+ *                          part of
+ *                                  <li> 'materialize_on_gpu': If
+ *                          <code>true</code> then the output columns will be
+ *                          cached on the GPU.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3265,13 +3418,13 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 <li> 'create_foreign_key': Creates a <a
  *                         href="../../concepts/tables.html#foreign-key"
  *                         target="_top">foreign key</a> using the format
- *                         'source_column references
- *                         target_table(primary_key_column) [ as
- *                         <foreign_key_name> ]'.
+ *                         '(source_column_name [, ...]) references
+ *                         target_table_name(primary_key_column_name [, ...])
+ *                         [as foreign_key_name]'.
  *                                 <li> 'delete_foreign_key': Deletes a <a
  *                         href="../../concepts/tables.html#foreign-key"
  *                         target="_top">foreign key</a>.  The
- *                         <code>value</code> should be the <foreign_key_name>
+ *                         <code>value</code> should be the foreign_key_name
  *                         specified when creating the key or the complete
  *                         string used to define it.
  *                                 <li> 'set_global_access_mode': Sets the
@@ -3282,20 +3435,24 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         'read_write'.
  *                                 <li> 'refresh': Replay all the table
  *                         creation commands required to create this view.
- *                         Endpoints supported are filter, create_join_table,
- *                         create_projection, create_union, aggregate_group_by,
- *                         and aggregate_unique.
+ *                         Endpoints supported are {@linkcode GPUdb#filter},
+ *                         {@linkcode GPUdb#create_join_table},
+ *                         {@linkcode GPUdb#create_projection},
+ *                         {@linkcode GPUdb#create_union},
+ *                         {@linkcode GPUdb#aggregate_group_by}, and
+ *                         {@linkcode GPUdb#aggregate_unique}.
  *                                 <li> 'set_refresh_method': Set the method by
- *                         which this view is refreshed - one of manual,
- *                         periodic, on_change, on_query.
+ *                         which this view is refreshed - one of 'manual',
+ *                         'periodic', 'on_change', 'on_query'.
  *                                 <li> 'set_refresh_start_time': Set the time
  *                         to start periodic refreshes to datetime string with
  *                         format YYYY-MM-DD HH:MM:SS at which refresh is to be
  *                         done.  Next refresh occurs at refresh_start_time +
  *                         N*refresh_period
  *                                 <li> 'set_refresh_period': Set the time
- *                         interval at which to refresh this view - set refresh
- *                         method to periodic if not alreay set.
+ *                         interval in seconds at which to refresh this view -
+ *                         sets the refresh method to periodic if not alreay
+ *                         set.
  *                         </ul>
  * @param {String} value  The value of the modification. May be a column name,
  *                        'true' or 'false', a TTL, or the global access mode
@@ -3592,10 +3749,14 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  * @param {Object} field_map  Contains the mapping of column names from the
  *                            target table (specified by
  *                            <code>table_name</code>) as the keys, and
- *                            corresponding column names from the source table
- *                            (specified by <code>source_table_name</code>).
- *                            Must be existing column names in source table and
- *                            target table, and their types must be matched.
+ *                            corresponding column names or expressions (e.g.,
+ *                            'col_name+1') from the source table (specified by
+ *                            <code>source_table_name</code>). Must be existing
+ *                            column names in source table and target table,
+ *                            and their types must be matched. For details on
+ *                            using expressions, see <a
+ *                            href="../../concepts/expressions.html"
+ *                            target="_top">Expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'offset': A positive integer
@@ -3674,78 +3835,6 @@ GPUdb.prototype.append_records = function(table_name, source_table_name, field_m
     };
 
     this.submit_request("/append/records", actual_request, callback);
-};
-
-/**
- * Clears (drops) one or all column statistics of a tables.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.clear_statistics_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.clear_statistics_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        table_name: (request.table_name !== undefined && request.table_name !== null) ? request.table_name : "",
-        column_name: (request.column_name !== undefined && request.column_name !== null) ? request.column_name : "",
-        options: request.options
-    };
-
-    this.submit_request("/clear/statistics", actual_request, callback);
-};
-
-/**
- * Clears (drops) one or all column statistics of a tables.
- *
- * @param {String} table_name  Name of the table to clear the statistics. Must
- *                             be an existing table.
- * @param {String} column_name  Name of the column to be cleared. Must be an
- *                              existing table. Empty string clears all
- *                              available statistics of the table.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.clear_statistics = function(table_name, column_name, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.clear_statistics(table_name, column_name, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        table_name: (table_name !== undefined && table_name !== null) ? table_name : "",
-        column_name: (column_name !== undefined && column_name !== null) ? column_name : "",
-        options: options
-    };
-
-    this.submit_request("/clear/statistics", actual_request, callback);
 };
 
 /**
@@ -3980,76 +4069,6 @@ GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
 };
 
 /**
- * Collect the requested statistics of the given column(s) in a given table.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.collect_statistics_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.collect_statistics_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        table_name: request.table_name,
-        column_names: request.column_names,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/collect/statistics", actual_request, callback);
-};
-
-/**
- * Collect the requested statistics of the given column(s) in a given table.
- *
- * @param {String} table_name  Name of the table on which the statistics
- *                             operation will be performed.
- * @param {String[]} column_names  List of one or more column names.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.collect_statistics = function(table_name, column_names, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.collect_statistics(table_name, column_names, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        table_name: table_name,
-        column_names: column_names,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/collect/statistics", actual_request, callback);
-};
-
-/**
  * Create a job which will run asynchronously. The response returns a job ID,
  * which can be used to query the status and result of the job. The status and
  * the result of the job upon completion can be requested by
@@ -4155,9 +4174,12 @@ GPUdb.prototype.create_job = function(endpoint, request_encoding, data, data_str
 };
 
 /**
- * Creates a table that is the result of a SQL JOIN.  For details see: <a
- * href="../../concepts/joins.html" target="_top">join concept
- * documentation</a>.
+ * Creates a table that is the result of a SQL JOIN.
+ * <p>
+ * For join details and examples see: <a href="../../concepts/joins.html"
+ * target="_top">Joins</a>.  For limitations, see <a
+ * href="../../concepts/joins.html#limitations-cautions" target="_top">Join
+ * Limitations and Cautions</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4193,9 +4215,12 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
 };
 
 /**
- * Creates a table that is the result of a SQL JOIN.  For details see: <a
- * href="../../concepts/joins.html" target="_top">join concept
- * documentation</a>.
+ * Creates a table that is the result of a SQL JOIN.
+ * <p>
+ * For join details and examples see: <a href="../../concepts/joins.html"
+ * target="_top">Joins</a>.  For limitations, see <a
+ * href="../../concepts/joins.html#limitations-cautions" target="_top">Join
+ * Limitations and Cautions</a>.
  *
  * @param {String} join_table_name  Name of the join table to be created.  Has
  *                                  the same naming restrictions as <a
@@ -4323,11 +4348,16 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
 };
 
 /**
- * The create materialized view request does not create the actual table that
- * will be the toplevel table of the view but instead registers the table name
- * so no other views or tables can be created with that name.  The response
- * contains a a view_id that is used to label the table creation requests
- * (projection, union, group-by, filter, or join) that describes the view.
+ * Initiates the process of creating a materialized view, reserving the view's
+ * name to prevent other views or tables from being created with that name.
+ * <p>
+ * For materialized view details and examples, see <a
+ * href="../../concepts/materialized_views.html" target="_top">Materialized
+ * Views</a>.
+ * <p>
+ * The response contains <code>view_id</code>, which is used to tag each
+ * subsequent operation (projection, union, group-by, filter, or join) that
+ * will compose the view.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4360,11 +4390,16 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
 };
 
 /**
- * The create materialized view request does not create the actual table that
- * will be the toplevel table of the view but instead registers the table name
- * so no other views or tables can be created with that name.  The response
- * contains a a view_id that is used to label the table creation requests
- * (projection, union, group-by, filter, or join) that describes the view.
+ * Initiates the process of creating a materialized view, reserving the view's
+ * name to prevent other views or tables from being created with that name.
+ * <p>
+ * For materialized view details and examples, see <a
+ * href="../../concepts/materialized_views.html" target="_top">Materialized
+ * Views</a>.
+ * <p>
+ * The response contains <code>view_id</code>, which is used to tag each
+ * subsequent operation (projection, union, group-by, filter, or join) that
+ * will compose the view.
  *
  * @param {String} table_name  Name of the table to be created that is the
  *                             top-level table of the materialized view.
@@ -4584,6 +4619,16 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
  * target="_top">projection</a> of an existing table. A projection represents a
  * subset of the columns (potentially including derived columns) of a table.
  * <p>
+ * For projection details and examples, see <a
+ * href="../../concepts/projections.html" target="_top">Projections</a>.  For
+ * limitations, see <a
+ * href="../../concepts/projections.html#limitations-and-cautions"
+ * target="_top">Projection Limitations and Cautions</a>.
+ * <p>
+ * <a href="../../concepts/window.html" target="_top">Window functions</a> are
+ * available through this endpoint as well as
+ * {@linkcode GPUdb#get_records_by_column}.
+ * <p>
  * Notes:
  * <p>
  * A moving average can be calculated on a given column using the following
@@ -4644,6 +4689,16 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * Creates a new <a href="../../concepts/projections.html"
  * target="_top">projection</a> of an existing table. A projection represents a
  * subset of the columns (potentially including derived columns) of a table.
+ * <p>
+ * For projection details and examples, see <a
+ * href="../../concepts/projections.html" target="_top">Projections</a>.  For
+ * limitations, see <a
+ * href="../../concepts/projections.html#limitations-and-cautions"
+ * target="_top">Projection Limitations and Cautions</a>.
+ * <p>
+ * <a href="../../concepts/window.html" target="_top">Window functions</a> are
+ * available through this endpoint as well as
+ * {@linkcode GPUdb#get_records_by_column}.
  * <p>
  * Notes:
  * <p>
@@ -4967,9 +5022,9 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          list of <a
  *                          href="../../concepts/tables.html#foreign-keys"
  *                          target="_top">foreign keys</a>, of the format
- *                          'source_column references
- *                          target_table(primary_key_column) [ as
- *                          <foreign_key_name> ]'.
+ *                          '(source_column_name [, ...]) references
+ *                          target_table_name(primary_key_column_name [, ...])
+ *                          [as foreign_key_name]'.
  *                                  <li> 'foreign_shard_key': Foreign shard key
  *                          of the format 'source_column references
  *                          shard_by_column from
@@ -5639,14 +5694,34 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
 };
 
 /**
- * Performs a <a href="../../concepts/unions.html" target="_top">union</a>
- * (concatenation) of one or more existing tables or views, the results of
- * which are stored in a new table. It is equivalent to the SQL UNION ALL
- * operator.  Non-charN 'string' and 'bytes' column types cannot be included in
- * a union, neither can columns with the property 'store_only'. Though not
- * explicitly unions, <a href="../../concepts/intersect.html"
- * target="_top">intersect</a> and <a href="../../concepts/except.html"
- * target="_top">except</a> are also available from this endpoint.
+ * Merges data from one or more tables with comparable data types into a new
+ * table.
+ * <p>
+ * The following merges are supported:
+ * <p>
+ * UNION (DISTINCT/ALL) - For data set union details and examples, see <a
+ * href="../../concepts/unions.html" target="_top">Union</a>.  For limitations,
+ * see <a href="../../concepts/unions.html#limitations-and-cautions"
+ * target="_top">Union Limitations and Cautions</a>.
+ * <p>
+ * INTERSECT (DISTINCT) - For data set intersection details and examples, see
+ * <a href="../../concepts/intersect.html" target="_top">Intersect</a>.  For
+ * limitations, see <a href="../../concepts/intersect.html#limitations"
+ * target="_top">Intersect Limitations</a>.
+ * <p>
+ * EXCEPT (DISTINCT) - For data set subtraction details and examples, see <a
+ * href="../../concepts/except.html" target="_top">Except</a>.  For
+ * limitations, see <a href="../../concepts/except.html#limitations"
+ * target="_top">Except Limitations</a>.
+ * <p>
+ * MERGE VIEWS - For a given set of <a
+ * href="../../concepts/filtered_views.html" target="_top">filtered views</a>
+ * on a single table, creates a single filtered view containing all of the
+ * unique records across all of the given filtered data sets.
+ * <p>
+ * Non-charN 'string' and 'bytes' column types cannot be merged, nor can
+ * columns marked as <a href="../../concepts/types.html#data-handling"
+ * target="_top">store-only</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5682,44 +5757,65 @@ GPUdb.prototype.create_union_request = function(request, callback) {
 };
 
 /**
- * Performs a <a href="../../concepts/unions.html" target="_top">union</a>
- * (concatenation) of one or more existing tables or views, the results of
- * which are stored in a new table. It is equivalent to the SQL UNION ALL
- * operator.  Non-charN 'string' and 'bytes' column types cannot be included in
- * a union, neither can columns with the property 'store_only'. Though not
- * explicitly unions, <a href="../../concepts/intersect.html"
- * target="_top">intersect</a> and <a href="../../concepts/except.html"
- * target="_top">except</a> are also available from this endpoint.
+ * Merges data from one or more tables with comparable data types into a new
+ * table.
+ * <p>
+ * The following merges are supported:
+ * <p>
+ * UNION (DISTINCT/ALL) - For data set union details and examples, see <a
+ * href="../../concepts/unions.html" target="_top">Union</a>.  For limitations,
+ * see <a href="../../concepts/unions.html#limitations-and-cautions"
+ * target="_top">Union Limitations and Cautions</a>.
+ * <p>
+ * INTERSECT (DISTINCT) - For data set intersection details and examples, see
+ * <a href="../../concepts/intersect.html" target="_top">Intersect</a>.  For
+ * limitations, see <a href="../../concepts/intersect.html#limitations"
+ * target="_top">Intersect Limitations</a>.
+ * <p>
+ * EXCEPT (DISTINCT) - For data set subtraction details and examples, see <a
+ * href="../../concepts/except.html" target="_top">Except</a>.  For
+ * limitations, see <a href="../../concepts/except.html#limitations"
+ * target="_top">Except Limitations</a>.
+ * <p>
+ * MERGE VIEWS - For a given set of <a
+ * href="../../concepts/filtered_views.html" target="_top">filtered views</a>
+ * on a single table, creates a single filtered view containing all of the
+ * unique records across all of the given filtered data sets.
+ * <p>
+ * Non-charN 'string' and 'bytes' column types cannot be merged, nor can
+ * columns marked as <a href="../../concepts/types.html#data-handling"
+ * target="_top">store-only</a>.
  *
  * @param {String} table_name  Name of the table to be created. Has the same
  *                             naming restrictions as <a
  *                             href="../../concepts/tables.html"
  *                             target="_top">tables</a>.
- * @param {String[]} table_names  The list of table names making up the union.
- *                                Must contain the names of one or more
- *                                existing tables.
+ * @param {String[]} table_names  The list of table names to merge. Must
+ *                                contain the names of one or more existing
+ *                                tables.
  * @param {String[][]} input_column_names  The list of columns from each of the
  *                                         corresponding input tables.
  * @param {String[]} output_column_names  The list of names of the columns to
- *                                        be stored in the union.
+ *                                        be stored in the output table.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
- *                          collection which is to contain the union. If the
- *                          collection provided is non-existent, the collection
- *                          will be automatically created. If empty, then the
- *                          union will be a top-level table.
- *                                  <li> 'materialize_on_gpu': If 'true' then
- *                          the columns of the union will be cached on the GPU.
+ *                          collection which is to contain the output table. If
+ *                          the collection provided is non-existent, the
+ *                          collection will be automatically created. If empty,
+ *                          the output table will be a top-level table.
+ *                                  <li> 'materialize_on_gpu': If
+ *                          <code>true</code>, then the columns of the output
+ *                          table will be cached on the GPU.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'mode': If 'merge_views' then this
- *                          operation will merge (i.e. union) the provided
- *                          views. All 'table_names' must be views from the
+ *                                  <li> 'mode': If <code>merge_views</code>,
+ *                          then this operation will merge the provided views.
+ *                          All <code>table_names</code> must be views from the
  *                          same underlying base table.
  *                          Supported values:
  *                          <ul>
@@ -5727,7 +5823,7 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          specified tables.
  *                                  <li> 'union': Retains all unique rows from
  *                          the specified tables (synonym for
- *                          'union_distinct').
+ *                          <code>union_distinct</code>).
  *                                  <li> 'union_distinct': Retains all unique
  *                          rows from the specified tables.
  *                                  <li> 'except': Retains all unique rows from
@@ -5743,10 +5839,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          <code>output_column_names</code> must be empty. The
  *                          resulting view would match the results of a SQL OR
  *                          operation, e.g., if filter 1 creates a view using
- *                          the expression 'x = 10' and filter 2 creates a view
+ *                          the expression 'x = 20' and filter 2 creates a view
  *                          using the expression 'x <= 10', then the merge
  *                          views operation creates a new view using the
- *                          expression 'x = 10 OR x <= 10'.
+ *                          expression 'x = 20 OR x <= 10'.
  *                          </ul>
  *                          The default value is 'union_all'.
  *                                  <li> 'chunk_size': Indicates the chunk size
@@ -5756,10 +5852,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          target="_top">TTL</a> of the table specified in
  *                          <code>table_name</code>.
  *                                  <li> 'persist': If <code>true</code>, then
- *                          the union specified in <code>table_name</code> will
+ *                          the table specified in <code>table_name</code> will
  *                          be persisted and will not expire unless a
  *                          <code>ttl</code> is specified.   If
- *                          <code>false</code>, then the union will be an
+ *                          <code>false</code>, then the table will be an
  *                          in-memory table and will expire unless a
  *                          <code>ttl</code> is specified otherwise.
  *                          Supported values:
@@ -5768,8 +5864,8 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'view_id': view this union table is
- *                          part of
+ *                                  <li> 'view_id': view the output table will
+ *                          be a part of
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -8219,6 +8315,10 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * returned. This endpoint supports pagination with the <code>offset</code> and
  * <code>limit</code> parameters.
  * <p>
+ * <a href="../../concepts/window.html" target="_top">Window functions</a> are
+ * available through this endpoint as well as
+ * {@linkcode GPUdb#create_projection}.
+ * <p>
  * When using pagination, if the table (or the underlying table in the case of
  * a view) is modified (records are inserted, updated, or deleted) during a
  * call to the endpoint, the records or values retrieved may differ between
@@ -8275,6 +8375,10 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * of column name to the array of values as well as the column data type are
  * returned. This endpoint supports pagination with the <code>offset</code> and
  * <code>limit</code> parameters.
+ * <p>
+ * <a href="../../concepts/window.html" target="_top">Window functions</a> are
+ * available through this endpoint as well as
+ * {@linkcode GPUdb#create_projection}.
  * <p>
  * When using pagination, if the table (or the underlying table in the case of
  * a view) is modified (records are inserted, updated, or deleted) during a
@@ -9757,13 +9861,20 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  * Create a new empty result table (specified by <code>table_name</code>), and
  * insert all records from source tables (specified by
  * <code>source_table_names</code>) based on the field mapping information
- * (specified by <code>field_maps</code>). The field map (specified by
- * <code>field_maps</code>) holds the user specified maps of target table
- * column names to source table columns. The array of <code>field_maps</code>
- * must match one-to-one with the <code>source_table_names</code>, e.g.,
- * there's a map present in <code>field_maps</code> for each table listed in
- * <code>source_table_names</code>. Read more about Merge Records <a
- * href="../../concepts/merge_records.html" target="_top">here</a>.
+ * (specified by <code>field_maps</code>).
+ * <p>
+ * For merge records details and examples, see <a
+ * href="../../concepts/merge_records.html" target="_top">Merge Records</a>.
+ * For limitations, see <a
+ * href="../../concepts/merge_records.html#limitations-and-cautions"
+ * target="_top">Merge Records Limitations and Cautions</a>.
+
+ * The field map (specified by <code>field_maps</code>) holds the
+ * user-specified maps of target table column names to source table columns.
+ * The array of <code>field_maps</code> must match one-to-one with the
+ * <code>source_table_names</code>, e.g., there's a map present in
+ * <code>field_maps</code> for each table listed in
+ * <code>source_table_names</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9801,13 +9912,20 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  * Create a new empty result table (specified by <code>table_name</code>), and
  * insert all records from source tables (specified by
  * <code>source_table_names</code>) based on the field mapping information
- * (specified by <code>field_maps</code>). The field map (specified by
- * <code>field_maps</code>) holds the user specified maps of target table
- * column names to source table columns. The array of <code>field_maps</code>
- * must match one-to-one with the <code>source_table_names</code>, e.g.,
- * there's a map present in <code>field_maps</code> for each table listed in
- * <code>source_table_names</code>. Read more about Merge Records <a
- * href="../../concepts/merge_records.html" target="_top">here</a>.
+ * (specified by <code>field_maps</code>).
+ * <p>
+ * For merge records details and examples, see <a
+ * href="../../concepts/merge_records.html" target="_top">Merge Records</a>.
+ * For limitations, see <a
+ * href="../../concepts/merge_records.html#limitations-and-cautions"
+ * target="_top">Merge Records Limitations and Cautions</a>.
+
+ * The field map (specified by <code>field_maps</code>) holds the
+ * user-specified maps of target table column names to source table columns.
+ * The array of <code>field_maps</code> must match one-to-one with the
+ * <code>source_table_names</code>, e.g., there's a map present in
+ * <code>field_maps</code> for each table listed in
+ * <code>source_table_names</code>.
  *
  * @param {String} table_name  The new result table name for the records to be
  *                             merged.  Must NOT be an existing table.
@@ -9820,12 +9938,14 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                               being merged into the target table specified
  *                               by <code>table_name</code>.  Each mapping
  *                               contains the target column names (as keys)
- *                               that the data in the mapped source columns (as
- *                               values) will be merged into.  All of the
- *                               source columns being merged into a given
- *                               target column must match in type, as that type
- *                               will determine the type of the new target
- *                               column.
+ *                               that the data in the mapped source columns or
+ *                               column <a
+ *                               href="../../concepts/expressions.html"
+ *                               target="_top">expressions</a> (as values) will
+ *                               be merged into.  All of the source columns
+ *                               being merged into a given target column must
+ *                               match in type, as that type will determine the
+ *                               type of the new target column.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
@@ -9858,6 +9978,8 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                                  <li> 'chunk_size': Indicates the chunk size
  *                          to be used for the merged table specified in
  *                          <code>table_name</code>.
+ *                                  <li> 'view_id': view this result table is
+ *                          part of
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -10435,74 +10557,6 @@ GPUdb.prototype.show_security = function(names, options, callback) {
     };
 
     this.submit_request("/show/security", actual_request, callback);
-};
-
-/**
- * Retrieves the collected column statistics for the specified table.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.show_statistics_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.show_statistics_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        table_names: request.table_names,
-        options: request.options
-    };
-
-    this.submit_request("/show/statistics", actual_request, callback);
-};
-
-/**
- * Retrieves the collected column statistics for the specified table.
- *
- * @param {String[]} table_names  Tables whose metadata will be fetched. All
- *                                provided tables must exist, or an error is
- *                                returned.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.show_statistics = function(table_names, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.show_statistics(table_names, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        table_names: table_names,
-        options: options
-    };
-
-    this.submit_request("/show/statistics", actual_request, callback);
 };
 
 /**
