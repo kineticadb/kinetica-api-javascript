@@ -1,10 +1,11 @@
 GPUdb Javascript API Changelog
 ==============================
 
-Version 6.2.0 - 2018-02-11
+Version 6.2.0 - 2018-04-17
 --------------------------
 
--   Version release
+-   Added a convenience method get_geo_json() that returns a GeoJSON object
+    from a table (to both the JavaScript and NodeJS APIs).
 
 
 Version 6.1.0 - 2017-10-05

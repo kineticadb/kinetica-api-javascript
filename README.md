@@ -5,6 +5,19 @@ Kinetica JavaScript API
 This repository contains the *Kinetica* client-side API for both *JavaScript*
 and *Node.js*, as well as examples of each.
 
+At high level, the difference between the JavaScript and the Node.js APIs is:
+
+*   The JavaScript API allows synchronous calls:
+    *   If the user provides a callback, the API will make an asynchronous call.
+    *   If the user does not provide a callback, then the API will make a
+        synchronous call, although doing this is discouraged.
+*   The Node.js API uses promises:
+    *   If the user provides a callback, the API will use it (and make an asynchronous
+        calls).
+    *   If the user does not provide a callback, the API will return a promise (also
+        asynchronous).
+
+
 
 JavaScript
 ----------

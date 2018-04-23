@@ -860,6 +860,103 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
     });
 };
 
+
+/**
+ * Retrieves records from a given table as a GeoJSON, optionally filtered by an expression
+ * and/or sorted by a column. This operation can be performed on tables, views,
+ * or on homogeneous collections (collections containing tables of all the same
+ * type). Records can be returned encoded as binary, json or geojson.
+ * <p>
+ * This operation supports paging through the data via the <code>offset</code>
+ * and <code>limit</code> parameters. Note that when paging through a table, if
+ * the table (or the underlying table in case of a view) is updated (records
+ * are inserted, deleted or modified) the records retrieved may differ between
+ * calls based on the updates applied.
+ *
+ * @param {String} table_name  Name of the table from which the records will be
+ *                             fetched. Must be a table, view or homogeneous
+ *                             collection.
+ * @param {Number} offset  A positive integer indicating the number of initial
+ *                         results to skip (this can be useful for paging
+ *                         through the results).
+ * @param {Number} limit  A positive integer indicating the maximum number of
+ *                        results to be returned. Or END_OF_SET (-9999) to
+ *                        indicate that the max number of results should be
+ *                        returned.
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> 'expression': Optional filter
+ *                          expression to apply to the table.
+ *                                  <li> 'fast_index_lookup': Indicates if
+ *                          indexes should be used to perform the lookup for a
+ *                          given expression if possible. Only applicable if
+ *                          there is no sorting, the expression contains only
+ *                          equivalence comparisons based on existing tables
+ *                          indexes and the range of requested values is from
+ *                          [0 to END_OF_SET].
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'sort_by': Optional column that the
+ *                          data should be sorted by. Empty by default (i.e. no
+ *                          sorting is applied).
+ *                                  <li> 'sort_order': String indicating how
+ *                          the returned values should be sorted - ascending or
+ *                          descending. If sort_order is provided, sort_by has
+ *                          to be provided.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'ascending'
+ *                                  <li> 'descending'
+ *                          </ul>
+ *                          The default value is 'ascending'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the GeoJSON
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.get_geo_json(table_name, offset, limit, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: table_name,
+        offset: (offset !== undefined && offset !== null) ? offset : 0,
+        limit: (limit !== undefined && limit !== null) ? limit : 10000,
+        encoding: "geojson",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/get/records", actual_request, function(err, data) {
+        if (err === null) {
+            var geo_json = GPUdb.decode( data.records_json )[0];
+            // Return just the GeoJSON
+            callback(err, geo_json);
+        }
+        else {
+            // There was an error, so nothing to decode
+            callback(err, data);
+        }
+    });
+};
+
+
+
 /**
  * Update the system config file.  Updates to the config file are only
  * permitted when the system is stopped.
@@ -1857,10 +1954,22 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          the result table to be replicated (ignores any
  *                          sharding). Must be used in combination with the
  *                          <code>result_table</code> option.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'result_table_generate_pk': If 'true'
  *                          then set a primary key for the result table. Must
  *                          be used in combination with the
  *                          <code>result_table</code> option.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
@@ -1946,7 +2055,8 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
  * inclusive.  The value returned for each bin is the number of records in it,
  * except when a column name is provided as a *value_column* in
  * <code>options</code>.  In this latter case the sum of the values
- * corresponding to the *value_column* is used as the result instead.
+ * corresponding to the *value_column* is used as the result instead.  The
+ * total number of bins requested cannot exceed 10,000.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1991,7 +2101,8 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  * inclusive.  The value returned for each bin is the number of records in it,
  * except when a column name is provided as a *value_column* in
  * <code>options</code>.  In this latter case the sum of the values
- * corresponding to the *value_column* is used as the result instead.
+ * corresponding to the *value_column* is used as the result instead.  The
+ * total number of bins requested cannot exceed 10,000.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table or
@@ -2319,9 +2430,9 @@ GPUdb.prototype.aggregate_min_max_geometry = function(table_name, column_name, o
  * percentiles each value must be specified separately (i.e.
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
- * A second, comma-separated value can be added to the {percentile}@{choise of
- * input stats} statistic to calculate percentile resolution, e.g., a 50th
- * percentile with 200 resolution would be 'percentile(50,200)'.
+ * A second, comma-separated value can be added to the <code>percentile</code>
+ * statistic to calculate percentile resolution, e.g., a 50th percentile with
+ * 200 resolution would be 'percentile(50,200)'.
  * <p>
  * The weighted average statistic requires a <code>weight_column_name</code> to
  * be specified in <code>options</code>. The weighted average is then defined
@@ -2394,9 +2505,9 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  * percentiles each value must be specified separately (i.e.
  * 'percentile(75.0),percentile(99.0),percentile_rank(1234.56),percentile_rank(-5)').
  * <p>
- * A second, comma-separated value can be added to the {percentile}@{choise of
- * input stats} statistic to calculate percentile resolution, e.g., a 50th
- * percentile with 200 resolution would be 'percentile(50,200)'.
+ * A second, comma-separated value can be added to the <code>percentile</code>
+ * statistic to calculate percentile resolution, e.g., a 50th percentile with
+ * 200 resolution would be 'percentile(50,200)'.
  * <p>
  * The weighted average statistic requires a <code>weight_column_name</code> to
  * be specified in <code>options</code>. The weighted average is then defined
@@ -2827,10 +2938,22 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          the result table to be replicated (ignores any
  *                          sharding). Must be used in combination with the
  *                          <code>result_table</code> option.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'result_table_generate_pk': If 'true'
  *                          then set a primary key for the result table. Must
  *                          be used in combination with the
  *                          <code>result_table</code> option.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
@@ -2924,6 +3047,7 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
 
     var actual_request = {
         table_name: request.table_name,
+        column_names: request.column_names,
         variable_column_name: (request.variable_column_name !== undefined && request.variable_column_name !== null) ? request.variable_column_name : "",
         value_column_name: (request.value_column_name !== undefined && request.value_column_name !== null) ? request.value_column_name : "",
         pivoted_columns: request.pivoted_columns,
@@ -2962,6 +3086,9 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table/view.
+ * @param {String[]} column_names  List of column names or expressions. A
+ *                                 wildcard '*' can be used to include all the
+ *                                 non-pivoted columns from the source table.
  * @param {String} variable_column_name  Specifies the variable/parameter
  *                                       column name.
  * @param {String} value_column_name  Specifies the value column name.
@@ -3031,12 +3158,12 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.aggregate_unpivot = function(table_name, variable_column_name, value_column_name, pivoted_columns, options, callback) {
+GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_column_name, value_column_name, pivoted_columns, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.aggregate_unpivot(table_name, variable_column_name, value_column_name, pivoted_columns, options, function(err, response) {
+            self.aggregate_unpivot(table_name, column_names, variable_column_name, value_column_name, pivoted_columns, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -3048,6 +3175,7 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, variable_column_name, v
 
     var actual_request = {
         table_name: table_name,
+        column_names: column_names,
         variable_column_name: (variable_column_name !== undefined && variable_column_name !== null) ? variable_column_name : "",
         value_column_name: (value_column_name !== undefined && value_column_name !== null) ? value_column_name : "",
         pivoted_columns: pivoted_columns,
@@ -3882,7 +4010,9 @@ GPUdb.prototype.clear_table_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to be cleared. Must be an
  *                             existing table. Empty string clears all
- *                             available tables.
+ *                             available tables, though this behavior is be
+ *                             prevented by default via gpudb.conf parameter
+ *                             'disable_clear_all'.
  * @param {String} authorization  No longer used. User can pass an empty
  *                                string.
  * @param {Object} options  Optional parameters.
@@ -4315,6 +4445,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          in <code>join_table_name</code>.
  *                                  <li> 'view_id': view this projection is
  *                          part of
+ *                                  <li> 'no_count': return a count of 0 for
+ *                          the join table for logging and for show_table.
+ *                          optimization needed for large overlapped equi-join
+ *                          stencils
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4791,6 +4925,16 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'preserve_dict_encoding': If
+ *                          <code>true</code>, then columns that were dict
+ *                          encoded in the source table will be dict encoded in
+ *                          the projection table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 'view_id': view this projection is
  *                          part of
  *                          </ul>
@@ -6672,6 +6816,14 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  * @param {Number[]} y_vector  List of y coordinates of the vertices of the
  *                             polygon representing the area to be filtered.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created.  If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6772,6 +6924,14 @@ GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
  * @param {Number[]} y_vector  List of y coordinates of the vertices of the
  *                             polygon representing the area to be filtered.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6881,6 +7041,14 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  * @param {Number} max_y  Upper bound for <code>y_column_name</code>. Must be
  *                        greater than or equal to <code>min_y</code>.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6990,6 +7158,14 @@ GPUdb.prototype.filter_by_box_geometry_request = function(request, callback) {
  *                        box. Must be greater than or equal to
  *                        <code>min_y</code>.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7104,6 +7280,14 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  *                            within the given WKT.
  *                            </ul>
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7214,6 +7398,12 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *                                    column in the table
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
  *                                  <li> 'filter_mode': String indicating the
  *                          filter mode, either 'in_list' or 'not_in_list'.
  *                          Supported values:
@@ -7338,6 +7528,14 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                         value. It is in meters; so, for example, a value of
  *                         '42000' means 42 km.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7442,6 +7640,14 @@ GPUdb.prototype.filter_by_radius_geometry_request = function(request, callback) 
  *                         value. It is in meters; so, for example, a value of
  *                         '42000' means 42 km.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7546,6 +7752,14 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  * @param {Number} lower_bound  Value of the lower bound (inclusive).
  * @param {Number} upper_bound  Value of the upper bound (inclusive).
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7660,6 +7874,12 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                     set.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
  *                                  <li> 'spatial_radius': A positive number
  *                          passed as a string representing the radius of the
  *                          search area centered around each track point's
@@ -7798,6 +8018,12 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                                 filter. Ignored for 'search' mode.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
  *                                  <li> 'case_sensitive': If 'false' then
  *                          string filtering will ignore case. Does not apply
  *                          to 'search' mode.
@@ -7921,6 +8147,12 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                           <code>column_name</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
  *                                  <li> 'filter_mode': String indicating the
  *                          filter mode, either <code>in_table</code> or
  *                          <code>not_in_table</code>.
@@ -8068,6 +8300,14 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  * @param {String} column_name  Name of a column on which the filter by value
  *                              would be applied.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'collection_name': Name of a
+ *                          collection which is to contain the newly created
+ *                          view. If the collection provided is non-existent,
+ *                          the collection will be automatically created. If
+ *                          empty, then the newly created view will be
+ *                          top-level.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8170,7 +8410,7 @@ GPUdb.prototype.get_job = function(job_id, options, callback) {
  * Retrieves records from a given table, optionally filtered by an expression
  * and/or sorted by a column. This operation can be performed on tables, views,
  * or on homogeneous collections (collections containing tables of all the same
- * type). Records can be returned encoded as binary or json.
+ * type). Records can be returned encoded as binary, json or geojson.
  * <p>
  * This operation supports paging through the data via the <code>offset</code>
  * and <code>limit</code> parameters. Note that when paging through a table, if
@@ -8222,7 +8462,7 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  * Retrieves records from a given table, optionally filtered by an expression
  * and/or sorted by a column. This operation can be performed on tables, views,
  * or on homogeneous collections (collections containing tables of all the same
- * type). Records can be returned encoded as binary or json.
+ * type). Records can be returned encoded as binary, json or geojson.
  * <p>
  * This operation supports paging through the data via the <code>offset</code>
  * and <code>limit</code> parameters. Note that when paging through a table, if
@@ -9975,6 +10215,19 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the merged table specified
  *                          in <code>table_name</code>.
+ *                                  <li> 'persist': If <code>true</code>, then
+ *                          the table specified in <code>table_name</code> will
+ *                          be persisted and will not expire unless a
+ *                          <code>ttl</code> is specified.   If
+ *                          <code>false</code>, then the table will be an
+ *                          in-memory table and will expire unless a
+ *                          <code>ttl</code> is specified otherwise.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 'chunk_size': Indicates the chunk size
  *                          to be used for the merged table specified in
  *                          <code>table_name</code>.
@@ -10837,6 +11090,15 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                             is returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'force_synchronous': If
+ *                          <code>true</code> then the table sizes will wait
+ *                          for read lock before returning.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 'get_sizes': If <code>true</code> then
  *                          the table sizes will be returned; blank, otherwise.
  *                          Supported values:
