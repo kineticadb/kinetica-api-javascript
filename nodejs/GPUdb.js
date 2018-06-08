@@ -958,74 +958,6 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
 
 
 /**
- * Update the system config file.  Updates to the config file are only
- * permitted when the system is stopped.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.admin_alter_configuration_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_alter_configuration_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        config_string: request.config_string,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/admin/alter/configuration", actual_request, callback);
-};
-
-/**
- * Update the system config file.  Updates to the config file are only
- * permitted when the system is stopped.
- *
- * @param {String} config_string  updated contents of the config file.
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.admin_alter_configuration = function(config_string, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_alter_configuration(config_string, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        config_string: config_string,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/admin/alter/configuration", actual_request, callback);
-};
-
-/**
  * Perform the requested action on a list of one or more job(s). Based on the
  * type of job and the current state of execution, the action may not be
  * successfully executed. The final result of the attempted actions for each
@@ -1194,6 +1126,15 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
 /**
  * Retrieves a list of the most recent alerts generated.  The number of alerts
  * to retrieve is specified in this request.
+ * <p>
+ * Important: This endpoint is accessed via the host manager port rather than
+ * the primary database port; the default ports for host manager and the
+ * primary database can be found <a
+ * href="../../install/index.html#default-ports" target="_top">here</a>.  If
+ * you are invoking this endpoint via a GPUdb API object, you must instantiate
+ * that object using the host manager port instead of the database port. The
+ * same IP address is used for both ports.
+
  * Returns lists of alert data, earliest to latest
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -1229,6 +1170,15 @@ GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
 /**
  * Retrieves a list of the most recent alerts generated.  The number of alerts
  * to retrieve is specified in this request.
+ * <p>
+ * Important: This endpoint is accessed via the host manager port rather than
+ * the primary database port; the default ports for host manager and the
+ * primary database can be found <a
+ * href="../../install/index.html#default-ports" target="_top">here</a>.  If
+ * you are invoking this endpoint via a GPUdb API object, you must instantiate
+ * that object using the host manager port instead of the database port. The
+ * same IP address is used for both ports.
+
  * Returns lists of alert data, earliest to latest
  *
  * @param {Number} num_alerts  Number of most recent alerts to request. The
@@ -1262,69 +1212,6 @@ GPUdb.prototype.admin_show_alerts = function(num_alerts, options, callback) {
     };
 
     this.submit_request("/admin/show/alerts", actual_request, callback);
-};
-
-/**
- * Show the current system configuration file.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.admin_show_configuration_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_show_configuration_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/admin/show/configuration", actual_request, callback);
-};
-
-/**
- * Show the current system configuration file.
- *
- * @param {Object} options  Optional parameters.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.admin_show_configuration = function(options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_show_configuration(options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/admin/show/configuration", actual_request, callback);
 };
 
 /**
@@ -1978,6 +1865,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          to be used for the result table. Must be used in
  *                          combination with the <code>result_table</code>
  *                          option.
+ *                                  <li> 'create_indexes': Comma-separated list
+ *                          of columns on which to create indexes on the result
+ *                          table. Must be used in combination with the
+ *                          <code>result_table</code> option.
  *                                  <li> 'view_id': view this result table is
  *                          part of
  *                                  <li> 'materialize_on_gpu': If
@@ -3355,6 +3246,12 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       Enable JobManager to enforce
  *                                       processing of requests in the order
  *                                       received.
+ *                                               <li> 'chunk_cache_enabled':
+ *                                       Enable chunk level query caching.
+ *                                       Flushes the chunk cache when value is
+ *                                       false
+ *                                               <li> 'chunk_cache_size': Size
+ *                                       of the chunk cache in bytes.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -3402,9 +3299,13 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * contained
  * table & view that is not protected will have its TTL set to the given value.
  * <p>
- * Set the global access mode (i.e. locking) for a table. The mode can be set
- * to
- * 'no_access', 'read_only', 'write_only' or 'read_write'.
+ * Set the global access mode (i.e. locking) for a table. This setting trumps
+ * any
+ * role-based access controls that may be in place; e.g., a user with write
+ * access
+ * to a table marked read-only will not be able to insert records into it. The
+ * mode
+ * can be set to read-only, write-only, read/write, and no access.
  * <p>
  * Change the <a href="../../concepts/protection.html"
  * target="_top">protection</a> mode to prevent or
@@ -3469,9 +3370,13 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * contained
  * table & view that is not protected will have its TTL set to the given value.
  * <p>
- * Set the global access mode (i.e. locking) for a table. The mode can be set
- * to
- * 'no_access', 'read_only', 'write_only' or 'read_write'.
+ * Set the global access mode (i.e. locking) for a table. This setting trumps
+ * any
+ * role-based access controls that may be in place; e.g., a user with write
+ * access
+ * to a table marked read-only will not be able to insert records into it. The
+ * mode
+ * can be set to read-only, write-only, read/write, and no access.
  * <p>
  * Change the <a href="../../concepts/protection.html"
  * target="_top">protection</a> mode to prevent or
@@ -3520,9 +3425,17 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         href="../../concepts/tables.html"
  *                         target="_top">tables</a>.
  *                                 <li> 'ttl': Sets the <a
- *                         href="../../concepts/ttl.html" target="_top">TTL</a>
- *                         of the table, view, or collection specified in
+ *                         href="../../concepts/ttl.html"
+ *                         target="_top">time-to-live</a> in minutes of the
+ *                         table, view, or collection specified in
  *                         <code>table_name</code>.
+ *                                 <li> 'memory_ttl': Sets the time-to-live in
+ *                         minutes for the individual chunks of the columns of
+ *                         the table, view, or collection specified in
+ *                         <code>table_name</code> to free their memory if
+ *                         unused longer than the given time. Specify an empty
+ *                         string to restore the global memory_ttl setting and
+ *                         a value of '-1' for an infinite timeout.
  *                                 <li> 'add_column': Adds the column specified
  *                         in <code>value</code> to the table specified in
  *                         <code>table_name</code>.  Use
@@ -3535,7 +3448,13 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         <code>value</code>.  Use <code>column_type</code>
  *                         and <code>column_properties</code> in
  *                         <code>options</code> to set the column's type and
- *                         properties, respectively.
+ *                         properties, respectively. Note that primary key
+ *                         and/or shard key columns cannot be changed. All
+ *                         unchanging column properties must be listed for the
+ *                         change to take place, e.g., to add dictionary
+ *                         encoding to an existing 'char4' column, both 'char4'
+ *                         and 'dict' must be specified in the
+ *                         <code>options</code> map.
  *                                 <li> 'set_column_compression': Modifies the
  *                         <a href="../../concepts/compression.html"
  *                         target="_top">compression</a> setting on the column
@@ -3561,26 +3480,27 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         access mode in <code>value</code>. Valid modes are
  *                         'no_access', 'read_only', 'write_only' and
  *                         'read_write'.
- *                                 <li> 'refresh': Replay all the table
- *                         creation commands required to create this view.
- *                         Endpoints supported are {@linkcode GPUdb#filter},
- *                         {@linkcode GPUdb#create_join_table},
- *                         {@linkcode GPUdb#create_projection},
- *                         {@linkcode GPUdb#create_union},
- *                         {@linkcode GPUdb#aggregate_group_by}, and
- *                         {@linkcode GPUdb#aggregate_unique}.
- *                                 <li> 'set_refresh_method': Set the method by
- *                         which this view is refreshed - one of 'manual',
- *                         'periodic', 'on_change', 'on_query'.
- *                                 <li> 'set_refresh_start_time': Set the time
- *                         to start periodic refreshes to datetime string with
- *                         format YYYY-MM-DD HH:MM:SS at which refresh is to be
- *                         done.  Next refresh occurs at refresh_start_time +
- *                         N*refresh_period
- *                                 <li> 'set_refresh_period': Set the time
- *                         interval in seconds at which to refresh this view -
- *                         sets the refresh method to periodic if not alreay
- *                         set.
+ *                                 <li> 'refresh': Replays all the table
+ *                         creation commands required to create this <a
+ *                         href="../../concepts/materialized_views.html"
+ *                         target="_top">materialized view</a>.
+ *                                 <li> 'set_refresh_method': Sets the method
+ *                         by which this <a
+ *                         href="../../concepts/materialized_views.html"
+ *                         target="_top">materialized view</a> is refreshed -
+ *                         one of 'manual', 'periodic', 'on_change'.
+ *                                 <li> 'set_refresh_start_time': Sets the time
+ *                         to start periodic refreshes of this <a
+ *                         href="../../concepts/materialized_views.html"
+ *                         target="_top">materialized view</a> to datetime
+ *                         string with format 'YYYY-MM-DD HH:MM:SS'.
+ *                         Subsequent refreshes occur at the specified time + N
+ *                         * the refresh period.
+ *                                 <li> 'set_refresh_period': Sets the time
+ *                         interval in seconds at which to refresh this <a
+ *                         href="../../concepts/materialized_views.html"
+ *                         target="_top">materialized view</a>.  Also, sets the
+ *                         refresh method to periodic if not alreay set.
  *                         </ul>
  * @param {String} value  The value of the modification. May be a column name,
  *                        'true' or 'false', a TTL, or the global access mode
@@ -4368,10 +4288,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                 include all columns across member tables or
  *                                 'table_id.*' for all of a single table's
  *                                 columns.  Columns and column expressions
- *                                 comprising the join must be uniquely named
- *                                 or aliased--therefore, the '*' wild card
- *                                 cannot be used if column names aren't unique
- *                                 across all tables.
+ *                                 composing the join must be uniquely named or
+ *                                 aliased--therefore, the '*' wild card cannot
+ *                                 be used if column names aren't unique across
+ *                                 all tables.
  * @param {String[]} expressions  An optional list of expressions to combine
  *                                and filter the joined tables.  Corresponds to
  *                                a SQL statement WHERE clause. For details
@@ -4412,13 +4332,18 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          base table.  A full refresh of all the records
  *                          occurs when a new query is issued and there have
  *                          been inserts to any non-base-tables since the last
- *                          query
+ *                          query.  <a href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> will be set to not expire;
+ *                          any <code>ttl</code> specified will be ignored.
  *                                  <li> 'on_insert': incrementally refresh
  *                          (refresh just those records added) whenever new
  *                          data is inserted into a base table.  A full refresh
  *                          of all the records occurs when a new query is
  *                          issued and there have been inserts to any
- *                          non-base-tables since the last query
+ *                          non-base-tables since the last query.  <a
+ *                          href="../../concepts/ttl.html"
+ *                          target="_top">TTL</a> will be set to not expire;
+ *                          any <code>ttl</code> specified will be ignored.
  *                          </ul>
  *                          The default value is 'manual'.
  *                                  <li> 'refresh': Do a manual refresh of the
@@ -4442,7 +4367,9 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the join table specified
- *                          in <code>join_table_name</code>.
+ *                          in <code>join_table_name</code>.  Ignored if
+ *                          <code>refresh_method</code> is either
+ *                          <code>on_insert</code> or <code>on_query</code>.
  *                                  <li> 'view_id': view this projection is
  *                          part of
  *                                  <li> 'no_count': return a count of 0 for
@@ -4490,7 +4417,7 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
  * Views</a>.
  * <p>
  * The response contains <code>view_id</code>, which is used to tag each
- * subsequent operation (projection, union, group-by, filter, or join) that
+ * subsequent operation (projection, union, aggregation, filter, or join) that
  * will compose the view.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -4532,7 +4459,7 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  * Views</a>.
  * <p>
  * The response contains <code>view_id</code>, which is used to tag each
- * subsequent operation (projection, union, group-by, filter, or join) that
+ * subsequent operation (projection, union, aggregation, filter, or join) that
  * will compose the view.
  *
  * @param {String} table_name  Name of the table to be created that is the
@@ -4568,31 +4495,28 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'manual': Refresh only occurs when
- *                          manually requested by calling alter_table with
- *                          action refresh_view
- *                                  <li> 'on_query': Incrementally refresh
- *                          (refresh just those records added) whenever a new
- *                          query is issued and new data is inserted into the
- *                          base table.  A full refresh of all the records
- *                          occurs when a new query is issued and there have
- *                          been inserts to any non-base-tables since the last
- *                          query
+ *                          manually requested by calling
+ *                          {@linkcode GPUdb#alter_table} with an 'action' of
+ *                          'refresh'
+ *                                  <li> 'on_query': For future use.
  *                                  <li> 'on_change': If possible,
  *                          incrementally refresh (refresh just those records
  *                          added) whenever an insert, update, delete or
- *                          refresh of input table is done.  A full refresh
- *                          on_query is done if an incremental refresh is not
- *                          possible.
+ *                          refresh of input table is done.  A full refresh is
+ *                          done if an incremental refresh is not possible.
  *                                  <li> 'periodic': Refresh table periodically
- *                          at rate specified by refresh_period option
+ *                          at rate specified by <code>refresh_period</code>
  *                          </ul>
  *                          The default value is 'manual'.
- *                                  <li> 'refresh_period': When refresh_method
- *                          is periodic specifies the period in seconds at
- *                          which refresh occurs
- *                                  <li> 'refresh_start_time': First time at
- *                          which a periodic refresh is to be done.  Value is a
- *                          datatime string with format YYYY-MM-DD HH:MM:SS.
+ *                                  <li> 'refresh_period': When
+ *                          <code>refresh_method</code> is
+ *                          <code>periodic</code>, specifies the period in
+ *                          seconds at which refresh occurs
+ *                                  <li> 'refresh_start_time': When
+ *                          <code>refresh_method</code> is
+ *                          <code>periodic</code>, specifies the first time at
+ *                          which a refresh is to be done.  Value is a datetime
+ *                          string with format 'YYYY-MM-DD HH:MM:SS'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -4882,6 +4806,15 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          href="../../concepts/expressions.html"
  *                          target="_top">expression</a> to be applied to the
  *                          source table prior to the projection.
+ *                                  <li> 'is_replicated': If <code>true</code>
+ *                          then the projection will be replicated even if the
+ *                          source table is not.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'limit': The number of records to
  *                          keep.
  *                                  <li> 'order_by': Comma-separated list of
@@ -4901,6 +4834,12 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'chunk_size': Indicates the chunk size
  *                          to be used for this table.
+ *                                  <li> 'create_indexes': Comma-separated list
+ *                          of columns on which to create indexes on the output
+ *                          table.  The columns specified must be present in
+ *                          <code>column_names</code>.  If any alias is given
+ *                          for any column name, the alias must be used, rather
+ *                          than the original column name.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the projection specified
@@ -5540,14 +5479,16 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * simultaneously.  One example of mutually exclusive properties are
  * <code>data</code> and <code>store_only</code>.
  * <p>
- * To set a *primary key* on one or more columns include the property
- * 'primary_key' on the desired column_names. If a primary key is specified,
- * then a uniqueness constraint is enforced, in that only a single object can
- * exist with a given primary key. When
- * [inserting]{@linkcode GPUdb#insert_records} data into a table with a
- * primary key, depending on the parameters in the request, incoming objects
- * with primary keys that match existing objects will either overwrite (i.e.
- * update) the existing object or will be skipped and not added into the set.
+ * A single <a href="../../concepts/tables.html#primary-keys"
+ * target="_top">primary key</a> and/or single <a
+ * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> can
+ * be set across one or more columns. If a primary key is specified, then a
+ * uniqueness constraint is enforced, in that only a single object can exist
+ * with a given primary key. When [inserting]{@linkcode GPUdb#insert_records}
+ * data into a table with a primary key, depending on the parameters in the
+ * request, incoming objects with primary key values that match existing
+ * objects will either overwrite (i.e. update) the existing object or will be
+ * skipped and not added into the set.
  * <p>
  * Example of a type definition with some of the parameters::
  * <p>
@@ -5611,14 +5552,16 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * simultaneously.  One example of mutually exclusive properties are
  * <code>data</code> and <code>store_only</code>.
  * <p>
- * To set a *primary key* on one or more columns include the property
- * 'primary_key' on the desired column_names. If a primary key is specified,
- * then a uniqueness constraint is enforced, in that only a single object can
- * exist with a given primary key. When
- * [inserting]{@linkcode GPUdb#insert_records} data into a table with a
- * primary key, depending on the parameters in the request, incoming objects
- * with primary keys that match existing objects will either overwrite (i.e.
- * update) the existing object or will be skipped and not added into the set.
+ * A single <a href="../../concepts/tables.html#primary-keys"
+ * target="_top">primary key</a> and/or single <a
+ * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> can
+ * be set across one or more columns. If a primary key is specified, then a
+ * uniqueness constraint is enforced, in that only a single object can exist
+ * with a given primary key. When [inserting]{@linkcode GPUdb#insert_records}
+ * data into a table with a primary key, depending on the parameters in the
+ * request, incoming objects with primary key values that match existing
+ * objects will either overwrite (i.e. update) the existing object or will be
+ * skipped and not added into the set.
  * <p>
  * Example of a type definition with some of the parameters::
  * <p>
@@ -5659,19 +5602,19 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     <li> 'text_search': Valid only for
  *                             'string' columns. Enables full text search for
  *                             string columns. Can be set independently of
- *                             *data* and *store_only*.
+ *                             <code>data</code> and <code>store_only</code>.
  *                                     <li> 'store_only': Persist the column
  *                             value but do not make it available to queries
  *                             (e.g. {@linkcode GPUdb#filter})-i.e. it is
- *                             mutually exclusive to the 'data' property. Any
- *                             'bytes' type column must have a 'store_only'
- *                             property. This property reduces system memory
- *                             usage.
+ *                             mutually exclusive to the <code>data</code>
+ *                             property. Any 'bytes' type column must have a
+ *                             <code>store_only</code> property. This property
+ *                             reduces system memory usage.
  *                                     <li> 'disk_optimized': Works in
- *                             conjunction with the 'data' property for string
- *                             columns. This property reduces system disk usage
- *                             by disabling reverse string lookups. Queries
- *                             like {@linkcode GPUdb#filter},
+ *                             conjunction with the <code>data</code> property
+ *                             for string columns. This property reduces system
+ *                             disk usage by disabling reverse string lookups.
+ *                             Queries like {@linkcode GPUdb#filter},
  *                             {@linkcode GPUdb#filter_by_list}, and
  *                             {@linkcode GPUdb#filter_by_value} work as
  *                             usual but {@linkcode GPUdb#aggregate_unique},
@@ -5691,72 +5634,66 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             in the fractional part.  The value can be
  *                             positive or negative (indicated by a minus sign
  *                             at the beginning).  This property is mutually
- *                             exclusive with the 'text_search' property.
+ *                             exclusive with the <code>text_search</code>
+ *                             property.
  *                                     <li> 'date': Valid only for 'string'
  *                             columns.  Indicates that this field represents a
  *                             date and will be provided in the format
  *                             'YYYY-MM-DD'.  The allowable range is 1000-01-01
  *                             through 2900-01-01.  This property is mutually
- *                             exclusive with the *text_search* property.
+ *                             exclusive with the <code>text_search</code>
+ *                             property.
  *                                     <li> 'time': Valid only for 'string'
  *                             columns.  Indicates that this field represents a
  *                             time-of-day and will be provided in the format
  *                             'HH:MM:SS.mmm'.  The allowable range is
  *                             00:00:00.000 through 23:59:59.999.  This
  *                             property is mutually exclusive with the
- *                             *text_search* property.
+ *                             <code>text_search</code> property.
  *                                     <li> 'datetime': Valid only for 'string'
  *                             columns.  Indicates that this field represents a
  *                             datetime and will be provided in the format
  *                             'YYYY-MM-DD HH:MM:SS.mmm'.  The allowable range
  *                             is 1000-01-01 00:00:00.000 through 2900-01-01
  *                             23:59:59.999.  This property is mutually
- *                             exclusive with the *text_search* property.
+ *                             exclusive with the <code>text_search</code>
+ *                             property.
  *                                     <li> 'char1': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 1 character. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 1 character.
  *                                     <li> 'char2': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 2 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 2 characters.
  *                                     <li> 'char4': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 4 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 4 characters.
  *                                     <li> 'char8': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 8 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 8 characters.
  *                                     <li> 'char16': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 16 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 16 characters.
  *                                     <li> 'char32': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 32 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 32 characters.
  *                                     <li> 'char64': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 64 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 64 characters.
  *                                     <li> 'char128': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 128 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 128 characters.
  *                                     <li> 'char256': This property provides
  *                             optimized memory, disk and query performance for
  *                             string columns. Strings with this property must
- *                             be no longer than 256 characters. This property
- *                             cannot be combined with *text_search*
+ *                             be no longer than 256 characters.
  *                                     <li> 'int8': This property provides
  *                             optimized memory and query performance for int
  *                             columns. Ints with this property must be between
@@ -5778,10 +5715,14 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             format.
  *                                     <li> 'primary_key': This property
  *                             indicates that this column will be part of (or
- *                             the entire) primary key.
+ *                             the entire) <a
+ *                             href="../../concepts/tables.html#primary-keys"
+ *                             target="_top">primary key</a>.
  *                                     <li> 'shard_key': This property
  *                             indicates that this column will be part of (or
- *                             the entire) shard key.
+ *                             the entire) <a
+ *                             href="../../concepts/tables.html#shard-keys"
+ *                             target="_top">shard key</a>.
  *                                     <li> 'nullable': This property indicates
  *                             that this column is nullable.  However, setting
  *                             this property is insufficient for making the
@@ -5794,9 +5735,9 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             the avro schema must be: ['int', 'null'].
  *                             The C++, C#, Java, and Python APIs have built-in
  *                             convenience for bypassing setting the avro
- *                             schema by hand.  For those two languages, one
- *                             can use this property as usual and not have to
- *                             worry about the avro schema for the record.
+ *                             schema by hand.  For those languages, one can
+ *                             use this property as usual and not have to worry
+ *                             about the avro schema for the record.
  *                                     <li> 'dict': This property indicates
  *                             that this column should be dictionary encoded.
  *                             It can only be used in conjunction with string
@@ -5991,6 +5932,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          The default value is 'union_all'.
  *                                  <li> 'chunk_size': Indicates the chunk size
  *                          to be used for this table.
+ *                                  <li> 'create_indexes': Comma-separated list
+ *                          of columns on which to create indexes on the output
+ *                          table.  The columns specified must be present in
+ *                          <code>output_column_names</code>.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
@@ -6257,12 +6202,13 @@ GPUdb.prototype.delete_proc = function(proc_name, options, callback) {
 /**
  * Deletes record(s) matching the provided criteria from the given table. The
  * record selection criteria can either be one or more
- * <code>expressions</code> (matching multiple records) or a single record
- * identified by <code>record_id</code> options.  Note that the two selection
- * criteria are mutually exclusive.  This operation cannot be run on a
- * collection or a view.  The operation is synchronous meaning that a response
- * will not be available until the request is completely processed and all the
- * matching records are deleted.
+ * <code>expressions</code> (matching multiple records), a single record
+ * identified by <code>record_id</code> options, or all records when using
+ * <code>delete_all_records</code>.  Note that the three selection criteria are
+ * mutually exclusive.  This operation cannot be run on a collection or a view.
+ * The operation is synchronous meaning that a response will not be available
+ * until the request is completely processed and all the matching records are
+ * deleted.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6298,12 +6244,13 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
 /**
  * Deletes record(s) matching the provided criteria from the given table. The
  * record selection criteria can either be one or more
- * <code>expressions</code> (matching multiple records) or a single record
- * identified by <code>record_id</code> options.  Note that the two selection
- * criteria are mutually exclusive.  This operation cannot be run on a
- * collection or a view.  The operation is synchronous meaning that a response
- * will not be available until the request is completely processed and all the
- * matching records are deleted.
+ * <code>expressions</code> (matching multiple records), a single record
+ * identified by <code>record_id</code> options, or all records when using
+ * <code>delete_all_records</code>.  Note that the three selection criteria are
+ * mutually exclusive.  This operation cannot be run on a collection or a view.
+ * The operation is synchronous meaning that a response will not be available
+ * until the request is completely processed and all the matching records are
+ * deleted.
  *
  * @param {String} table_name  Name of the table from which to delete records.
  *                             The set must be a currently existing table and
@@ -6328,6 +6275,16 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                          or by calling
  *                          {@linkcode GPUdb#get_records_from_collection}
  *                          with the *return_record_ids* option.
+ *                                  <li> 'delete_all_records': If set to
+ *                          <code>true</code>, all records in the table will be
+ *                          deleted. If set to <code>false</code>, then the
+ *                          option is effectively ignored.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6599,6 +6556,13 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                          for multiple specified run IDs, the cached data
  *                          from the first run ID specified in the list that
  *                          includes that table will be used.
+ *                                  <li> 'kifs_input_dirs': A comma-delimited
+ *                          list of KiFS directories whose local files will be
+ *                          made directly accessible to the proc through the
+ *                          API. (All KiFS files, local or not, are also
+ *                          accessible through the file system below the KiFS
+ *                          mount point.) Each name specified must the name of
+ *                          an existing KiFS directory.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7859,7 +7823,9 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table on which the filter by track
  *                             operation will be performed. Must be a currently
- *                             existing table with track semantic type.
+ *                             existing table with a <a
+ *                             href="../../geospatial/geo_objects.html"
+ *                             target="_top">track</a> present.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Has the same naming
  *                            restrictions as <a
@@ -9634,11 +9600,11 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                                  <li> 'min': For numerical columns, the
  *                          minimum of the generated values is set to this
  *                          value.  Default is -99999.  For point, shape, and
- *                          track semantic types, min for numeric 'x' and 'y'
- *                          columns needs to be within [-180, 180] and [-90,
- *                          90], respectively. The default minimum possible
- *                          values for these columns in such cases are -180.0
- *                          and -90.0. For the 'TIMESTAMP' column, the default
+ *                          track columns, min for numeric 'x' and 'y' columns
+ *                          needs to be within [-180, 180] and [-90, 90],
+ *                          respectively. The default minimum possible values
+ *                          for these columns in such cases are -180.0 and
+ *                          -90.0. For the 'TIMESTAMP' column, the default
  *                          minimum corresponds to Jan 1, 2010.
  *                          For string columns, the minimum length of the
  *                          randomly generated strings is set to this value
@@ -9647,18 +9613,17 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          max. Value needs to be within [0, 200].
  *                          If the min is outside the accepted ranges for
  *                          strings columns and 'x' and 'y' columns for
- *                          point/shape/track types, then those parameters will
- *                          not be set; however, an error will not be thrown in
+ *                          point/shape/track, then those parameters will not
+ *                          be set; however, an error will not be thrown in
  *                          such a case. It is the responsibility of the user
  *                          to use the <code>all</code> parameter judiciously.
  *                                  <li> 'max': For numerical columns, the
  *                          maximum of the generated values is set to this
  *                          value. Default is 99999. For point, shape, and
- *                          track semantic types, max for numeric 'x' and 'y'
- *                          columns needs to be within [-180, 180] and [-90,
- *                          90], respectively. The default minimum possible
- *                          values for these columns in such cases are 180.0
- *                          and 90.0.
+ *                          track columns, max for numeric 'x' and 'y' columns
+ *                          needs to be within [-180, 180] and [-90, 90],
+ *                          respectively. The default minimum possible values
+ *                          for these columns in such cases are 180.0 and 90.0.
  *                          For string columns, the maximum length of the
  *                          randomly generated strings is set to this value
  *                          (default is 200). If both minimum and maximum are
@@ -9666,8 +9631,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          *min*. Value needs to be within [0, 200].
  *                          If the *max* is outside the accepted ranges for
  *                          strings columns and 'x' and 'y' columns for
- *                          point/shape/track types, then those parameters will
- *                          not be set; however, an error will not be thrown in
+ *                          point/shape/track, then those parameters will not
+ *                          be set; however, an error will not be thrown in
  *                          such a case. It is the responsibility of the user
  *                          to use the <code>all</code> parameter judiciously.
  *                                  <li> 'interval': If specified, generate
@@ -9707,11 +9672,11 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                                  <li> 'min': For numerical columns, the
  *                          minimum of the generated values is set to this
  *                          value.  Default is -99999.  For point, shape, and
- *                          track semantic types, min for numeric 'x' and 'y'
- *                          columns needs to be within [-180, 180] and [-90,
- *                          90], respectively. The default minimum possible
- *                          values for these columns in such cases are -180.0
- *                          and -90.0. For the 'TIMESTAMP' column, the default
+ *                          track columns, min for numeric 'x' and 'y' columns
+ *                          needs to be within [-180, 180] and [-90, 90],
+ *                          respectively. The default minimum possible values
+ *                          for these columns in such cases are -180.0 and
+ *                          -90.0. For the 'TIMESTAMP' column, the default
  *                          minimum corresponds to Jan 1, 2010.
  *                          For string columns, the minimum length of the
  *                          randomly generated strings is set to this value
@@ -9720,18 +9685,17 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          max. Value needs to be within [0, 200].
  *                          If the min is outside the accepted ranges for
  *                          strings columns and 'x' and 'y' columns for
- *                          point/shape/track types, then those parameters will
- *                          not be set; however, an error will not be thrown in
+ *                          point/shape/track, then those parameters will not
+ *                          be set; however, an error will not be thrown in
  *                          such a case. It is the responsibility of the user
  *                          to use the <code>all</code> parameter judiciously.
  *                                  <li> 'max': For numerical columns, the
  *                          maximum of the generated values is set to this
  *                          value. Default is 99999. For point, shape, and
- *                          track semantic types, max for numeric 'x' and 'y'
- *                          columns needs to be within [-180, 180] and [-90,
- *                          90], respectively. The default minimum possible
- *                          values for these columns in such cases are 180.0
- *                          and 90.0.
+ *                          track columns, max for numeric 'x' and 'y' columns
+ *                          needs to be within [-180, 180] and [-90, 90],
+ *                          respectively. The default minimum possible values
+ *                          for these columns in such cases are 180.0 and 90.0.
  *                          For string columns, the maximum length of the
  *                          randomly generated strings is set to this value
  *                          (default is 200). If both minimum and maximum are
@@ -9739,8 +9703,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          *min*. Value needs to be within [0, 200].
  *                          If the *max* is outside the accepted ranges for
  *                          strings columns and 'x' and 'y' columns for
- *                          point/shape/track types, then those parameters will
- *                          not be set; however, an error will not be thrown in
+ *                          point/shape/track, then those parameters will not
+ *                          be set; however, an error will not be thrown in
  *                          such a case. It is the responsibility of the user
  *                          to use the <code>all</code> parameter judiciously.
  *                                  <li> 'interval': If specified, generate
@@ -9772,8 +9736,8 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                          disabled by default.
  *                          </ul>
  *                                  <li> 'track_length': This key-map pair is
- *                          only valid for track type data sets (an error is
- *                          thrown otherwise).  No nulls would be generated for
+ *                          only valid for track data sets (an error is thrown
+ *                          otherwise).  No nulls would be generated for
  *                          nullable columns.
  *                          <ul>
  *                                  <li> 'min': Minimum possible length for
@@ -11242,10 +11206,10 @@ GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
 
 /**
  * Gets names of the tables whose type matches the given criteria. Each table
- * has a particular type. This type is made out of the type label, schema of
- * the table, and the semantic type of the table. This function allows a look
- * up of the existing tables based on full or partial type information. The
- * operation is synchronous.
+ * has a particular type. This type comprises the schema and properties of the
+ * table and sometimes a type label. This function allows a look up of the
+ * existing tables based on full or partial type information. The operation is
+ * synchronous.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -11280,10 +11244,10 @@ GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
 
 /**
  * Gets names of the tables whose type matches the given criteria. Each table
- * has a particular type. This type is made out of the type label, schema of
- * the table, and the semantic type of the table. This function allows a look
- * up of the existing tables based on full or partial type information. The
- * operation is synchronous.
+ * has a particular type. This type comprises the schema and properties of the
+ * table and sometimes a type label. This function allows a look up of the
+ * existing tables based on full or partial type information. The operation is
+ * synchronous.
  *
  * @param {String} type_id  Type id returned by a call to
  *                          {@linkcode GPUdb#create_type}.
@@ -11392,11 +11356,9 @@ GPUdb.prototype.show_triggers = function(trigger_ids, options, callback) {
 };
 
 /**
- * Retrieves information for the specified data type. Given a type ID, the
- * database returns the data type schema, the label, and the semantic type
- * along with the type ID. If the user provides any combination of label and
- * semantic type, then the database returns the pertinent information for all
- * data types that match the input criteria.
+ * Retrieves information for the specified data type ID or type label. For all
+ * data types that match the input criteria, the database returns the type ID,
+ * the type schema, the label (if available), and the type's column properties.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -11430,11 +11392,9 @@ GPUdb.prototype.show_types_request = function(request, callback) {
 };
 
 /**
- * Retrieves information for the specified data type. Given a type ID, the
- * database returns the data type schema, the label, and the semantic type
- * along with the type ID. If the user provides any combination of label and
- * semantic type, then the database returns the pertinent information for all
- * data types that match the input criteria.
+ * Retrieves information for the specified data type ID or type label. For all
+ * data types that match the input criteria, the database returns the type ID,
+ * the type schema, the label (if available), and the type's column properties.
  *
  * @param {String} type_id  Type Id returned in response to a call to
  *                          {@linkcode GPUdb#create_type}.
@@ -12330,6 +12290,158 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
     };
 
     this.submit_request("/visualize/image/classbreak", actual_request, callback);
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ * @private
+ */
+GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_contour_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_names: request.table_names,
+        x_column_name: request.x_column_name,
+        y_column_name: request.y_column_name,
+        value_column_name: request.value_column_name,
+        min_x: request.min_x,
+        max_x: request.max_x,
+        min_y: request.min_y,
+        max_y: request.max_y,
+        width: request.width,
+        height: request.height,
+        projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
+        style_options: request.style_options,
+        options: request.options
+    };
+
+    this.submit_request("/visualize/image/contour", actual_request, callback);
+};
+
+/**
+ *
+ * @param {String[]} table_names
+ * @param {String} x_column_name
+ * @param {String} y_column_name
+ * @param {String} value_column_name
+ * @param {Number} min_x
+ * @param {Number} max_x
+ * @param {Number} min_y
+ * @param {Number} max_y
+ * @param {Number} width
+ * @param {Number} height
+ * @param {String} projection
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> '3857'
+ *                                     <li> '102100'
+ *                                     <li> '900913'
+ *                                     <li> 'EPSG:4326'
+ *                                     <li> 'PLATE_CARREE'
+ *                                     <li> 'EPSG:900913'
+ *                                     <li> 'EPSG:102100'
+ *                                     <li> 'EPSG:3857'
+ *                                     <li> 'WEB_MERCATOR'
+ *                             </ul>
+ *                             The default value is 'PLATE_CARREE'.
+ * @param {Object} style_options
+ *                                <ul>
+ *                                        <li> 'line_size':
+ *                                        <li> 'color':
+ *                                        <li> 'bg_color':
+ *                                        <li> 'colormap':
+ *                                Supported values:
+ *                                <ul>
+ *                                        <li> 'jet'
+ *                                        <li> 'hot'
+ *                                        <li> 'hsv'
+ *                                        <li> 'gray'
+ *                                        <li> 'blues'
+ *                                        <li> 'greens'
+ *                                        <li> 'greys'
+ *                                        <li> 'oranges'
+ *                                        <li> 'purples'
+ *                                        <li> 'reds'
+ *                                        <li> 'viridis'
+ *                                </ul>
+ *                                The default value is 'jet'.
+ *                                </ul>
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> 'min_level':
+ *                                  <li> 'max_level':
+ *                                  <li> 'num_levels':
+ *                                  <li> 'search_radius':
+ *                                  <li> 'gridding_method':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'INV_DST_POW'
+ *                                  <li> 'MIN_CURV'
+ *                                  <li> 'KRIGING'
+ *                                  <li> 'PASS_THROUGH'
+ *                          </ul>
+ *                          The default value is 'INV_DST_POW'.
+ *                                  <li> 'smoothing_factor':
+ *                                  <li> 'grid_rows':
+ *                                  <li> 'grid_columns':
+ *                                  <li> 'render_output_grid':
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ * @private
+ */
+GPUdb.prototype.visualize_image_contour = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.visualize_image_contour(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_names: table_names,
+        x_column_name: x_column_name,
+        y_column_name: y_column_name,
+        value_column_name: value_column_name,
+        min_x: min_x,
+        max_x: max_x,
+        min_y: min_y,
+        max_y: max_y,
+        width: width,
+        height: height,
+        projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
+        style_options: style_options,
+        options: options
+    };
+
+    this.submit_request("/visualize/image/contour", actual_request, callback);
 };
 
 /**
