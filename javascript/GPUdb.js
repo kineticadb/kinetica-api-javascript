@@ -2872,6 +2872,23 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'create_indexes': Comma-separated list
+ *                          of columns on which to create indexes on the table
+ *                          specified in <code>result_table</code>. The columns
+ *                          specified must be present in output column names.
+ *                          If any alias is given for any column name, the
+ *                          alias must be used, rather than the original column
+ *                          name.
+ *                                  <li> 'result_table_force_replicated': Force
+ *                          the result table to be replicated (ignores any
+ *                          sharding). Must be used in combination with the
+ *                          <code>result_table</code> option.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5425,9 +5442,16 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> 'except': Retains all unique rows from
  *                          the first table that do not appear in the second
  *                          table (only works on 2 tables).
+ *                                  <li> 'except_all': Retains all
+ *                          rows(including duplicates) from the first table
+ *                          that do not appear in the second table (only works
+ *                          on 2 tables).
  *                                  <li> 'intersect': Retains all unique rows
  *                          that appear in both of the specified tables (only
  *                          works on 2 tables).
+ *                                  <li> 'intersect_all': Retains all
+ *                          rows(including duplicates) that appear in both of
+ *                          the specified tables (only works on 2 tables).
  *                                  <li> 'merge_views': Merge two or more views
  *                          (or views of views) of the same base data set into
  *                          a new view. If this mode is selected
@@ -5466,6 +5490,16 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'view_id': view the output table will
  *                          be a part of
+ *                                  <li> 'force_replicated': If
+ *                          <code>true</code>, then the table specified in
+ *                          <code>table_name</code> will be replicated even if
+ *                          the source tables are not.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -10702,8 +10736,14 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         y_column_name: request.y_column_name,
         geometry_column_name: request.geometry_column_name,
         track_ids: request.track_ids,
-        cb_column_name: request.cb_column_name,
+        cb_attr: request.cb_attr,
         cb_vals: request.cb_vals,
+        cb_pointcolor_attr: request.cb_pointcolor_attr,
+        cb_pointcolor_vals: request.cb_pointcolor_vals,
+        cb_pointsize_attr: request.cb_pointsize_attr,
+        cb_pointsize_vals: request.cb_pointsize_vals,
+        cb_pointshape_attr: request.cb_pointshape_attr,
+        cb_pointshape_vals: request.cb_pointshape_vals,
         min_x: request.min_x,
         max_x: request.max_x,
         min_y: request.min_y,
@@ -10732,8 +10772,14 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {String} y_column_name
  * @param {String} geometry_column_name
  * @param {String[][]} track_ids
- * @param {String} cb_column_name
+ * @param {String} cb_attr
  * @param {String[]} cb_vals
+ * @param {String} cb_pointcolor_attr
+ * @param {String[]} cb_pointcolor_vals
+ * @param {String} cb_pointsize_attr
+ * @param {String[]} cb_pointsize_vals
+ * @param {String} cb_pointshape_attr
+ * @param {String[]} cb_pointshape_vals
  * @param {Number} min_x
  * @param {Number} max_x
  * @param {Number} min_y
@@ -10853,7 +10899,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * 
  * @private
  */
-GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_column_name, cb_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
+GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
@@ -10861,8 +10907,14 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
         y_column_name: y_column_name,
         geometry_column_name: geometry_column_name,
         track_ids: track_ids,
-        cb_column_name: cb_column_name,
+        cb_attr: cb_attr,
         cb_vals: cb_vals,
+        cb_pointcolor_attr: cb_pointcolor_attr,
+        cb_pointcolor_vals: cb_pointcolor_vals,
+        cb_pointsize_attr: cb_pointsize_attr,
+        cb_pointsize_vals: cb_pointsize_vals,
+        cb_pointshape_attr: cb_pointshape_attr,
+        cb_pointshape_vals: cb_pointshape_vals,
         min_x: min_x,
         max_x: max_x,
         min_y: min_y,
