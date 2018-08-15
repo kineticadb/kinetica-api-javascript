@@ -233,6 +233,8 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
     var timeout = this.timeout;
     var urls = this.urls;
     var authorization = this.authorization;
+    var getCookie = this.getCookie;
+    var setCookie = this.setCookie;
 
 	/// Wraps the async callback with auto-retry logic
     var failureWrapperCB = function(err, data, url) {
@@ -364,6 +366,8 @@ GPUdb.prototype.wms_request = function(request, callback) {
     var timeout = this.timeout;
     var urls = this.urls;
     var authorization = this.authorization;
+    var getCookie = this.getCookie;
+    var setCookie = this.setCookie;
 
 	/// Wraps the async callback with auto-retry logic
     var failureWrapperCB = function(err, data, url) {
