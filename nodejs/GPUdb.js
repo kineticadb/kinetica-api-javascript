@@ -163,6 +163,29 @@ function GPUdb(url, options) {
             enumerable: true,
             value: options.timeout !== undefined && options.timeout !== null && options.timeout >= 0 ? options.timeout : 0
         });
+        /**
+         * Function to get request cookie
+         *
+         * @name GPUdb#getCookie
+         * @type Function
+         * @readonly
+         */
+        Object.defineProperty(this, "getCookie", {
+            enumerable: true,
+            value: options.getCookie
+        });
+
+        /**
+         * Function to set responce cookie
+         *
+         * @name GPUdb#setCookie
+         * @type Function
+         * @readonly
+         */
+        Object.defineProperty(this, "setCookie", {
+            enumerable: true,
+            value: options.setCookie
+        });
     } else {
         Object.defineProperty(this, "username", { enumerable: true, value: "" });
         Object.defineProperty(this, "password", { enumerable: true, value: "" });
@@ -233,6 +256,8 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
     var timeout = this.timeout;
     var urls = this.urls;
     var authorization = this.authorization;
+    var getCookie = this.getCookie;
+    var setCookie = this.setCookie;
 
 	/// Wraps the async callback with auto-retry logic
     var failureWrapperCB = function(err, data, url) {
@@ -265,6 +290,9 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
             headers["Authorization"] = authorization;
         }
 
+        if (getCookie && typeof getCookie === "function") {
+            headers["Cookie"] = getCookie();
+        }
         var got_error = false;
 
         var req = http.request({
@@ -275,6 +303,9 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
                 headers: headers
             }, function(res) {
                 var responseString = "";
+                if (setCookie && typeof setCookie === "function") {
+                    setCookie(res.headers["set-cookie"]);
+                }
 
                 res.on("data", function(chunk) {
                     responseString += chunk;
@@ -364,6 +395,8 @@ GPUdb.prototype.wms_request = function(request, callback) {
     var timeout = this.timeout;
     var urls = this.urls;
     var authorization = this.authorization;
+    var getCookie = this.getCookie;
+    var setCookie = this.setCookie;
 
 	/// Wraps the async callback with auto-retry logic
     var failureWrapperCB = function(err, data, url) {
@@ -396,6 +429,9 @@ GPUdb.prototype.wms_request = function(request, callback) {
             headers["Authorization"] = authorization;
         }
 
+        if (getCookie && typeof getCookie === "function") {
+            headers["Cookie"] = getCookie();
+        }
         var got_error = false;
 
         var req = http.request({
@@ -405,6 +441,9 @@ GPUdb.prototype.wms_request = function(request, callback) {
             headers: headers,
         }, function(res) {
             var data = [];
+            if (setCookie && typeof setCookie === "function") {
+                setCookie(res.headers["set-cookie"]);
+            }
 
             res.on("data", function(chunk) {
                 data.push(chunk);
@@ -3518,6 +3557,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         href="../../concepts/materialized_views.html"
  *                         target="_top">materialized view</a>.  Also, sets the
  *                         refresh method to periodic if not alreay set.
+ *                                 <li> 'remove_text_search_attributes': remove
+ *                         text_search attribute from all columns, if exists.
  *                         </ul>
  * @param {String} value  The value of the modification. May be a column name,
  *                        'true' or 'false', a TTL, or the global access mode
@@ -3564,6 +3605,14 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'true': true
  *                                  <li> 'false': false
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'update_last_access_time': Indicates
+ *                          whether need to update the last_access_time.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
  *                                  <li> 'add_column_expression': expression
@@ -3841,13 +3890,11 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          by <code>source_table_name</code>). Empty by
  *                          default.
  *                                  <li> 'order_by': Comma-separated list of
- *                          the columns to be sorted from source table
- *                          (specified by <code>source_table_name</code>) by;
- *                          e.g. 'timestamp asc, x desc'.  The columns
- *                          specified must be present in
- *                          <code>field_map</code>.  If any alias is given for
- *                          any column name, the alias must be used, rather
- *                          than the original column name.
+ *                          the columns and expressions to be sorted by from
+ *                          the source table (specified by
+ *                          <code>source_table_name</code>); e.g. 'timestamp
+ *                          asc, x desc'.  The <code>order_by</code> columns do
+ *                          not have to be present in <code>field_map</code>.
  *                                  <li> 'update_on_existing_pk': Specifies the
  *                          record collision policy for inserting the source
  *                          table records (specified by
@@ -5806,13 +5853,13 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
  * see <a href="../../concepts/unions.html#limitations-and-cautions"
  * target="_top">Union Limitations and Cautions</a>.
  * <p>
- * INTERSECT (DISTINCT) - For data set intersection details and examples, see
- * <a href="../../concepts/intersect.html" target="_top">Intersect</a>.  For
- * limitations, see <a href="../../concepts/intersect.html#limitations"
+ * INTERSECT (DISTINCT/ALL) - For data set intersection details and examples,
+ * see <a href="../../concepts/intersect.html" target="_top">Intersect</a>.
+ * For limitations, see <a href="../../concepts/intersect.html#limitations"
  * target="_top">Intersect Limitations</a>.
  * <p>
- * EXCEPT (DISTINCT) - For data set subtraction details and examples, see <a
- * href="../../concepts/except.html" target="_top">Except</a>.  For
+ * EXCEPT (DISTINCT/ALL) - For data set subtraction details and examples, see
+ * <a href="../../concepts/except.html" target="_top">Except</a>.  For
  * limitations, see <a href="../../concepts/except.html#limitations"
  * target="_top">Except Limitations</a>.
  * <p>
@@ -5869,13 +5916,13 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  * see <a href="../../concepts/unions.html#limitations-and-cautions"
  * target="_top">Union Limitations and Cautions</a>.
  * <p>
- * INTERSECT (DISTINCT) - For data set intersection details and examples, see
- * <a href="../../concepts/intersect.html" target="_top">Intersect</a>.  For
- * limitations, see <a href="../../concepts/intersect.html#limitations"
+ * INTERSECT (DISTINCT/ALL) - For data set intersection details and examples,
+ * see <a href="../../concepts/intersect.html" target="_top">Intersect</a>.
+ * For limitations, see <a href="../../concepts/intersect.html#limitations"
  * target="_top">Intersect Limitations</a>.
  * <p>
- * EXCEPT (DISTINCT) - For data set subtraction details and examples, see <a
- * href="../../concepts/except.html" target="_top">Except</a>.  For
+ * EXCEPT (DISTINCT/ALL) - For data set subtraction details and examples, see
+ * <a href="../../concepts/except.html" target="_top">Except</a>.  For
  * limitations, see <a href="../../concepts/except.html#limitations"
  * target="_top">Except Limitations</a>.
  * <p>
@@ -8645,7 +8692,7 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'expression': Optional filter
  *                          expression to apply to the table.
- *                                  <li> 'sort_by': Optional column that the
+ *                                  <li> 'sort_by': Optional column(s) that the
  *                          data should be sorted by. Empty by default (i.e. no
  *                          sorting is applied).
  *                                  <li> 'sort_order': String indicating how
@@ -8660,10 +8707,15 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          The default value is 'ascending'.
  *                                  <li> 'order_by': Comma-separated list of
  *                          the columns to be sorted by; e.g. 'timestamp asc, x
- *                          desc'.  The columns specified must be present in
- *                          <code>column_names</code>.  If any alias is given
- *                          for any column name, the alias must be used, rather
- *                          than the original column name.
+ *                          desc'.
+ *                                  <li> 'convert_wkts_to_wkbs': If true, then
+ *                          WKT string columns will be returned as WKB bytes.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -9412,9 +9464,6 @@ GPUdb.prototype.has_type = function(type_id, options, callback) {
  * <p>
  * The <code>return_record_ids</code> option indicates that the database should
  * return the unique identifiers of inserted records.
- * <p>
- * The <code>route_to_address</code> option directs that inserted records
- * should be targeted for a particular database node.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9466,9 +9515,6 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  * <p>
  * The <code>return_record_ids</code> option indicates that the database should
  * return the unique identifiers of inserted records.
- * <p>
- * The <code>route_to_address</code> option directs that inserted records
- * should be targeted for a particular database node.
  *
  * @param {String} table_name  Table to which the records are to be added. Must
  *                             be an existing table.
@@ -9507,9 +9553,6 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'route_to_address': Route to a
- *                          specific rank/tom. Option not suitable for tables
- *                          using primary/shard keys
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -11583,6 +11626,17 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          to customize behavior when the updated primary key
  *                          value already exists as described in
  *                          {@linkcode GPUdb#insert_records}.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'use_expressions_in_new_values_maps':
+ *                          When set to 'true', all new_values in
+ *                          new_values_maps are considered as expression
+ *                          values. When set to 'false', all new_values in
+ *                          new_values_maps are considered as constants.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
