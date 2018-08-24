@@ -1199,7 +1199,7 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
 GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
     var actual_request = {
         num_alerts: request.num_alerts,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -1238,7 +1238,7 @@ GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
 GPUdb.prototype.admin_show_alerts = function(num_alerts, options, callback) {
     var actual_request = {
         num_alerts: num_alerts,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -4561,7 +4561,7 @@ GPUdb.prototype.create_projection = function(table_name, projection_name, column
 GPUdb.prototype.create_role_request = function(request, callback) {
     var actual_request = {
         name: request.name,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -4589,7 +4589,7 @@ GPUdb.prototype.create_role_request = function(request, callback) {
 GPUdb.prototype.create_role = function(name, options, callback) {
     var actual_request = {
         name: name,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -6078,9 +6078,11 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to filter.  This may be the ID
  *                             of a collection, table or a result set (for
- *                             chaining queries).  Collections may be filtered
- *                             only if all tables within the collection have
- *                             the same type ID.
+ *                             chaining queries). If filtering a collection,
+ *                             all child tables where the filter expression is
+ *                             valid will be filtered; the filtered result
+ *                             tables will then be placed in a collection
+ *                             specified by <code>view_name</code>.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Has the same naming
  *                            restrictions as <a
@@ -6172,9 +6174,11 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to filter.  This may be the
  *                             name of a collection, a table or a view (when
- *                             chaining queries).  Collections may be filtered
- *                             only if all tables within the collection have
- *                             the same type ID.
+ *                             chaining queries). If filtering a collection,
+ *                             all child tables where the filter expression is
+ *                             valid will be filtered; the filtered result
+ *                             tables will then be placed in a collection
+ *                             specified by <code>view_name</code>.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Has the same naming
  *                            restrictions as <a
@@ -6268,9 +6272,11 @@ GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to filter.  This may be the
  *                             name of a collection, a table or a view (when
- *                             chaining queries).  Collections may be filtered
- *                             only if all tables within the collection have
- *                             the same type ID.
+ *                             chaining queries).  If filtering a collection,
+ *                             all child tables where the filter expression is
+ *                             valid will be filtered; the filtered result
+ *                             tables will then be placed in a collection
+ *                             specified by <code>view_name</code>.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Must not be an
  *                            already existing collection, table or view.
@@ -6679,9 +6685,11 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to filter.  This may be the ID
  *                             of a collection, table or a result set (for
- *                             chaining queries).  Collections may be filtered
- *                             only if all tables within the collection have
- *                             the same type ID.
+ *                             chaining queries). If filtering a collection,
+ *                             all child tables where the filter expression is
+ *                             valid will be filtered; the filtered result
+ *                             tables will then be placed in a collection
+ *                             specified by <code>view_name</code>.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results. Has the same naming
  *                            restrictions as <a
@@ -10118,6 +10126,16 @@ GPUdb.prototype.show_types_request = function(request, callback) {
  * @param {String} label  Option string that was supplied by user in a call to
  *                        {@linkcode GPUdb#create_type}.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_join_types': When set to 'true',
+ *                          no join types will be included.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -10578,8 +10596,8 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
 GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
     var actual_request = {
         table_name: request.table_name,
-        x_column_name: request.x_column_name,
-        y_column_name: request.y_column_name,
+        x_column_names: request.x_column_names,
+        y_column_names: request.y_column_names,
         min_x: request.min_x,
         max_x: request.max_x,
         min_y: request.min_y,
@@ -10608,10 +10626,10 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table containing the data to be
  *                             drawn as a chart.
- * @param {String} x_column_name  Name of the column containing the data mapped
- *                                to the x axis of a chart.
- * @param {String} y_column_name  Name of the column containing the data mapped
- *                                to the y axis of a chart.
+ * @param {String[]} x_column_names  Names of the columns containing the data
+ *                                   mapped to the x axis of a chart.
+ * @param {String[]} y_column_names  Names of the columns containing the data
+ *                                   mapped to the y axis of a chart.
  * @param {Number} min_x  Lower bound for the x column values. For non-numeric
  *                        x column, each x column item is mapped to an integral
  *                        value starting from 0.
@@ -10690,6 +10708,26 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                aggregate expression by which non-numeric y
  *                                column values are sorted, e.g. "avg(price)",
  *                                which defaults to "avg(price) ascending".
+ *                                        <li> 'scale_type_x': Type of x axis
+ *                                scale.
+ *                                Supported values:
+ *                                <ul>
+ *                                        <li> 'none': No scale is applied to
+ *                                the x axis.
+ *                                        <li> 'log': A base-10 log scale is
+ *                                applied to the x axis.
+ *                                </ul>
+ *                                The default value is 'none'.
+ *                                        <li> 'scale_type_y': Type of y axis
+ *                                scale.
+ *                                Supported values:
+ *                                <ul>
+ *                                        <li> 'none': No scale is applied to
+ *                                the y axis.
+ *                                        <li> 'log': A base-10 log scale is
+ *                                applied to the y axis.
+ *                                </ul>
+ *                                The default value is 'none'.
  *                                        <li> 'jitter_x': Amplitude of
  *                                horizontal jitter applied to non-numaric x
  *                                column values.
@@ -10708,11 +10746,11 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.visualize_image_chart = function(table_name, x_column_name, y_column_name, min_x, max_x, min_y, max_y, width, height, bg_color, style_options, options, callback) {
+GPUdb.prototype.visualize_image_chart = function(table_name, x_column_names, y_column_names, min_x, max_x, min_y, max_y, width, height, bg_color, style_options, options, callback) {
     var actual_request = {
         table_name: table_name,
-        x_column_name: x_column_name,
-        y_column_name: y_column_name,
+        x_column_names: x_column_names,
+        y_column_names: y_column_names,
         min_x: min_x,
         max_x: max_x,
         min_y: min_y,
@@ -10975,7 +11013,7 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
         height: request.height,
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
         style_options: request.style_options,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     if (callback !== undefined && callback !== null) {
@@ -11039,7 +11077,9 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                                  <li> 'min_level':
  *                                  <li> 'max_level':
  *                                  <li> 'num_levels':
+ *                                  <li> 'adjust_levels':
  *                                  <li> 'search_radius':
+ *                                  <li> 'max_search_cells':
  *                                  <li> 'gridding_method':
  *                          Supported values:
  *                          <ul>
@@ -11047,11 +11087,16 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                                  <li> 'MIN_CURV'
  *                                  <li> 'KRIGING'
  *                                  <li> 'PASS_THROUGH'
+ *                                  <li> 'FILL_RATIO'
  *                          </ul>
  *                          The default value is 'INV_DST_POW'.
  *                                  <li> 'smoothing_factor':
- *                                  <li> 'grid_rows':
- *                                  <li> 'grid_columns':
+ *                                  <li> 'grid_size':
+ *                                  <li> 'adjust_grid':
+ *                                  <li> 'adjust_grid_neigh':
+ *                                  <li> 'adjust_grid_size':
+ *                                  <li> 'max_grid_size':
+ *                                  <li> 'min_grid_size':
  *                                  <li> 'render_output_grid':
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
@@ -11075,7 +11120,7 @@ GPUdb.prototype.visualize_image_contour = function(table_names, x_column_name, y
         height: height,
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
         style_options: style_options,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     if (callback !== undefined && callback !== null) {
