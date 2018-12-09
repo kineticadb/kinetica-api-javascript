@@ -38,8 +38,8 @@ browser's web console.
 
 The *JavaScript* documentation can be found at:
 
-* **Complete API**: <http://www.kinetica.com/docs/6.2/api/javascript/GPUdb.html>
-* **Tutorial**: <http://www.kinetica.com/docs/6.2/tutorials/js_guide.html>
+* **Complete API**: <http://www.kinetica.com/docs/7.0/api/javascript/GPUdb.html>
+* **Tutorial**: <http://www.kinetica.com/docs/7.0/tutorials/js_guide.html>
 
 
 Node.js
@@ -69,8 +69,8 @@ The following rpm packages are required for using the library:
 
 The *Node.js* module documentation can be found at:
 
-* **Complete API**: <http://www.kinetica.com/docs/6.2/api/nodejs-mod/GPUdb.html>
-* **Tutorial**: <http://www.kinetica.com/docs/6.2/tutorials/nodejs_guide.html>
+* **Complete API**: <http://www.kinetica.com/docs/7.0/api/nodejs-mod/GPUdb.html>
+* **Tutorial**: <http://www.kinetica.com/docs/7.0/tutorials/nodejs_guide.html>
 
 
 -----

@@ -1,6 +1,12 @@
 GPUdb Javascript API Changelog
 ==============================
 
+Version 7.0.0 - TBD
+--------------------------
+
+-   Version release
+
+
 Version 6.2.0 - 2018-04-17
 --------------------------
 
