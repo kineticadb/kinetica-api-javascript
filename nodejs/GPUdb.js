@@ -704,7 +704,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.1" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -997,6 +997,148 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
 
 
 /**
+ * Add one or more new ranks to the Kinetica cluster. The new ranks will not
+ * contain any data initially, other than replicated tables, and not be
+ * assigned any shards. To rebalance data across the cluster, which includes
+ * shifting some shard key assignments to newly added ranks, see
+ * {@linkcode GPUdb#admin_rebalance}.
+ * <p>
+ * For example, if attempting to add three new ranks (two ranks on host
+ * 172.123.45.67 and one rank on host 172.123.45.68) to a Kinetica cluster with
+ * additional configuration parameters:
+ * <p>
+ * * <code>hosts</code> would be an array including 172.123.45.67 in the first
+ * two indices (signifying two ranks being added to host 172.123.45.67) and
+ * 172.123.45.68 in the last index (signifying one rank being added to host
+ * 172.123.45.67)
+ * <p>
+ * * <code>config_params</code> would be an array of maps, with each map
+ * corresponding to the ranks being added in <code>hosts</code>. The key of
+ * each map would be the configuration parameter name and the value would be
+ * the parameter's value, e.g. 'rank.gpu':'1'
+ * <p>
+ * This endpoint's processing includes copying all replicated table data to the
+ * new rank(s) and therefore could take a long time. The API call may time out
+ * if run directly.  It is recommended to run this endpoint asynchronously via
+ * {@linkcode GPUdb#create_job}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_add_ranks_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        hosts: request.hosts,
+        config_params: request.config_params,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/add/ranks", actual_request, callback);
+};
+
+/**
+ * Add one or more new ranks to the Kinetica cluster. The new ranks will not
+ * contain any data initially, other than replicated tables, and not be
+ * assigned any shards. To rebalance data across the cluster, which includes
+ * shifting some shard key assignments to newly added ranks, see
+ * {@linkcode GPUdb#admin_rebalance}.
+ * <p>
+ * For example, if attempting to add three new ranks (two ranks on host
+ * 172.123.45.67 and one rank on host 172.123.45.68) to a Kinetica cluster with
+ * additional configuration parameters:
+ * <p>
+ * * <code>hosts</code> would be an array including 172.123.45.67 in the first
+ * two indices (signifying two ranks being added to host 172.123.45.67) and
+ * 172.123.45.68 in the last index (signifying one rank being added to host
+ * 172.123.45.67)
+ * <p>
+ * * <code>config_params</code> would be an array of maps, with each map
+ * corresponding to the ranks being added in <code>hosts</code>. The key of
+ * each map would be the configuration parameter name and the value would be
+ * the parameter's value, e.g. 'rank.gpu':'1'
+ * <p>
+ * This endpoint's processing includes copying all replicated table data to the
+ * new rank(s) and therefore could take a long time. The API call may time out
+ * if run directly.  It is recommended to run this endpoint asynchronously via
+ * {@linkcode GPUdb#create_job}.
+ *
+ * @param {String[]} hosts  The IP address of each rank being added to the
+ *                          cluster. Insert one entry per rank, even if they
+ *                          are on the same host. The order of the hosts in the
+ *                          array only matters as it relates to the
+ *                          <code>config_params</code>.
+ * @param {Object[]} config_params  Configuration parameters to apply to the
+ *                                  new ranks, e.g., which GPU to use.
+ *                                  Configuration parameters that start with
+ *                                  'rankN.', where N is the rank number,
+ *                                  should omit the N, as the new rank
+ *                                  number(s) are not allocated until the ranks
+ *                                  are created. Each entry in this array
+ *                                  corresponds to the entry at the same array
+ *                                  index in the <code>hosts</code>. This array
+ *                                  must either be completely empty or have the
+ *                                  same number of elements as the hosts array.
+ *                                  An empty array will result in the new ranks
+ *                                  being set only with default parameters.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'dry_run': If <code>true</code>, only
+ *                          validation checks will be performed. No ranks are
+ *                          added.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_add_ranks = function(hosts, config_params, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_add_ranks(hosts, config_params, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        hosts: hosts,
+        config_params: config_params,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/add/ranks", actual_request, callback);
+};
+
+/**
  * Perform the requested action on a list of one or more job(s). Based on the
  * type of job and the current state of execution, the action may not be
  * successfully executed. The final result of the attempted actions for each
@@ -1081,90 +1223,6 @@ GPUdb.prototype.admin_alter_jobs = function(job_ids, action, options, callback) 
 };
 
 /**
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- * @private
- */
-GPUdb.prototype.admin_alter_shards_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_alter_shards_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        version: request.version,
-        use_index: request.use_index,
-        rank: request.rank,
-        tom: request.tom,
-        index: request.index,
-        backup_map_list: request.backup_map_list,
-        backup_map_values: request.backup_map_values,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/admin/alter/shards", actual_request, callback);
-};
-
-/**
- *
- * @param {Number} version
- * @param {Boolean} use_index
- * @param {Number[]} rank
- * @param {Number[]} tom
- * @param {Number[]} index
- * @param {Number[]} backup_map_list
- * @param {Number[][]} backup_map_values
- * @param {Object} options
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- * @private
- */
-GPUdb.prototype.admin_alter_shards = function(version, use_index, rank, tom, index, backup_map_list, backup_map_values, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_alter_shards(version, use_index, rank, tom, index, backup_map_list, backup_map_values, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        version: version,
-        use_index: use_index,
-        rank: rank,
-        tom: tom,
-        index: index,
-        backup_map_list: backup_map_list,
-        backup_map_values: backup_map_values,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/admin/alter/shards", actual_request, callback);
-};
-
-/**
  * Take the system offline. When the system is offline, no user operations can
  * be performed with the exception of a system shutdown.
  *
@@ -1244,6 +1302,229 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
     };
 
     this.submit_request("/admin/offline", actual_request, callback);
+};
+
+/**
+ * Rebalance the cluster so that all the nodes contain approximately an equal
+ * number of records.  The rebalance will also cause the shards to be equally
+ * distributed (as much as possible) across all the ranks.
+ * <p>
+ * This endpoint may take a long time to run, depending on the amount of data
+ * in the system. The API call may time out if run directly.  It is recommended
+ * to run this endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_rebalance_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_rebalance_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/rebalance", actual_request, callback);
+};
+
+/**
+ * Rebalance the cluster so that all the nodes contain approximately an equal
+ * number of records.  The rebalance will also cause the shards to be equally
+ * distributed (as much as possible) across all the ranks.
+ * <p>
+ * This endpoint may take a long time to run, depending on the amount of data
+ * in the system. The API call may time out if run directly.  It is recommended
+ * to run this endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ *
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'rebalance_sharded_data': If
+ *                          <code>true</code>, sharded data will be rebalanced
+ *                          approximately equally across the cluster. Note that
+ *                          for big clusters, this data transfer could be time
+ *                          consuming and result in delayed query responses.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'rebalance_unsharded_data': If
+ *                          <code>true</code>, unsharded data (data without
+ *                          primary keys and without shard keys) will be
+ *                          rebalanced approximately equally across the
+ *                          cluster. Note that for big clusters, this data
+ *                          transfer could be time consuming and result in
+ *                          delayed query responses.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'table_whitelist': Comma-separated
+ *                          list of unsharded table names to rebalance. Not
+ *                          applicable to sharded tables because they are
+ *                          always balanced in accordance with their primary
+ *                          key or shard key. Cannot be used simultaneously
+ *                          with <code>table_blacklist</code>.
+ *                                  <li> 'table_blacklist': Comma-separated
+ *                          list of unsharded table names to not rebalance. Not
+ *                          applicable to sharded tables because they are
+ *                          always balanced in accordance with their primary
+ *                          key or shard key. Cannot be used simultaneously
+ *                          with <code>table_whitelist</code>.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_rebalance = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_rebalance(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/rebalance", actual_request, callback);
+};
+
+/**
+ * Remove one or more ranks from the cluster. All data in the ranks to be
+ * removed is rebalanced to other ranks before the node is removed unless the
+ * <code>rebalance_sharded_data</code> or <code>rebalance_unsharded_data</code>
+ * parameters are set to <code>false</code> in the <code>options</code>.
+ * <p>
+ * Due to the rebalancing, this endpoint may take a long time to run, depending
+ * on the amount of data in the system. The API call may time out if run
+ * directly.  It is recommended to run this endpoint asynchronously via
+ * {@linkcode GPUdb#create_job}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_remove_ranks_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        ranks: request.ranks,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/remove/ranks", actual_request, callback);
+};
+
+/**
+ * Remove one or more ranks from the cluster. All data in the ranks to be
+ * removed is rebalanced to other ranks before the node is removed unless the
+ * <code>rebalance_sharded_data</code> or <code>rebalance_unsharded_data</code>
+ * parameters are set to <code>false</code> in the <code>options</code>.
+ * <p>
+ * Due to the rebalancing, this endpoint may take a long time to run, depending
+ * on the amount of data in the system. The API call may time out if run
+ * directly.  It is recommended to run this endpoint asynchronously via
+ * {@linkcode GPUdb#create_job}.
+ *
+ * @param {Number[]} ranks  Rank numbers of the ranks to be removed from the
+ *                          cluster.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'rebalance_sharded_data': When
+ *                          <code>true</code>, data with primary keys or shard
+ *                          keys will be rebalanced to other ranks prior to
+ *                          rank removal. Note that for big clusters, this data
+ *                          transfer could be time consuming and result in
+ *                          delayed query responses.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'rebalance_unsharded_data': When
+ *                          <code>true</code>, unsharded data (data without
+ *                          primary keys and without shard keys) will be
+ *                          rebalanced to other ranks prior to rank removal.
+ *                          Note that for big clusters, this data transfer
+ *                          could be time consuming and result in delayed query
+ *                          responses.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_remove_ranks = function(ranks, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_remove_ranks(ranks, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        ranks: ranks,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/remove/ranks", actual_request, callback);
 };
 
 /**
@@ -2098,6 +2379,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          the multidimensional aggregates.
  *                                  <li> 'throw_error_on_refresh': <DEVELOPER>
  *                                  <li> 'sleep_on_refresh': <DEVELOPER>
+ *                                  <li> 'refresh_type': <DEVELOPER>
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3769,13 +4051,6 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         target="_top">time-to-live</a> in minutes of the
  *                         table, view, or collection specified in
  *                         <code>table_name</code>.
- *                                 <li> 'memory_ttl': Sets the time-to-live in
- *                         minutes for the individual chunks of the columns of
- *                         the table, view, or collection specified in
- *                         <code>table_name</code> to free their memory if
- *                         unused longer than the given time. Specify an empty
- *                         string to restore the global memory_ttl setting and
- *                         a value of '-1' for an infinite timeout.
  *                                 <li> 'add_column': Adds the column specified
  *                         in <code>value</code> to the table specified in
  *                         <code>table_name</code>.  Use
@@ -4468,6 +4743,20 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          being inserted will remain unchanged and the new
  *                          record discarded.  If the specified table does not
  *                          have a primary key, then this option is ignored.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'truncate_strings': If set to
+ *                          {true}@{, it allows to append unbounded string to
+ *                          charN string. If 'truncate_strings' is 'true', the
+ *                          desination column is charN datatype, and the source
+ *                          column is unnbounded string, it will truncate the
+ *                          source string to length of N first, and then append
+ *                          the truncated string to the destination charN
+ *                          column. The default value is false.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5300,10 +5589,8 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          collection provided is non-existent, the collection
  *                          will be automatically created. If empty, then the
  *                          join will be at the top level.
- *                                  <li> 'max_query_dimensions': The maximum
- *                          number of tables in a join that can be accessed by
- *                          a query and are not equated by a foreign-key to
- *                          primary-key equality predicate
+ *                                  <li> 'max_query_dimensions': Obsolete in
+ *                          GPUdb v7.0
  *                                  <li> 'optimize_lookups': Use more memory to
  *                          speed up the joining of tables.
  *                          Supported values:
@@ -5371,6 +5658,9 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          the join table for logging and for show_table.
  *                          optimization needed for large overlapped equi-join
  *                          stencils
+ *                                  <li> 'chunk_size': Maximum size of a
+ *                          joined-chunk for this table. Defaults to the
+ *                          gpudb.conf file chunk size
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6241,6 +6531,7 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'INTERVAL': Use <a
  *                          href="../../concepts/tables.html#partitioning-by-interval"
  *                          target="_top">interval partitioning</a>.
+ *                                  <li> 'LIST': Not yet supported
  *                          </ul>
  *                                  <li> 'partition_keys': Comma-separated list
  *                          of partition keys, which are the columns or column
@@ -6256,6 +6547,16 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          href="../../concepts/tables.html#partitioning-by-interval-example"
  *                          target="_top">interval partitioning example</a> for
  *                          example formats.
+ *                                  <li> 'is_automatic_partition': If true, a
+ *                          new partition will be created for values which
+ *                          don't fall into an existing partition.  Currently
+ *                          only supported for LIST partitions
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ttl': For a table, sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
@@ -6770,9 +7071,8 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             Queries like {@linkcode GPUdb#filter},
  *                             {@linkcode GPUdb#filter_by_list}, and
  *                             {@linkcode GPUdb#filter_by_value} work as
- *                             usual but {@linkcode GPUdb#aggregate_unique},
- *                             {@linkcode GPUdb#aggregate_group_by} and
- *                             {@linkcode GPUdb#get_records_by_column} are
+ *                             usual but {@linkcode GPUdb#aggregate_unique}
+ *                             and {@linkcode GPUdb#aggregate_group_by} are
  *                             not allowed on columns with this property.
  *                                     <li> 'timestamp': Valid only for 'long'
  *                             columns. Indicates that this field represents a
@@ -6901,6 +7201,10 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             the cardinality (the number of unique values) is
  *                             expected to be low. This property can save a
  *                             large amount of memory.
+ *                                     <li> 'init_with_now': For columns with
+ *                             attributes of date, time, datetime or timestamp,
+ *                             at insert time, replace empty strings and
+ *                             invalid timestamps with NOW()
  *                             </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -7525,12 +7829,15 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                                  <li> 'global_expression': An optional
  *                          global expression to reduce the search space of the
  *                          <code>expressions</code>.
- *                                  <li> 'record_id': A record id identifying a
+ *                                  <li> 'record_id': A record ID identifying a
  *                          single record, obtained at the time of
  *                          [insertion of the record]{@linkcode GPUdb#insert_records}
  *                          or by calling
  *                          {@linkcode GPUdb#get_records_from_collection}
- *                          with the *return_record_ids* option.
+ *                          with the *return_record_ids* option. This option
+ *                          cannot be used to delete records from <a
+ *                          href="../../concepts/tables.html#replication"
+ *                          target="_top">replicated</a> tables.
  *                                  <li> 'delete_all_records': If set to
  *                          <code>true</code>, all records in the table will be
  *                          deleted. If set to <code>false</code>, then the
@@ -8036,10 +8343,10 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the paging table.
  *                                  <li> 'distributed_joins': If
- *                          <code>false</code>, disables the use of distributed
+ *                          <code>true</code>, enables the use of distributed
  *                          joins in servicing the given query.  Any query
- *                          requiring a distributed join to succeed will fail,
- *                          though hints can be used in the query to change the
+ *                          requiring a distributed join will succeed, though
+ *                          hints can be used in the query to change the
  *                          distribution of the source data to allow the query
  *                          to succeed.
  *                          Supported values:
@@ -8047,7 +8354,20 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
- *                          The default value is 'true'.
+ *                          The default value is 'false'.
+ *                                  <li> 'distributed_operations': If
+ *                          <code>true</code>, enables the use of distributed
+ *                          operations in servicing the given query.  Any query
+ *                          requiring a distributed join will succeed, though
+ *                          hints can be used in the query to change the
+ *                          distribution of the source data to allow the query
+ *                          to succeed.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ssq_optimization': If
  *                          <code>false</code>, scalar subqueries will be
  *                          translated into joins
@@ -8102,6 +8422,24 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'true': true
  *                                  <li> 'false': false
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'prepare_mode': If <code>true</code>,
+ *                          compiles a query into an execution plan and saves
+ *                          it in query cache. Query execution is not performed
+ *                          and an empty response will be returned to user
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'planner_join_validations':
+ *                          <DEVELOPER>
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
  *                          </ul>
@@ -11936,9 +12274,66 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
 
 /**
  * Employs a topological query on a network graph generated a-priori by
- * {@linkcode GPUdb#create_graph}. See <a
- * href="../../graph_solver/network_graph_solver.html" target="_top">Network
- * Graph Solvers</a> for more information.
+ * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
+ * node(s), also known as an adjacency list, depending on what's been provided
+ * to the endpoint; providing edges will return nodes and providing nodes will
+ * return edges. There are two ways to provide edge(s) or node(s) to be
+ * queried: using column names and <a
+ * href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ * target="_top">query identifiers</a> with the <code>queries</code> with or
+ * using a list of specific IDs with one of the
+ * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
+ * <code>edge_or_node_wkt_ids</code> arrays and <code>edge_to_node</code> to
+ * determine if the IDs are edges or nodes.
+ * <p>
+ * To determine the node(s) or edge(s) adjacent to a value from a given column,
+ * provide a list of column names aliased as a particular query identifier to
+ * <code>queries</code>. This field can be populated with column values from
+ * any table as long as the type is supported by the given identifier. See <a
+ * href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ * target="_top">Query Identifiers</a> for more information. I
+ * <p>
+ * To query for nodes that are adjacent to a given set of edges, set
+ * <code>edge_to_node</code> to <code>true</code> and provide values to the
+ * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
+ * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in the
+ * arrays are edges and the corresponding adjacency list array in the response
+ * will be populated with nodes.
+ * <p>
+ * To query for edges that are adjacent to a given set of nodes, set
+ * <code>edge_to_node</code> to <code>false</code> and provide values to the
+ * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
+ * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in arrays
+ * are nodes and the given node(s) will be queried for adjacent edges and the
+ * corresponding adjacency list array in the response will be populated with
+ * edges.
+ * <p>
+ * To query for adjacencies relative to a given column and a given set of
+ * edges/nodes, the <code>queries</code> and <code>edge_or_node_int_ids</code>
+ * / <code>edge_or_node_string_ids</code> / <code>edge_or_node_wkt_ids</code>
+ * parameters can be used in conjuction with each other. If both
+ * <code>queries</code> and one of the arrays are populated, values from
+ * <code>queries</code> will be prioritized over values in the array and all
+ * values parsed from the <code>queries</code> array will be appended to the
+ * corresponding arrays (depending on the type). If using both
+ * <code>queries</code> and the edge_or_node arrays, the types must match,
+ * e.g., if <code>queries</code> utilizes the 'QUERY_NODE_ID' identifier, only
+ * the <code>edge_or_node_int_ids</code> array should be used. Note that using
+ * <code>queries</code> will override <code>edge_to_node</code>, so if
+ * <code>queries</code> contains a node-based query identifier, e.g.,
+ * 'table.column AS QUERY_NODE_ID', it is assumed that the
+ * <code>edge_or_node_int_ids</code> will contain node IDs.
+ * <p>
+ * To return the adjacency list in the response, leave
+ * <code>adjacency_table</code> empty. To return the adjacency list in a table
+ * and not in the response, provide a value to <code>adjacency_table</code> and
+ * set <code>export_query_results</code> to <code>false</code>. To return the
+ * adjacency list both in a table and the response, provide a value to
+ * <code>adjacency_table</code> and set <code>export_query_results</code> to
+ * <code>true</code>.
+ * <p>
+ * See <a href="../../graph_solver/network_graph_solver.html"
+ * target="_top">Network Graph Solver</a> for more information.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -11964,6 +12359,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
 
     var actual_request = {
         graph_name: request.graph_name,
+        queries: request.queries,
         edge_to_node: (request.edge_to_node !== undefined && request.edge_to_node !== null) ? request.edge_to_node : true,
         edge_or_node_int_ids: request.edge_or_node_int_ids,
         edge_or_node_string_ids: request.edge_or_node_string_ids,
@@ -11977,15 +12373,80 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
 
 /**
  * Employs a topological query on a network graph generated a-priori by
- * {@linkcode GPUdb#create_graph}. See <a
- * href="../../graph_solver/network_graph_solver.html" target="_top">Network
- * Graph Solvers</a> for more information.
+ * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
+ * node(s), also known as an adjacency list, depending on what's been provided
+ * to the endpoint; providing edges will return nodes and providing nodes will
+ * return edges. There are two ways to provide edge(s) or node(s) to be
+ * queried: using column names and <a
+ * href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ * target="_top">query identifiers</a> with the <code>queries</code> with or
+ * using a list of specific IDs with one of the
+ * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
+ * <code>edge_or_node_wkt_ids</code> arrays and <code>edge_to_node</code> to
+ * determine if the IDs are edges or nodes.
+ * <p>
+ * To determine the node(s) or edge(s) adjacent to a value from a given column,
+ * provide a list of column names aliased as a particular query identifier to
+ * <code>queries</code>. This field can be populated with column values from
+ * any table as long as the type is supported by the given identifier. See <a
+ * href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ * target="_top">Query Identifiers</a> for more information. I
+ * <p>
+ * To query for nodes that are adjacent to a given set of edges, set
+ * <code>edge_to_node</code> to <code>true</code> and provide values to the
+ * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
+ * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in the
+ * arrays are edges and the corresponding adjacency list array in the response
+ * will be populated with nodes.
+ * <p>
+ * To query for edges that are adjacent to a given set of nodes, set
+ * <code>edge_to_node</code> to <code>false</code> and provide values to the
+ * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
+ * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in arrays
+ * are nodes and the given node(s) will be queried for adjacent edges and the
+ * corresponding adjacency list array in the response will be populated with
+ * edges.
+ * <p>
+ * To query for adjacencies relative to a given column and a given set of
+ * edges/nodes, the <code>queries</code> and <code>edge_or_node_int_ids</code>
+ * / <code>edge_or_node_string_ids</code> / <code>edge_or_node_wkt_ids</code>
+ * parameters can be used in conjuction with each other. If both
+ * <code>queries</code> and one of the arrays are populated, values from
+ * <code>queries</code> will be prioritized over values in the array and all
+ * values parsed from the <code>queries</code> array will be appended to the
+ * corresponding arrays (depending on the type). If using both
+ * <code>queries</code> and the edge_or_node arrays, the types must match,
+ * e.g., if <code>queries</code> utilizes the 'QUERY_NODE_ID' identifier, only
+ * the <code>edge_or_node_int_ids</code> array should be used. Note that using
+ * <code>queries</code> will override <code>edge_to_node</code>, so if
+ * <code>queries</code> contains a node-based query identifier, e.g.,
+ * 'table.column AS QUERY_NODE_ID', it is assumed that the
+ * <code>edge_or_node_int_ids</code> will contain node IDs.
+ * <p>
+ * To return the adjacency list in the response, leave
+ * <code>adjacency_table</code> empty. To return the adjacency list in a table
+ * and not in the response, provide a value to <code>adjacency_table</code> and
+ * set <code>export_query_results</code> to <code>false</code>. To return the
+ * adjacency list both in a table and the response, provide a value to
+ * <code>adjacency_table</code> and set <code>export_query_results</code> to
+ * <code>true</code>.
+ * <p>
+ * See <a href="../../graph_solver/network_graph_solver.html"
+ * target="_top">Network Graph Solver</a> for more information.
  *
  * @param {String} graph_name  Name of the graph resource to query.
- * @param {Boolean} edge_to_node  If set to <code>true</code>, the query gives
- *                                the adjacency list from edge(s) to node(s);
- *                                otherwise, the adjacency list is from node(s)
- *                                to edge(s).
+ * @param {String[]} queries  Nodes or edges to be queried specified using <a
+ *                            href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ *                            target="_top">query identifiers</a>, e.g.,
+ *                            'table.column AS QUERY_NODE_ID' or 'table.column
+ *                            AS QUERY_EDGE_WKTLINE'. Multiple columns can be
+ *                            used as long as the same identifier is used for
+ *                            all columns. Passing in a query identifier will
+ *                            override the <code>edge_to_node</code> parameter.
+ * @param {Boolean} edge_to_node  If set to <code>true</code>, the given
+ *                                edge(s) will be queried for adjacent nodes.
+ *                                If set to <code>false</code>, the given
+ *                                node(s) will be queried for adjacent edges.
  *                                Supported values:
  *                                <ul>
  *                                        <li> 'true'
@@ -12013,13 +12474,24 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  <li> 'number_of_rings': Sets the number of
  *                          rings of edges around the node to query for
  *                          adjacency, with '1' being the edges directly
- *                          attached to the queried nodes. This setting is
- *                          ignored if <code>edge_to_node</code> is set to
- *                          <code>true</code>.
- *                                  <li> 'include_all_edges': Includes only the
- *                          edges directed out of the node for the query if set
- *                          to <code>false</code>. If set to <code>true</code>,
- *                          all edges are queried.
+ *                          attached to the queried nodes. For example, if
+ *                          <code>number_of_rings</code> is set to '2', the
+ *                          edge(s) directly attached to the queried nodes will
+ *                          be returned; in addition, the edge(s) attached to
+ *                          the node(s) attached to the initial ring of edge(s)
+ *                          surrounding the queried node(s) will be returned.
+ *                          This setting is ignored if
+ *                          <code>edge_to_node</code> is set to
+ *                          <code>true</code>. This setting cannot be less than
+ *                          '1'.
+ *                                  <li> 'include_all_edges': This parameter is
+ *                          only applicable if the queried graph is directed
+ *                          and <code>edge_to_node</code> is set to
+ *                          <code>false</code>. If set to <code>true</code>,
+ *                          all inbound edges and outbound edges relative to
+ *                          the node will be returned. If set to
+ *                          <code>false</code>, only outbound edges relative to
+ *                          the node will be returned.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -12036,9 +12508,15 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'true'.
  *                                  <li> 'enable_graph_draw': If set to
- *                          <code>true</code>, adds an 'EDGE_WKTLINE' column
- *                          identifier to the given
- *                          <code>adjacency_table</code>.
+ *                          <code>true</code>, adds a WKT-type column named
+ *                          'QUERY_EDGE_WKTLINE' to the given
+ *                          <code>adjacency_table</code> and inputs WKT values
+ *                          from the source graph (if available) or
+ *                          auto-generated WKT values (if there are no WKT
+ *                          values in the source graph). A subsequent call to
+ *                          the <a href="../../api/rest/wms_rest.html"
+ *                          target="_top">/wms</a> endpoint can then be made to
+ *                          display the query results on a map.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -12051,12 +12529,12 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.query_graph = function(graph_name, edge_to_node, edge_or_node_int_ids, edge_or_node_string_ids, edge_or_node_wkt_ids, adjacency_table, options, callback) {
+GPUdb.prototype.query_graph = function(graph_name, queries, edge_to_node, edge_or_node_int_ids, edge_or_node_string_ids, edge_or_node_wkt_ids, adjacency_table, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.query_graph(graph_name, edge_to_node, edge_or_node_int_ids, edge_or_node_string_ids, edge_or_node_wkt_ids, adjacency_table, options, function(err, response) {
+            self.query_graph(graph_name, queries, edge_to_node, edge_or_node_int_ids, edge_or_node_string_ids, edge_or_node_wkt_ids, adjacency_table, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -12068,6 +12546,7 @@ GPUdb.prototype.query_graph = function(graph_name, edge_to_node, edge_or_node_in
 
     var actual_request = {
         graph_name: graph_name,
+        queries: queries,
         edge_to_node: (edge_to_node !== undefined && edge_to_node !== null) ? edge_to_node : true,
         edge_or_node_int_ids: edge_or_node_int_ids,
         edge_or_node_string_ids: edge_or_node_string_ids,
@@ -12077,75 +12556,6 @@ GPUdb.prototype.query_graph = function(graph_name, edge_to_node, edge_or_node_in
     };
 
     this.submit_request("/query/graph", actual_request, callback);
-};
-
-/**
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- * @private
- */
-GPUdb.prototype.admin_replace_tom_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_replace_tom_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        old_rank_tom: request.old_rank_tom,
-        new_rank_tom: request.new_rank_tom,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/replace/tom", actual_request, callback);
-};
-
-/**
- *
- * @param {Number} old_rank_tom
- * @param {Number} new_rank_tom
- * @param {Object} options
- * @param {GPUdbCallback} callback  Callback that handles the response.
- * 
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- * @private
- */
-GPUdb.prototype.admin_replace_tom = function(old_rank_tom, new_rank_tom, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.admin_replace_tom(old_rank_tom, new_rank_tom, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        old_rank_tom: old_rank_tom,
-        new_rank_tom: new_rank_tom,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/replace/tom", actual_request, callback);
 };
 
 /**
@@ -13073,6 +13483,10 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  * setting <code>show_children</code> to <code>true</code> returns a list of
  * tables and views contained in the collection, along with their corresponding
  * detail.
+ * <p>
+ * To retrieve a list of every table, view, and collection in the database, set
+ * <code>table_name</code> to '*' and <code>show_children</code> to
+ * <code>true</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -13123,6 +13537,10 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  * setting <code>show_children</code> to <code>true</code> returns a list of
  * tables and views contained in the collection, along with their corresponding
  * detail.
+ * <p>
+ * To retrieve a list of every table, view, and collection in the database, set
+ * <code>table_name</code> to '*' and <code>show_children</code> to
+ * <code>true</code>.
  *
  * @param {String} table_name  Name of the table for which to retrieve the
  *                             information. If blank, then information about
@@ -14016,8 +14434,8 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
  *                             will be performed. Must be an existing view.
  * @param {String} world_table_name  Name of the table containing the complete
  *                                   series (track) information.
- * @param {String} view_name  Optional name of the view containing the series
- *                            (tracks) which have to be updated.
+ * @param {String} view_name  name of the view containing the series (tracks)
+ *                            which have to be updated.
  * @param {String[]} reserved
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
