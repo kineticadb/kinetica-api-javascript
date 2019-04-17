@@ -704,7 +704,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.1" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.2.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1263,8 +1263,8 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  * @param {Boolean} offline  Set to true if desired state is offline.
  *                           Supported values:
  *                           <ul>
- *                                   <li> 'true'
- *                                   <li> 'false'
+ *                                   <li> true
+ *                                   <li> false
  *                           </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -2350,7 +2350,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          table. Must be used in combination with the
  *                          <code>result_table</code> option.
  *                                  <li> 'view_id': view this result table is
- *                          part of
+ *                          part of.  The default value is ''.
  *                                  <li> 'materialize_on_gpu': If
  *                          <code>true</code> then the columns of the groupby
  *                          result table will be cached on the GPU. Must be
@@ -2427,10 +2427,14 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
  * For each bin, the start value is inclusive, but the end value is
  * exclusive--except for the very last bin for which the end value is also
  * inclusive.  The value returned for each bin is the number of records in it,
- * except when a column name is provided as a *value_column* in
- * <code>options</code>.  In this latter case the sum of the values
- * corresponding to the *value_column* is used as the result instead.  The
- * total number of bins requested cannot exceed 10,000.
+ * except when a column name is provided as a <code>value_column</code>.  In
+ * this latter case the sum of the values corresponding to the
+ * <code>value_column</code> is used as the result instead.  The total number
+ * of bins requested cannot exceed 10,000.
+ * <p>
+ * NOTE:  The Kinetica instance being accessed must be running a CUDA
+ * (GPU-based) build to service a request that specifies a
+ * <code>value_column</code> option.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2473,10 +2477,14 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  * For each bin, the start value is inclusive, but the end value is
  * exclusive--except for the very last bin for which the end value is also
  * inclusive.  The value returned for each bin is the number of records in it,
- * except when a column name is provided as a *value_column* in
- * <code>options</code>.  In this latter case the sum of the values
- * corresponding to the *value_column* is used as the result instead.  The
- * total number of bins requested cannot exceed 10,000.
+ * except when a column name is provided as a <code>value_column</code>.  In
+ * this latter case the sum of the values corresponding to the
+ * <code>value_column</code> is used as the result instead.  The total number
+ * of bins requested cannot exceed 10,000.
+ * <p>
+ * NOTE:  The Kinetica instance being accessed must be running a CUDA
+ * (GPU-based) build to service a request that specifies a
+ * <code>value_column</code> option.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table or
@@ -2536,6 +2544,9 @@ GPUdb.prototype.aggregate_histogram = function(table_name, column_name, start, e
  * begins with a randomly selected set of k points and then refines the
  * location of the points iteratively and settles to a local minimum.  Various
  * parameters and options are provided to control the heuristic search.
+ * <p>
+ * NOTE:  The Kinetica instance being accessed must be running a CUDA
+ * (GPU-based) build to service this request.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2579,6 +2590,9 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  * begins with a randomly selected set of k points and then refines the
  * location of the points iteratively and settles to a local minimum.  Various
  * parameters and options are provided to control the heuristic search.
+ * <p>
+ * NOTE:  The Kinetica instance being accessed must be running a CUDA
+ * (GPU-based) build to service this request.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table or
@@ -3013,6 +3027,9 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  * column values. Binning-columns whose value matches the nth member of the
  * bin_values list are placed in the nth bin. When a list is provided the
  * binning-column must be of type string or int.
+ * <p>
+ * NOTE:  The Kinetica instance being accessed must be running a CUDA
+ * (GPU-based) build to service this request.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3074,6 +3091,9 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  * column values. Binning-columns whose value matches the nth member of the
  * bin_values list are placed in the nth bin. When a list is provided the
  * binning-column must be of type string or int.
+ * <p>
+ * NOTE:  The Kinetica instance being accessed must be running a CUDA
+ * (GPU-based) build to service this request.
  *
  * @param {String} table_name  Name of the table on which the ranged-statistics
  *                             operation will be performed.
@@ -3337,7 +3357,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          combination with the <code>result_table</code>
  *                          option.
  *                                  <li> 'view_id': view this result table is
- *                          part of
+ *                          part of.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -3504,19 +3524,19 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          desc'.  The columns specified must be present in
  *                          input table.  If any alias is given for any column
  *                          name, the alias must be used, rather than the
- *                          original column name.
+ *                          original column name.  The default value is ''.
  *                                  <li> 'chunk_size': Indicates the chunk size
  *                          to be used for the result table. Must be used in
  *                          combination with the <code>result_table</code>
  *                          option.
  *                                  <li> 'limit': The number of records to
- *                          keep.
+ *                          keep.  The default value is ''.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
  *                          <code>result_table</code>.
  *                                  <li> 'view_id': view this result table is
- *                          part of
+ *                          part of.  The default value is ''.
  *                                  <li> 'materialize_on_gpu': If
  *                          <code>true</code> then the output columns will be
  *                          cached on the GPU.
@@ -3613,6 +3633,8 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
     var actual_request = {
         name: request.name,
         tier_attributes: (request.tier_attributes !== undefined && request.tier_attributes !== null) ? request.tier_attributes : {},
+        ranking: (request.ranking !== undefined && request.ranking !== null) ? request.ranking : "",
+        adjoining_resource_group: (request.adjoining_resource_group !== undefined && request.adjoining_resource_group !== null) ? request.adjoining_resource_group : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -3639,6 +3661,24 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                  of memory usable in the given tier at one
  *                                  time for this group.
  *                                  </ul>
+ * @param {String} ranking  If the resource group ranking has to be updated,
+ *                          this indicates the relative ranking among existing
+ *                          resource groups where this resource group will be
+ *                          moved. Left bank if not changing the ranking.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> ''
+ *                                  <li> 'first'
+ *                                  <li> 'last'
+ *                                  <li> 'before'
+ *                                  <li> 'after'
+ *                          </ul>
+ *                          The default value is ''.
+ * @param {String} adjoining_resource_group  If the ranking is 'before' or
+ *                                           'after', this field indicates the
+ *                                           resource group before or after
+ *                                           which the current group will be
+ *                                           placed otherwise left blank.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'max_cpu_concurrency': Maximum number
@@ -3665,12 +3705,12 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.alter_resource_group = function(name, tier_attributes, options, callback) {
+GPUdb.prototype.alter_resource_group = function(name, tier_attributes, ranking, adjoining_resource_group, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.alter_resource_group(name, tier_attributes, options, function(err, response) {
+            self.alter_resource_group(name, tier_attributes, ranking, adjoining_resource_group, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -3683,10 +3723,93 @@ GPUdb.prototype.alter_resource_group = function(name, tier_attributes, options, 
     var actual_request = {
         name: name,
         tier_attributes: (tier_attributes !== undefined && tier_attributes !== null) ? tier_attributes : {},
+        ranking: (ranking !== undefined && ranking !== null) ? ranking : "",
+        adjoining_resource_group: (adjoining_resource_group !== undefined && adjoining_resource_group !== null) ? adjoining_resource_group : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/alter/resourcegroup", actual_request, callback);
+};
+
+/**
+ * Alters a Role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_role_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_role_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        action: request.action,
+        value: request.value,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/alter/role", actual_request, callback);
+};
+
+/**
+ * Alters a Role.
+ *
+ * @param {String} name  Name of the role to be altered. Must be an existing
+ *                       role.
+ * @param {String} action  Modification operation to be applied to the role.
+ *                         Supported values:
+ *                         <ul>
+ *                                 <li> 'set_resource_group': Sets the resource
+ *                         group for an internal role. The resource group must
+ *                         exist, otherwise, an empty string assigns the role
+ *                         to the default resource group.
+ *                         </ul>
+ * @param {String} value  The value of the modification, depending on
+ *                        <code>action</code>.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_role = function(name, action, value, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_role(name, action, value, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        action: action,
+        value: value,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/alter/role", actual_request, callback);
 };
 
 /**
@@ -3757,6 +3880,13 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               <li> 'true'
  *                                               <li> 'false'
  *                                       </ul>
+ *                                               <li>
+ *                                       'subtask_concurrency_limit': Sets the
+ *                                       maximum number of simultaneous threads
+ *                                       allocated to a given request, on each
+ *                                       rank. Note that thread allocation may
+ *                                       also be limted by resource group
+ *                                       limits and/or system load.
  *                                               <li> 'chunk_size': Sets the
  *                                       chunk size of all new sets to the
  *                                       specified integer value.
@@ -3827,11 +3957,13 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       (e.g., {@linkcode GPUdb#filter}) and
  *                                       aggregating (e.g.,
  *                                       {@linkcode GPUdb#aggregate_group_by})
- *                                       queries will timeout.
+ *                                       queries will timeout.  The default
+ *                                       value is '20'.
  *                                               <li> 'max_get_records_size':
  *                                       The maximum number of records the
  *                                       database will serve for a given data
- *                                       retrieval call
+ *                                       retrieval call.  The default value is
+ *                                       '20000'.
  *                                               <li> 'enable_audit': Enable or
  *                                       disable auditing.
  *                                               <li> 'audit_headers': Enable
@@ -3846,11 +3978,13 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       Flushes the chunk cache when value is
  *                                       false
  *                                               <li> 'chunk_cache_size': Size
- *                                       of the chunk cache in bytes.
+ *                                       of the chunk cache in bytes.  The
+ *                                       default value is '10000000'.
  *                                               <li>
  *                                       'synchronous_compression': compress
  *                                       vector on set_compression (instead of
- *                                       waiting for background thread)
+ *                                       waiting for background thread).  The
+ *                                       default value is 'false'.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -4711,21 +4845,23 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          indicating the number of initial results to skip
  *                          from <code>source_table_name</code>. Default is 0.
  *                          The minimum allowed value is 0. The maximum allowed
- *                          value is MAX_INT.
+ *                          value is MAX_INT.  The default value is '0'.
  *                                  <li> 'limit': A positive integer indicating
  *                          the maximum number of results to be returned from
  *                          <code>source_table_name</code>. Or END_OF_SET
  *                          (-9999) to indicate that the max number of results
- *                          should be returned.
+ *                          should be returned.  The default value is '-9999'.
  *                                  <li> 'expression': Optional filter
  *                          expression to apply to the
- *                          <code>source_table_name</code>.
+ *                          <code>source_table_name</code>.  The default value
+ *                          is ''.
  *                                  <li> 'order_by': Comma-separated list of
  *                          the columns to be sorted by from source table
  *                          (specified by <code>source_table_name</code>),
  *                          e.g., 'timestamp asc, x desc'. The
  *                          <code>order_by</code> columns do not have to be
- *                          present in <code>field_map</code>.
+ *                          present in <code>field_map</code>.  The default
+ *                          value is ''.
  *                                  <li> 'update_on_existing_pk': Specifies the
  *                          record collision policy for inserting the source
  *                          table records (specified by
@@ -5224,10 +5360,10 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  be directed.
  *                                  Supported values:
  *                                  <ul>
- *                                          <li> 'true'
- *                                          <li> 'false'
+ *                                          <li> true
+ *                                          <li> false
  *                                  </ul>
- *                                  The default value is 'true'.
+ *                                  The default value is true.
  * @param {String[]} nodes  Nodes represent fundamental topological units of a
  *                          graph. Nodes must be specified using <a
  *                          href="../../graph_solver/network_graph_solver.html#identifiers"
@@ -5287,14 +5423,19 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          determines the minimum separation allowed between
  *                          unique nodes. If nodes are within the tolerance of
  *                          each other, they will be merged as a single node.
+ *                          The default value is '1.0E-4'.
  *                                  <li> 'min_x': Minimum x (longitude) value
- *                          for spatial graph associations.
+ *                          for spatial graph associations.  The default value
+ *                          is '-180.0'.
  *                                  <li> 'max_x': Maximum x (longitude) value
- *                          for spatial graph associations.
+ *                          for spatial graph associations.  The default value
+ *                          is '180.0'.
  *                                  <li> 'min_y': Minimum y (latitude) value
- *                          for spatial graph associations.
+ *                          for spatial graph associations.  The default value
+ *                          is '-90.0'.
  *                                  <li> 'max_y': Maximum y (latitude) value
- *                          for spatial graph associations.
+ *                          for spatial graph associations.  The default value
+ *                          is '90.0'.
  *                                  <li> 'recreate': If set to
  *                          <code>true</code> and the graph (using
  *                          <code>graph_name</code>) already exists, the graph
@@ -5367,7 +5508,8 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          the created graph is also created as a table with
  *                          the given name and following identifier columns:
  *                          'EDGE_ID', 'EDGE_NODE1_ID', 'EDGE_NODE2_ID'. If
- *                          left blank, no table is created.
+ *                          left blank, no table is created.  The default value
+ *                          is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5588,7 +5730,8 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          collection which is to contain the join. If the
  *                          collection provided is non-existent, the collection
  *                          will be automatically created. If empty, then the
- *                          join will be at the top level.
+ *                          join will be at the top level.  The default value
+ *                          is ''.
  *                                  <li> 'max_query_dimensions': Obsolete in
  *                          GPUdb v7.0
  *                                  <li> 'optimize_lookups': Use more memory to
@@ -5599,65 +5742,16 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'refresh_method': Method by which the
- *                          join can be refreshed when the data in underlying
- *                          member tables have changed.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'manual': refresh only occurs when
- *                          manually requested by calling this endpoint with
- *                          refresh option set to <code>refresh</code> or
- *                          <code>full_refresh</code>
- *                                  <li> 'on_query': incrementally refresh
- *                          (refresh just those records added) whenever a new
- *                          query is issued and new data is inserted into the
- *                          base table.  A full refresh of all the records
- *                          occurs when a new query is issued and there have
- *                          been inserts to any non-base-tables since the last
- *                          query.  <a href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> will be set to not expire;
- *                          any <code>ttl</code> specified will be ignored.
- *                                  <li> 'on_insert': incrementally refresh
- *                          (refresh just those records added) whenever new
- *                          data is inserted into a base table.  A full refresh
- *                          of all the records occurs when a new query is
- *                          issued and there have been inserts to any
- *                          non-base-tables since the last query.  <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> will be set to not expire;
- *                          any <code>ttl</code> specified will be ignored.
- *                          </ul>
- *                          The default value is 'manual'.
- *                                  <li> 'refresh': Do a manual refresh of the
- *                          join if it exists - throws an error otherwise
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'no_refresh': don't refresh
- *                                  <li> 'refresh': incrementally refresh
- *                          (refresh just those records added) if new data has
- *                          been inserted into the base table.  A full refresh
- *                          of all the records occurs if there have been
- *                          inserts to any non-base-tables since the last
- *                          refresh
- *                                  <li> 'full_refresh': always refresh even if
- *                          no new records have been added.  Only refresh
- *                          method guaranteed to do a full refresh (refresh all
- *                          the records) if a delete or update has occurred
- *                          since the last refresh.
- *                          </ul>
- *                          The default value is 'no_refresh'.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the join table specified
- *                          in <code>join_table_name</code>.  Ignored if
- *                          <code>refresh_method</code> is either
- *                          <code>on_insert</code> or <code>on_query</code>.
+ *                          in <code>join_table_name</code>.
  *                                  <li> 'view_id': view this projection is
- *                          part of
+ *                          part of.  The default value is ''.
  *                                  <li> 'no_count': return a count of 0 for
  *                          the join table for logging and for show_table.
  *                          optimization needed for large overlapped equi-join
- *                          stencils
+ *                          stencils.  The default value is 'false'.
  *                                  <li> 'chunk_size': Maximum size of a
  *                          joined-chunk for this table. Defaults to the
  *                          gpudb.conf file chunk size
@@ -5923,7 +6017,7 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                                  <li> 'max_concurrency_per_node': The
  *                          maximum number of concurrent instances of the proc
  *                          that will be executed per node. 0 allows unlimited
- *                          concurrency.
+ *                          concurrency.  The default value is '0'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6086,11 +6180,13 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          projection is to be assigned as a child. If the
  *                          collection provided is non-existent, the collection
  *                          will be automatically created. If empty, then the
- *                          projection will be at the top level.
+ *                          projection will be at the top level.  The default
+ *                          value is ''.
  *                                  <li> 'expression': An optional filter <a
  *                          href="../../concepts/expressions.html"
  *                          target="_top">expression</a> to be applied to the
- *                          source table prior to the projection.
+ *                          source table prior to the projection.  The default
+ *                          value is ''.
  *                                  <li> 'is_replicated': If <code>true</code>
  *                          then the projection will be replicated even if the
  *                          source table is not.
@@ -6101,13 +6197,14 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'limit': The number of records to
- *                          keep.
+ *                          keep.  The default value is ''.
  *                                  <li> 'order_by': Comma-separated list of
  *                          the columns to be sorted by; e.g. 'timestamp asc, x
  *                          desc'.  The columns specified must be present in
  *                          <code>column_names</code>.  If any alias is given
  *                          for any column name, the alias must be used, rather
- *                          than the original column name.
+ *                          than the original column name.  The default value
+ *                          is ''.
  *                                  <li> 'materialize_on_gpu': If
  *                          <code>true</code> then the columns of the
  *                          projection will be cached on the GPU.
@@ -6134,7 +6231,8 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          column2'.  The columns specified must be present in
  *                          <code>column_names</code>.  If any alias is given
  *                          for any column name, the alias must be used, rather
- *                          than the original column name.
+ *                          than the original column name.  The default value
+ *                          is ''.
  *                                  <li> 'persist': If <code>true</code>, then
  *                          the projection specified in
  *                          <code>projection_name</code> will be persisted and
@@ -6160,7 +6258,7 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'view_id': view this projection is
- *                          part of
+ *                          part of.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6220,6 +6318,8 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
     var actual_request = {
         name: request.name,
         tier_attributes: (request.tier_attributes !== undefined && request.tier_attributes !== null) ? request.tier_attributes : {},
+        ranking: request.ranking,
+        adjoining_resource_group: (request.adjoining_resource_group !== undefined && request.adjoining_resource_group !== null) ? request.adjoining_resource_group : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -6247,6 +6347,20 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  of memory usable in the given tier at one
  *                                  time for this group.
  *                                  </ul>
+ * @param {String} ranking  Indicates the relative ranking among existing
+ *                          resource groups where this new resource group will
+ *                          be placed.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'first'
+ *                                  <li> 'last'
+ *                                  <li> 'before'
+ *                                  <li> 'after'
+ *                          </ul>
+ * @param {String} adjoining_resource_group  Name of the resource group
+ *                                           relative to which this group will
+ *                                           be placed. Must be specified when
+ *                                           ranking is before or after
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'max_cpu_concurrency': Maximum number
@@ -6262,12 +6376,12 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.create_resource_group = function(name, tier_attributes, options, callback) {
+GPUdb.prototype.create_resource_group = function(name, tier_attributes, ranking, adjoining_resource_group, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.create_resource_group(name, tier_attributes, options, function(err, response) {
+            self.create_resource_group(name, tier_attributes, ranking, adjoining_resource_group, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -6280,6 +6394,8 @@ GPUdb.prototype.create_resource_group = function(name, tier_attributes, options,
     var actual_request = {
         name: name,
         tier_attributes: (tier_attributes !== undefined && tier_attributes !== null) ? tier_attributes : {},
+        ranking: ranking,
+        adjoining_resource_group: (adjoining_resource_group !== undefined && adjoining_resource_group !== null) ? adjoining_resource_group : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -6327,6 +6443,10 @@ GPUdb.prototype.create_role_request = function(request, callback) {
  *                       begin with a digit. Must not be the same name as an
  *                       existing user or role.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'resource_group': Name of an existing
+ *                          resource group to associate with this user
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7206,6 +7326,7 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             at insert time, replace empty strings and
  *                             invalid timestamps with NOW()
  *                             </ul>
+ *                             The default value is an empty dict ( {} ).
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7347,7 +7468,8 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          collection which is to contain the output table. If
  *                          the collection provided is non-existent, the
  *                          collection will be automatically created. If empty,
- *                          the output table will be a top-level table.
+ *                          the output table will be a top-level table.  The
+ *                          default value is ''.
  *                                  <li> 'materialize_on_gpu': If
  *                          <code>true</code>, then the columns of the output
  *                          table will be cached on the GPU.
@@ -7420,7 +7542,7 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'view_id': view the output table will
- *                          be a part of
+ *                          be a part of.  The default value is ''.
  *                                  <li> 'force_replicated': If
  *                          <code>true</code>, then the table specified in
  *                          <code>table_name</code> will be replicated even if
@@ -7828,7 +7950,7 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'global_expression': An optional
  *                          global expression to reduce the search space of the
- *                          <code>expressions</code>.
+ *                          <code>expressions</code>.  The default value is ''.
  *                                  <li> 'record_id': A record ID identifying a
  *                          single record, obtained at the time of
  *                          [insertion of the record]{@linkcode GPUdb#insert_records}
@@ -8171,7 +8293,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                          [clear_complete]{@linkcode GPUdb#show_proc_status}
  *                          option of {@linkcode GPUdb#show_proc_status} and
  *                          all proc instances using the cached data have
- *                          completed.
+ *                          completed.  The default value is ''.
  *                                  <li> 'use_cached_input': A comma-delimited
  *                          list of run IDs (as returned from prior calls to
  *                          {@linkcode GPUdb#execute_proc}) of running or
@@ -8184,14 +8306,16 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                          be passed to the proc. If the same table was cached
  *                          for multiple specified run IDs, the cached data
  *                          from the first run ID specified in the list that
- *                          includes that table will be used.
+ *                          includes that table will be used.  The default
+ *                          value is ''.
  *                                  <li> 'kifs_input_dirs': A comma-delimited
  *                          list of KiFS directories whose local files will be
  *                          made directly accessible to the proc through the
  *                          API. (All KiFS files, local or not, are also
  *                          accessible through the file system below the KiFS
  *                          mount point.) Each name specified must the name of
- *                          an existing KiFS directory.
+ *                          an existing KiFS directory.  The default value is
+ *                          ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -8562,7 +8686,7 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                          empty, then the newly created view will be
  *                          top-level.
  *                                  <li> 'view_id': view this filtered-view is
- *                          part of
+ *                          part of.  The default value is ''.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the view specified in
@@ -10031,7 +10155,8 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'normal'.
  *                                  <li> 'buffer': Buffer size, in meters. Only
- *                          relevant for <code>spatial</code> mode.
+ *                          relevant for <code>spatial</code> mode.  The
+ *                          default value is '0'.
  *                                  <li> 'buffer_method': Method used to buffer
  *                          polygons.  Only relevant for <code>spatial</code>
  *                          mode.
@@ -10044,16 +10169,20 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                          The default value is 'normal'.
  *                                  <li> 'max_partition_size': Maximum number
  *                          of points in a partition. Only relevant for
- *                          <code>spatial</code> mode.
+ *                          <code>spatial</code> mode.  The default value is
+ *                          '0'.
  *                                  <li> 'max_partition_score': Maximum number
  *                          of points * edges in a partition. Only relevant for
- *                          <code>spatial</code> mode.
+ *                          <code>spatial</code> mode.  The default value is
+ *                          '8000000'.
  *                                  <li> 'x_column_name': Name of column
  *                          containing x value of point being filtered in
- *                          <code>spatial</code> mode.
+ *                          <code>spatial</code> mode.  The default value is
+ *                          'x'.
  *                                  <li> 'y_column_name': Name of column
  *                          containing y value of point being filtered in
- *                          <code>spatial</code> mode.
+ *                          <code>spatial</code> mode.  The default value is
+ *                          'y'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -10509,7 +10638,8 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          data should be sorted by. Used in conjunction with
  *                          <code>sort_order</code>. The <code>order_by</code>
  *                          option can be used in lieu of <code>sort_by</code>
- *                          / <code>sort_order</code>.
+ *                          / <code>sort_order</code>.  The default value is
+ *                          ''.
  *                                  <li> 'sort_order': String indicating how
  *                          the returned values should be sorted -
  *                          <code>ascending</code> or <code>descending</code>.
@@ -10523,7 +10653,8 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                          The default value is 'ascending'.
  *                                  <li> 'order_by': Comma-separated list of
  *                          the columns to be sorted by as well as the sort
- *                          direction, e.g., 'timestamp asc, x desc'.
+ *                          direction, e.g., 'timestamp asc, x desc'.  The
+ *                          default value is ''.
  *                                  <li> 'convert_wkts_to_wkbs': If true, then
  *                          WKT string columns will be returned as WKB bytes.
  *                          Supported values:
@@ -12106,6 +12237,132 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
 };
 
 /**
+ * Matches measured lon/lat points to an underlying graph network.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.match_graph_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.match_graph_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: request.graph_name,
+        sample_points: request.sample_points,
+        solve_method: (request.solve_method !== undefined && request.solve_method !== null) ? request.solve_method : "incremental_weighted",
+        solution_table: (request.solution_table !== undefined && request.solution_table !== null) ? request.solution_table : "map_matching_solution",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/match/graph", actual_request, callback);
+};
+
+/**
+ * Matches measured lon/lat points to an underlying graph network.
+ *
+ * @param {String} graph_name  Name of the underlying graph network.
+ * @param {String[]} sample_points  ['Table.column AS node_identifier',
+ *                                  'Table.column AS SAMPLE_TIME' ]; e.g.,
+ *                                  't1.wkt' AS 'SAMPLE_WKTPOINT', t1.t' AS
+ *                                  'SAMPLE_TIME'
+ * @param {String} solve_method  Solver used for mapmatching.
+ *                               Supported values:
+ *                               <ul>
+ *                                       <li> 'markov_chain': Hidden Markov
+ *                               Model (HMM) based method.
+ *                                       <li> 'incremental_weighted': Uses time
+ *                               and/or distance to influence one or more
+ *                               shortest paths along the sample points.
+ *                               </ul>
+ *                               The default value is 'incremental_weighted'.
+ * @param {String} solution_table  Name of the table to store the solution.
+ *                                 Error if table already exists.
+ * @param {Object} options  Additional parameters
+ *                          <ul>
+ *                                  <li> 'gps_noise': GPS noise value - in
+ *                          meters - to remove redundant samplespoints (95th
+ *                          percentile). -1 to disable.  The default value is
+ *                          '5.0'.
+ *                                  <li> 'num_segments': Number of potentially
+ *                          matching road segments for each sample point.
+ *                          (Defaults to 3 for 'markov_chain' and 5 for
+ *                          'incremental_weighted').  The default value is '0'.
+ *                                  <li> 'search_radius': Maximum search radius
+ *                          used when snapping samples points onto potentially
+ *                          matching road segments. This corresponds to
+ *                          approximately 100m when using geodesic coordinates.
+ *                          The default value is '0.001'.
+ *                                  <li> 'chain_width': Only applicable if
+ *                          method is 'markov_chain'. Length of the sample
+ *                          points window within the Markov kernel.  The
+ *                          default value is '9'.
+ *                                  <li> 'max_solve_length': Only applicable if
+ *                          method is 'incremental_weighted'. Maximum number of
+ *                          samples along the path to solve on.  The default
+ *                          value is '200'.
+ *                                  <li> 'time_window_width': Only applicable
+ *                          if method is 'incremental_weighted'. Time window in
+ *                          which sample points are favored (dt of 1 is the
+ *                          most attractive).  The default value is '30'.
+ *                                  <li> 'detect_loops': Only applicable if
+ *                          method is 'incremental_weighted'. If true, add a
+ *                          break point within any loop.  The default value is
+ *                          'true'.
+ *                                  <li> 'source': Optional WKT point on the
+ *                          trace; otherwise the beginning (in time) is taken
+ *                          as the source.  The default value is 'POINT NULL'.
+ *                                  <li> 'destination': Optional WKT point on
+ *                          the trace; otherwise the end (in time) is taken as
+ *                          the destination.  The default value is 'POINT
+ *                          NULL'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.match_graph = function(graph_name, sample_points, solve_method, solution_table, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.match_graph(graph_name, sample_points, solve_method, solution_table, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: graph_name,
+        sample_points: sample_points,
+        solve_method: (solve_method !== undefined && solve_method !== null) ? solve_method : "incremental_weighted",
+        solution_table: (solution_table !== undefined && solution_table !== null) ? solution_table : "map_matching_solution",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/match/graph", actual_request, callback);
+};
+
+/**
  * Create a new empty result table (specified by <code>table_name</code>), and
  * insert all records from source tables (specified by
  * <code>source_table_names</code>) based on the field mapping information
@@ -12240,7 +12497,7 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                          to be used for the merged table specified in
  *                          <code>table_name</code>.
  *                                  <li> 'view_id': view this result table is
- *                          part of
+ *                          part of.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -12449,10 +12706,10 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                node(s) will be queried for adjacent edges.
  *                                Supported values:
  *                                <ul>
- *                                        <li> 'true'
- *                                        <li> 'false'
+ *                                        <li> true
+ *                                        <li> false
  *                                </ul>
- *                                The default value is 'true'.
+ *                                The default value is true.
  * @param {Number[]} edge_or_node_int_ids  The unique list of edge or node
  *                                         integer identifiers that will be
  *                                         queried for adjacencies.
@@ -12483,7 +12740,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          This setting is ignored if
  *                          <code>edge_to_node</code> is set to
  *                          <code>true</code>. This setting cannot be less than
- *                          '1'.
+ *                          '1'.  The default value is '1'.
  *                                  <li> 'include_all_edges': This parameter is
  *                          only applicable if the queried graph is directed
  *                          and <code>edge_to_node</code> is set to
@@ -14126,7 +14383,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          ignores the <code>destination_node_ids</code> list
  *                          and instead outputs the nodes within the radius
  *                          sorted by ascending cost. If set to '0.0', the
- *                          setting is ignored.
+ *                          setting is ignored.  The default value is '0.0'.
  *                                  <li> 'max_solution_targets': For
  *                          <code>SHORTEST_PATH</code> and
  *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
@@ -14135,6 +14392,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          and instead outputs no more than n number of nodes
  *                          sorted by ascending cost where n is equal to the
  *                          setting value. If set to 0, the setting is ignored.
+ *                          The default value is '0'.
  *                                  <li> 'export_solve_results': Returns
  *                          solution results inside the
  *                          <code>result_per_destination_node</code> array in
@@ -14299,7 +14557,8 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'global_expression': An optional
  *                          global expression to reduce the search space of the
- *                          predicates listed in <code>expressions</code>.
+ *                          predicates listed in <code>expressions</code>.  The
+ *                          default value is ''.
  *                                  <li> 'bypass_safety_checks': When set to
  *                          <code>true</code>, all predicates are available for
  *                          primary key updates.  Keep in mind that it is
@@ -14578,9 +14837,12 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                </ul>
  *                                The default value is 'false'.
  *                                        <li> 'pointcolors':
- *                                        <li> 'pointsizes':
- *                                        <li> 'pointoffset_x':
- *                                        <li> 'pointoffset_y':
+ *                                        <li> 'pointsizes': The default value
+ *                                is '3'.
+ *                                        <li> 'pointoffset_x': The default
+ *                                value is '0'.
+ *                                        <li> 'pointoffset_y': The default
+ *                                value is '0'.
  *                                        <li> 'pointshapes':
  *                                Supported values:
  *                                <ul>
@@ -14594,21 +14856,36 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
  *                                The default value is 'square'.
- *                                        <li> 'symbolrotations':
- *                                        <li> 'shapelinewidths':
- *                                        <li> 'shapelinecolors':
- *                                        <li> 'shapelinepatterns':
- *                                        <li> 'shapelinepatternlen':
- *                                        <li> 'shapefillcolors':
- *                                        <li> 'hashlineintervals':
- *                                        <li> 'hashlinecolors':
- *                                        <li> 'hashlineangles':
- *                                        <li> 'hashlinelens':
- *                                        <li> 'hashlinewidths':
- *                                        <li> 'tracklinewidths':
- *                                        <li> 'tracklinecolors':
- *                                        <li> 'trackmarkersizes':
- *                                        <li> 'trackmarkercolors':
+ *                                        <li> 'symbolrotations': The default
+ *                                value is '0'.
+ *                                        <li> 'shapelinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'shapelinecolors': The default
+ *                                value is 'FFFF00 '.
+ *                                        <li> 'shapelinepatterns': The default
+ *                                value is '0'.
+ *                                        <li> 'shapelinepatternlen': The
+ *                                default value is '32'.
+ *                                        <li> 'shapefillcolors': The default
+ *                                value is '-1'.
+ *                                        <li> 'hashlineintervals': The default
+ *                                value is '20'.
+ *                                        <li> 'hashlinecolors': The default
+ *                                value is 'The same as line color.'.
+ *                                        <li> 'hashlineangles': The default
+ *                                value is '0'.
+ *                                        <li> 'hashlinelens': The default
+ *                                value is '0'.
+ *                                        <li> 'hashlinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'tracklinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'tracklinecolors': The default
+ *                                value is '00FF00'.
+ *                                        <li> 'trackmarkersizes': The default
+ *                                value is '3'.
+ *                                        <li> 'trackmarkercolors': The default
+ *                                value is '0000FF'.
  *                                        <li> 'trackmarkershapes':
  *                                Supported values:
  *                                <ul>
@@ -14624,8 +14901,10 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
  *                                The default value is 'circle'.
- *                                        <li> 'trackheadcolors':
- *                                        <li> 'trackheadsizes':
+ *                                        <li> 'trackheadcolors': The default
+ *                                value is 'FFFFFF'.
+ *                                        <li> 'trackheadsizes': The default
+ *                                value is '10'.
  *                                        <li> 'trackheadshapes':
  *                                Supported values:
  *                                <ul>
@@ -14764,9 +15043,11 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                <ul>
  *                                        <li> 'pointcolor': The color of
  *                                points in the plot represented as a
- *                                hexadecimal number.
+ *                                hexadecimal number.  The default value is
+ *                                '0000FF'.
  *                                        <li> 'pointsize': The size of points
  *                                in the plot represented as number of pixels.
+ *                                The default value is '3'.
  *                                        <li> 'pointshape': The shape of
  *                                points in the plot.
  *                                Supported values:
@@ -14814,7 +15095,8 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                "circle;square;diamond"}.
  *                                        <li> 'cb_delimiter': A character or
  *                                string which separates per-class values in a
- *                                class-break style option string.
+ *                                class-break style option string.  The default
+ *                                value is ';'.
  *                                        <li> 'x_order_by': An expression or
  *                                aggregate expression by which non-numeric x
  *                                column values are sorted, e.g. "avg(price)
@@ -14845,14 +15127,15 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                The default value is 'none'.
  *                                        <li> 'jitter_x': Amplitude of
  *                                horizontal jitter applied to non-numeric x
- *                                column values.
+ *                                column values.  The default value is '0.0'.
  *                                        <li> 'jitter_y': Amplitude of
  *                                vertical jitter applied to non-numeric y
- *                                column values.
+ *                                column values.  The default value is '0.0'.
  *                                        <li> 'plot_all': If this options is
  *                                set to "true", all non-numeric column values
  *                                are plotted ignoring min_x, max_x, min_y and
- *                                max_y parameters.
+ *                                max_y parameters.  The default value is
+ *                                'false'.
  *                                </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -15015,10 +15298,14 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'false'
  *                                </ul>
  *                                The default value is 'false'.
- *                                        <li> 'pointcolors':
- *                                        <li> 'pointsizes':
- *                                        <li> 'pointoffset_x':
- *                                        <li> 'pointoffset_y':
+ *                                        <li> 'pointcolors': The default value
+ *                                is 'FF0000'.
+ *                                        <li> 'pointsizes': The default value
+ *                                is '3'.
+ *                                        <li> 'pointoffset_x': The default
+ *                                value is '0'.
+ *                                        <li> 'pointoffset_y': The default
+ *                                value is '0'.
  *                                        <li> 'pointshapes':
  *                                Supported values:
  *                                <ul>
@@ -15032,20 +15319,34 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
  *                                The default value is 'none'.
- *                                        <li> 'shapelinewidths':
- *                                        <li> 'shapelinecolors':
- *                                        <li> 'shapelinepatterns':
- *                                        <li> 'shapelinepatternlen':
- *                                        <li> 'shapefillcolors':
- *                                        <li> 'hashlineintervals':
- *                                        <li> 'hashlinecolors':
- *                                        <li> 'hashlineangles':
- *                                        <li> 'hashlinelens':
- *                                        <li> 'hashlinewidths':
- *                                        <li> 'tracklinewidths':
- *                                        <li> 'tracklinecolors':
- *                                        <li> 'trackmarkersizes':
- *                                        <li> 'trackmarkercolors':
+ *                                        <li> 'shapelinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'shapelinecolors': The default
+ *                                value is 'FFFF00 '.
+ *                                        <li> 'shapelinepatterns': The default
+ *                                value is '0'.
+ *                                        <li> 'shapelinepatternlen': The
+ *                                default value is '32'.
+ *                                        <li> 'shapefillcolors': The default
+ *                                value is '-1'.
+ *                                        <li> 'hashlineintervals': The default
+ *                                value is '20'.
+ *                                        <li> 'hashlinecolors': The default
+ *                                value is 'The same as line color.'.
+ *                                        <li> 'hashlineangles': The default
+ *                                value is '0'.
+ *                                        <li> 'hashlinelens': The default
+ *                                value is '0'.
+ *                                        <li> 'hashlinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'tracklinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'tracklinecolors': The default
+ *                                value is '00FF00'.
+ *                                        <li> 'trackmarkersizes': The default
+ *                                value is '3'.
+ *                                        <li> 'trackmarkercolors': The default
+ *                                value is '0000FF'.
  *                                        <li> 'trackmarkershapes':
  *                                Supported values:
  *                                <ul>
@@ -15059,8 +15360,10 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
  *                                The default value is 'none'.
- *                                        <li> 'trackheadcolors':
- *                                        <li> 'trackheadsizes':
+ *                                        <li> 'trackheadcolors': The default
+ *                                value is 'FFFFFF'.
+ *                                        <li> 'trackheadsizes': The default
+ *                                value is '10'.
  *                                        <li> 'trackheadshapes':
  *                                Supported values:
  *                                <ul>
@@ -15199,10 +15502,14 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                             The default value is 'PLATE_CARREE'.
  * @param {Object} style_options
  *                                <ul>
- *                                        <li> 'line_size':
- *                                        <li> 'color':
- *                                        <li> 'bg_color':
- *                                        <li> 'text_color':
+ *                                        <li> 'line_size': The default value
+ *                                is '3'.
+ *                                        <li> 'color': The default value is
+ *                                'FF696969'.
+ *                                        <li> 'bg_color': The default value is
+ *                                '00000000'.
+ *                                        <li> 'text_color': The default value
+ *                                is 'FF000000'.
  *                                        <li> 'colormap':
  *                                Supported values:
  *                                <ul>
@@ -15288,10 +15595,14 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'min_level':
  *                                  <li> 'max_level':
- *                                  <li> 'num_levels':
- *                                  <li> 'adjust_levels':
- *                                  <li> 'search_radius':
- *                                  <li> 'max_search_cells':
+ *                                  <li> 'num_levels': The default value is
+ *                          '10'.
+ *                                  <li> 'adjust_levels': The default value is
+ *                          'true'.
+ *                                  <li> 'search_radius': The default value is
+ *                          '20'.
+ *                                  <li> 'max_search_cells': The default value
+ *                          is '100'.
  *                                  <li> 'gridding_method':
  *                          Supported values:
  *                          <ul>
@@ -15302,22 +15613,38 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                                  <li> 'FILL_RATIO'
  *                          </ul>
  *                          The default value is 'INV_DST_POW'.
- *                                  <li> 'smoothing_factor':
- *                                  <li> 'grid_size':
- *                                  <li> 'adjust_grid':
- *                                  <li> 'adjust_grid_neigh':
- *                                  <li> 'adjust_grid_size':
- *                                  <li> 'max_grid_size':
- *                                  <li> 'min_grid_size':
- *                                  <li> 'render_output_grid':
- *                                  <li> 'color_isolines':
- *                                  <li> 'add_labels':
- *                                  <li> 'labels_font_size':
- *                                  <li> 'labels_font_family':
- *                                  <li> 'labels_search_window':
- *                                  <li> 'labels_intralevel_separation':
- *                                  <li> 'labels_interlevel_separation':
- *                                  <li> 'labels_max_angle':
+ *                                  <li> 'smoothing_factor': The default value
+ *                          is '10'.
+ *                                  <li> 'grid_size': The default value is
+ *                          '100'.
+ *                                  <li> 'adjust_grid': The default value is
+ *                          'false'.
+ *                                  <li> 'adjust_grid_neigh': The default value
+ *                          is '1'.
+ *                                  <li> 'adjust_grid_size': The default value
+ *                          is '1'.
+ *                                  <li> 'max_grid_size': The default value is
+ *                          '500'.
+ *                                  <li> 'min_grid_size': The default value is
+ *                          '10'.
+ *                                  <li> 'render_output_grid': The default
+ *                          value is 'false'.
+ *                                  <li> 'color_isolines': The default value is
+ *                          'true'.
+ *                                  <li> 'add_labels': The default value is
+ *                          'false'.
+ *                                  <li> 'labels_font_size': The default value
+ *                          is '12'.
+ *                                  <li> 'labels_font_family': The default
+ *                          value is 'arial'.
+ *                                  <li> 'labels_search_window': The default
+ *                          value is '4'.
+ *                                  <li> 'labels_intralevel_separation': The
+ *                          default value is '4'.
+ *                                  <li> 'labels_interlevel_separation': The
+ *                          default value is '20'.
+ *                                  <li> 'labels_max_angle': The default value
+ *                          is '60'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -15513,10 +15840,13 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  *                                        <li> 'ylorrd'
  *                                </ul>
  *                                The default value is 'jet'.
- *                                        <li> 'blur_radius':
+ *                                        <li> 'blur_radius': The default value
+ *                                is '5'.
  *                                        <li> 'bg_color':
- *                                        <li> 'gradient_start_color':
- *                                        <li> 'gradient_end_color':
+ *                                        <li> 'gradient_start_color': The
+ *                                default value is 'FFFFFF'.
+ *                                        <li> 'gradient_end_color': The
+ *                                default value is 'FF0000'.
  *                                </ul>
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -15816,8 +16146,10 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                        <li> 'false'
  *                                </ul>
  *                                The default value is 'true'.
- *                                        <li> 'pointcolors':
- *                                        <li> 'pointsizes':
+ *                                        <li> 'pointcolors': The default value
+ *                                is 'FF0000'.
+ *                                        <li> 'pointsizes': The default value
+ *                                is '3'.
  *                                        <li> 'pointshapes':
  *                                Supported values:
  *                                <ul>
@@ -15830,13 +16162,20 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                        <li> 'hollowdiamond'
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
- *                                        <li> 'shapelinewidths':
- *                                        <li> 'shapelinecolors':
- *                                        <li> 'shapefillcolors':
- *                                        <li> 'tracklinewidths':
- *                                        <li> 'tracklinecolors':
- *                                        <li> 'trackmarkersizes':
- *                                        <li> 'trackmarkercolors':
+ *                                        <li> 'shapelinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'shapelinecolors': The default
+ *                                value is 'FFFF00 '.
+ *                                        <li> 'shapefillcolors': The default
+ *                                value is '-1'.
+ *                                        <li> 'tracklinewidths': The default
+ *                                value is '3'.
+ *                                        <li> 'tracklinecolors': The default
+ *                                value is '00FF00'.
+ *                                        <li> 'trackmarkersizes': The default
+ *                                value is '3'.
+ *                                        <li> 'trackmarkercolors': The default
+ *                                value is '0000FF'.
  *                                        <li> 'trackmarkershapes':
  *                                Supported values:
  *                                <ul>
@@ -15850,8 +16189,10 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                        <li> 'SYMBOLCODE'
  *                                </ul>
  *                                The default value is 'none'.
- *                                        <li> 'trackheadcolors':
- *                                        <li> 'trackheadsizes':
+ *                                        <li> 'trackheadcolors': The default
+ *                                value is 'FFFFFF'.
+ *                                        <li> 'trackheadsizes': The default
+ *                                value is '10'.
  *                                        <li> 'trackheadshapes':
  *                                Supported values:
  *                                <ul>
@@ -16004,10 +16345,14 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
  *                                        <li> 'reds'
  *                                </ul>
  *                                The default value is 'reds'.
- *                                        <li> 'blur_radius':
- *                                        <li> 'bg_color':
- *                                        <li> 'gradient_start_color':
- *                                        <li> 'gradient_end_color':
+ *                                        <li> 'blur_radius': The default value
+ *                                is '5'.
+ *                                        <li> 'bg_color': The default value is
+ *                                'FF000000'.
+ *                                        <li> 'gradient_start_color': The
+ *                                default value is 'FFFFFF'.
+ *                                        <li> 'gradient_end_color': The
+ *                                default value is 'FF0000'.
  *                                </ul>
  * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
