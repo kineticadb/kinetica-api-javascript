@@ -746,7 +746,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.2.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.3.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1975,12 +1975,13 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * href="../../concepts/tables.html#table" target="_top">standard naming
  * conventions</a>; column/aggregation expressions will need to be aliased.  If
  * the source table's <a href="../../concepts/tables.html#shard-keys"
- * target="_top">shard key</a> is used as the grouping column(s), the result
- * table will be sharded, in all other cases it will be replicated.  Sorting
- * will properly function only if the result table is replicated or if there is
- * only one processing node and should not be relied upon in other cases.  Not
- * available when any of the values of <code>column_names</code> is an
- * unrestricted-length string.
+ * target="_top">shard key</a> is used as the grouping column(s) and all result
+ * records are selected (<code>offset</code> is 0 and <code>limit</code> is
+ * -9999), the result table will be sharded, in all other cases it will be
+ * replicated.  Sorting will properly function only if the result table is
+ * replicated or if there is only one processing node and should not be relied
+ * upon in other cases.  Not available when any of the values of
+ * <code>column_names</code> is an unrestricted-length string.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2074,12 +2075,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * href="../../concepts/tables.html#table" target="_top">standard naming
  * conventions</a>; column/aggregation expressions will need to be aliased.  If
  * the source table's <a href="../../concepts/tables.html#shard-keys"
- * target="_top">shard key</a> is used as the grouping column(s), the result
- * table will be sharded, in all other cases it will be replicated.  Sorting
- * will properly function only if the result table is replicated or if there is
- * only one processing node and should not be relied upon in other cases.  Not
- * available when any of the values of <code>column_names</code> is an
- * unrestricted-length string.
+ * target="_top">shard key</a> is used as the grouping column(s) and all result
+ * records are selected (<code>offset</code> is 0 and <code>limit</code> is
+ * -9999), the result table will be sharded, in all other cases it will be
+ * replicated.  Sorting will properly function only if the result table is
+ * replicated or if there is only one processing node and should not be relied
+ * upon in other cases.  Not available when any of the values of
+ * <code>column_names</code> is an unrestricted-length string.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing
@@ -2223,9 +2225,6 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          specify the multilevel aggregates.
  *                                  <li> 'cube': This option is used to specify
  *                          the multidimensional aggregates.
- *                                  <li> 'throw_error_on_refresh': <DEVELOPER>
- *                                  <li> 'sleep_on_refresh': <DEVELOPER>
- *                                  <li> 'refresh_type': <DEVELOPER>
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -3890,18 +3889,19 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         specified when creating the key or the complete
  *                         string used to define it.
  *                                 <li> 'add_partition': Adds a partition (for
- *                         range-partitioned tables only) specified in
- *                         <code>value</code>.  See <a
+ *                         range-partitioned or list-partitioned tables)
+ *                         specified in <code>value</code>.  See <a
  *                         href="../../concepts/tables.html#partitioning-by-range-example"
  *                         target="_top">range partitioning example</a> for
  *                         example format.
  *                                 <li> 'remove_partition': Removes the
  *                         partition specified in <code>value</code> and
  *                         relocates all its data to the default partition (for
- *                         range-partitioned tables only).
+ *                         range-partitioned or list-partition tables).
  *                                 <li> 'delete_partition': Deletes the
  *                         partition specified in <code>value</code> and its
- *                         data (for range-partitioned tables only).
+ *                         data (for range-partitioned or list-partitioned
+ *                         tables).
  *                                 <li> 'set_global_access_mode': Sets the
  *                         global access mode (i.e. locking) for the table
  *                         specified in <code>table_name</code>. Specify the
@@ -5478,28 +5478,11 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
  * href="../../concepts/projections.html#limitations-and-cautions"
  * target="_top">Projection Limitations and Cautions</a>.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a> are
- * available through this endpoint as well as
- * {@linkcode GPUdb#get_records_by_column}.
+ * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * which can perform operations like moving averages, are available through
+ * this endpoint as well as {@linkcode GPUdb#get_records_by_column}.
  * <p>
- * Notes:
- * <p>
- * A moving average can be calculated on a given column using the following
- * syntax in the <code>column_names</code> parameter:
- * <p>
- * 'moving_average(column_name,num_points_before,num_points_after) as
- * new_column_name'
- * <p>
- * For each record in the moving_average function's 'column_name' parameter, it
- * computes the average over the previous 'num_points_before' records and the
- * subsequent 'num_points_after' records.
- * <p>
- * Note that moving average relies on <code>order_by</code>, and
- * <code>order_by</code> requires that all the data being ordered resides on
- * the same processing node, so it won't make sense to use
- * <code>order_by</code> without moving average.
- * <p>
- * Also, a projection can be created with a different <a
+ * A projection can be created with a different <a
  * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
  * than the source table.  By specifying <code>shard_key</code>, the projection
  * will be sharded according to the specified columns, regardless of how the
@@ -5541,28 +5524,11 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * href="../../concepts/projections.html#limitations-and-cautions"
  * target="_top">Projection Limitations and Cautions</a>.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a> are
- * available through this endpoint as well as
- * {@linkcode GPUdb#get_records_by_column}.
+ * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * which can perform operations like moving averages, are available through
+ * this endpoint as well as {@linkcode GPUdb#get_records_by_column}.
  * <p>
- * Notes:
- * <p>
- * A moving average can be calculated on a given column using the following
- * syntax in the <code>column_names</code> parameter:
- * <p>
- * 'moving_average(column_name,num_points_before,num_points_after) as
- * new_column_name'
- * <p>
- * For each record in the moving_average function's 'column_name' parameter, it
- * computes the average over the previous 'num_points_before' records and the
- * subsequent 'num_points_after' records.
- * <p>
- * Note that moving average relies on <code>order_by</code>, and
- * <code>order_by</code> requires that all the data being ordered resides on
- * the same processing node, so it won't make sense to use
- * <code>order_by</code> without moving average.
- * <p>
- * Also, a projection can be created with a different <a
+ * A projection can be created with a different <a
  * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
  * than the source table.  By specifying <code>shard_key</code>, the projection
  * will be sharded according to the specified columns, regardless of how the
@@ -6011,7 +5977,9 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'INTERVAL': Use <a
  *                          href="../../concepts/tables.html#partitioning-by-interval"
  *                          target="_top">interval partitioning</a>.
- *                                  <li> 'LIST': Not yet supported
+ *                                  <li> 'LIST': Allows specifying a list of
+ *                          VALUES for a partition, or optionally to create an
+ *                          AUTOMATIC partition for each unique value
  *                          </ul>
  *                                  <li> 'partition_keys': Comma-separated list
  *                          of partition keys, which are the columns or column
@@ -7680,14 +7648,6 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'planner_join_validations':
- *                          <DEVELOPER>
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -9408,9 +9368,9 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * returned. This endpoint supports pagination with the <code>offset</code> and
  * <code>limit</code> parameters.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a> are
- * available through this endpoint as well as
- * {@linkcode GPUdb#create_projection}.
+ * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * which can perform operations like moving averages, are available through
+ * this endpoint as well as {@linkcode GPUdb#create_projection}.
  * <p>
  * When using pagination, if the table (or the underlying table in the case of
  * a view) is modified (records are inserted, updated, or deleted) during a
@@ -9463,9 +9423,9 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * returned. This endpoint supports pagination with the <code>offset</code> and
  * <code>limit</code> parameters.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a> are
- * available through this endpoint as well as
- * {@linkcode GPUdb#create_projection}.
+ * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * which can perform operations like moving averages, are available through
+ * this endpoint as well as {@linkcode GPUdb#create_projection}.
  * <p>
  * When using pagination, if the table (or the underlying table in the case of
  * a view) is modified (records are inserted, updated, or deleted) during a
@@ -10857,7 +10817,10 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
 };
 
 /**
- * Matches measured lon/lat points to an underlying graph network.
+ * Matches a directed route implied by a given set of latitude/longitude points
+ * to an existing underlying road network graph using a given solution type.
+ * See <a href="../../graph_solver/network_graph_solver.html"
+ * target="_top">Network Graph Solvers</a> for more information.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -10871,8 +10834,8 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
     var actual_request = {
         graph_name: request.graph_name,
         sample_points: request.sample_points,
-        solve_method: (request.solve_method !== undefined && request.solve_method !== null) ? request.solve_method : "incremental_weighted",
-        solution_table: (request.solution_table !== undefined && request.solution_table !== null) ? request.solution_table : "map_matching_solution",
+        solve_method: (request.solve_method !== undefined && request.solve_method !== null) ? request.solve_method : "markov_chain",
+        solution_table: (request.solution_table !== undefined && request.solution_table !== null) ? request.solution_table : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -10885,63 +10848,122 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
 };
 
 /**
- * Matches measured lon/lat points to an underlying graph network.
+ * Matches a directed route implied by a given set of latitude/longitude points
+ * to an existing underlying road network graph using a given solution type.
+ * See <a href="../../graph_solver/network_graph_solver.html"
+ * target="_top">Network Graph Solvers</a> for more information.
  *
- * @param {String} graph_name  Name of the underlying graph network.
- * @param {String[]} sample_points  ['Table.column AS node_identifier',
- *                                  'Table.column AS SAMPLE_TIME' ]; e.g.,
- *                                  't1.wkt' AS 'SAMPLE_WKTPOINT', t1.t' AS
- *                                  'SAMPLE_TIME'
- * @param {String} solve_method  Solver used for mapmatching.
+ * @param {String} graph_name  Name of the underlying geospatial graph resource
+ *                             to match to using <code>sample_points</code>.
+ * @param {String[]} sample_points  Sample points used to match to an
+ *                                  underlying geospatial graph. Sample points
+ *                                  must be specified using <a
+ *                                  href="../../graph_solver/network_graph_solver.html#match-identifiers"
+ *                                  target="_top">identifiers</a>; identifiers
+ *                                  are grouped as <a
+ *                                  href="../../graph_solver/network_graph_solver.html#match-combinations"
+ *                                  target="_top">combinations</a>. Identifiers
+ *                                  are used with existing column names, e.g.,
+ *                                  'table.column AS SAMPLE_WKTPOINT'.
+ * @param {String} solve_method  The type of solver to use for graph matching.
  *                               Supported values:
  *                               <ul>
- *                                       <li> 'markov_chain': Hidden Markov
- *                               Model (HMM) based method.
- *                                       <li> 'incremental_weighted': Uses time
- *                               and/or distance to influence one or more
- *                               shortest paths along the sample points.
+ *                                       <li> 'markov_chain': Matches
+ *                               <code>sample_points</code> to the graph using
+ *                               the Hidden Markov Model (HMM)-based method,
+ *                               which conducts a range-tree closest-edge
+ *                               search to find the best combinations of
+ *                               possible road segments
+ *                               (<code>num_segments</code>) for each sample
+ *                               point to create the best route. The route is
+ *                               secured one point at a time while looking
+ *                               ahead <code>chain_width</code> number of
+ *                               points, so the prediction is corrected after
+ *                               each point. This solution type is the most
+ *                               accurate but also the most computationally
+ *                               intensive.
+ *                                       <li> 'incremental_weighted': Matches
+ *                               <code>sample_points</code> to the graph using
+ *                               time and/or distance between points to
+ *                               influence one or more shortest paths across
+ *                               the sample points.
  *                               </ul>
- *                               The default value is 'incremental_weighted'.
- * @param {String} solution_table  Name of the table to store the solution.
- *                                 Error if table already exists.
+ *                               The default value is 'markov_chain'.
+ * @param {String} solution_table  The name of the table used to store the
+ *                                 results; this table contains a <a
+ *                                 href="../../geospatial/geo_objects.html#geospatial-tracks"
+ *                                 target="_top">track</a> of geospatial points
+ *                                 for the matched portion of the graph, a
+ *                                 track ID, and a score value. Also outputs a
+ *                                 details table containing a trip ID (that
+ *                                 matches the track ID), the
+ *                                 latitude/longitude pair, the timestamp the
+ *                                 point was recorded at, and an edge ID
+ *                                 corresponding to the matched road segment.
+ *                                 Has the same naming restrictions as <a
+ *                                 href="../../concepts/tables.html"
+ *                                 target="_top">tables</a>. Must not be an
+ *                                 existing table of the same name.
  * @param {Object} options  Additional parameters
  *                          <ul>
- *                                  <li> 'gps_noise': GPS noise value - in
- *                          meters - to remove redundant samplespoints (95th
- *                          percentile). -1 to disable.  The default value is
- *                          '5.0'.
- *                                  <li> 'num_segments': Number of potentially
- *                          matching road segments for each sample point.
- *                          (Defaults to 3 for 'markov_chain' and 5 for
- *                          'incremental_weighted').  The default value is '0'.
+ *                                  <li> 'gps_noise': GPS noise value (in
+ *                          meters) to remove redundant sample points. Use -1
+ *                          to disable noise reduction. The default value
+ *                          accounts for 95% of point variation (+ or -5
+ *                          meters).  The default value is '5.0'.
+ *                                  <li> 'num_segments': Maximum number of
+ *                          potentially matching road segments for each sample
+ *                          point. For the <code>markov_chain</code> solver,
+ *                          the default is 3; for the
+ *                          <code>incremental_weighted</code>, the default is
+ *                          5.  The default value is ''.
  *                                  <li> 'search_radius': Maximum search radius
- *                          used when snapping samples points onto potentially
- *                          matching road segments. This corresponds to
- *                          approximately 100m when using geodesic coordinates.
- *                          The default value is '0.001'.
- *                                  <li> 'chain_width': Only applicable if
- *                          method is 'markov_chain'. Length of the sample
- *                          points window within the Markov kernel.  The
- *                          default value is '9'.
- *                                  <li> 'max_solve_length': Only applicable if
- *                          method is 'incremental_weighted'. Maximum number of
- *                          samples along the path to solve on.  The default
- *                          value is '200'.
- *                                  <li> 'time_window_width': Only applicable
- *                          if method is 'incremental_weighted'. Time window in
- *                          which sample points are favored (dt of 1 is the
- *                          most attractive).  The default value is '30'.
- *                                  <li> 'detect_loops': Only applicable if
- *                          method is 'incremental_weighted'. If true, add a
- *                          break point within any loop.  The default value is
- *                          'true'.
- *                                  <li> 'source': Optional WKT point on the
- *                          trace; otherwise the beginning (in time) is taken
- *                          as the source.  The default value is 'POINT NULL'.
- *                                  <li> 'destination': Optional WKT point on
- *                          the trace; otherwise the end (in time) is taken as
- *                          the destination.  The default value is 'POINT
- *                          NULL'.
+ *                          used when snapping sample points onto potentially
+ *                          matching surrounding segments. The default value
+ *                          corresponds to approximately 100 meters.  The
+ *                          default value is '0.001'.
+ *                                  <li> 'chain_width': For the
+ *                          <code>markov_chain</code> solver only. Length of
+ *                          the sample points lookahead window within the
+ *                          Markov kernel; the larger the number, the more
+ *                          accurate the solution.  The default value is '9'.
+ *                                  <li> 'max_solve_length': For the
+ *                          <code>incremental_weighted</code> solver only.
+ *                          Maximum number of samples along the path on which
+ *                          to solve.  The default value is '200'.
+ *                                  <li> 'time_window_width': For the
+ *                          <code>incremental_weighted</code> solver only. Time
+ *                          window, also known as sampling period, in which
+ *                          points are favored. To determine the raw window
+ *                          value, the <code>time_window_width</code> value is
+ *                          multiplied by the mean sample time (in seconds)
+ *                          across all points, e.g., if
+ *                          <code>time_window_width</code> is 30 and the mean
+ *                          sample time is 2 seconds, points that are sampled
+ *                          greater than 60 seconds after the previous point
+ *                          are no longer favored in the solution.  The default
+ *                          value is '30'.
+ *                                  <li> 'detect_loops': For the
+ *                          <code>incremental_weighted</code> solver only. If
+ *                          <code>true</code>, a loop will be detected and
+ *                          traversed even if it would make a shorter path to
+ *                          ignore the loop.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'source': Optional WKT starting point
+ *                          from <code>sample_points</code> for the solver. The
+ *                          default behavior for the endpoint is to use time to
+ *                          determine the starting point.  The default value is
+ *                          'POINT NULL'.
+ *                                  <li> 'destination': Optional WKT ending
+ *                          point from <code>sample_points</code> for the
+ *                          solver. The default behavior for the endpoint is to
+ *                          use time to determine the destination point.  The
+ *                          default value is 'POINT NULL'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -10953,8 +10975,8 @@ GPUdb.prototype.match_graph = function(graph_name, sample_points, solve_method, 
     var actual_request = {
         graph_name: graph_name,
         sample_points: sample_points,
-        solve_method: (solve_method !== undefined && solve_method !== null) ? solve_method : "incremental_weighted",
-        solution_table: (solution_table !== undefined && solution_table !== null) ? solution_table : "map_matching_solution",
+        solve_method: (solve_method !== undefined && solve_method !== null) ? solve_method : "markov_chain",
+        solution_table: (solution_table !== undefined && solution_table !== null) ? solution_table : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -11122,52 +11144,17 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
  * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
  * node(s), also known as an adjacency list, depending on what's been provided
  * to the endpoint; providing edges will return nodes and providing nodes will
- * return edges. There are two ways to provide edge(s) or node(s) to be
- * queried: using column names and <a
+ * return edges. The edge(s) or node(s) to be queried are specified using
+ * column names and <a
  * href="../../graph_solver/network_graph_solver.html#query-identifiers"
- * target="_top">query identifiers</a> with the <code>queries</code> with or
- * using a list of specific IDs with one of the
- * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
- * <code>edge_or_node_wkt_ids</code> arrays and <code>edge_to_node</code> to
- * determine if the IDs are edges or nodes.
+ * target="_top">query identifiers</a> with the <code>queries</code>.
  * <p>
  * To determine the node(s) or edge(s) adjacent to a value from a given column,
  * provide a list of column names aliased as a particular query identifier to
  * <code>queries</code>. This field can be populated with column values from
  * any table as long as the type is supported by the given identifier. See <a
  * href="../../graph_solver/network_graph_solver.html#query-identifiers"
- * target="_top">Query Identifiers</a> for more information. I
- * <p>
- * To query for nodes that are adjacent to a given set of edges, set
- * <code>edge_to_node</code> to <code>true</code> and provide values to the
- * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
- * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in the
- * arrays are edges and the corresponding adjacency list array in the response
- * will be populated with nodes.
- * <p>
- * To query for edges that are adjacent to a given set of nodes, set
- * <code>edge_to_node</code> to <code>false</code> and provide values to the
- * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
- * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in arrays
- * are nodes and the given node(s) will be queried for adjacent edges and the
- * corresponding adjacency list array in the response will be populated with
- * edges.
- * <p>
- * To query for adjacencies relative to a given column and a given set of
- * edges/nodes, the <code>queries</code> and <code>edge_or_node_int_ids</code>
- * / <code>edge_or_node_string_ids</code> / <code>edge_or_node_wkt_ids</code>
- * parameters can be used in conjuction with each other. If both
- * <code>queries</code> and one of the arrays are populated, values from
- * <code>queries</code> will be prioritized over values in the array and all
- * values parsed from the <code>queries</code> array will be appended to the
- * corresponding arrays (depending on the type). If using both
- * <code>queries</code> and the edge_or_node arrays, the types must match,
- * e.g., if <code>queries</code> utilizes the 'QUERY_NODE_ID' identifier, only
- * the <code>edge_or_node_int_ids</code> array should be used. Note that using
- * <code>queries</code> will override <code>edge_to_node</code>, so if
- * <code>queries</code> contains a node-based query identifier, e.g.,
- * 'table.column AS QUERY_NODE_ID', it is assumed that the
- * <code>edge_or_node_int_ids</code> will contain node IDs.
+ * target="_top">Query Identifiers</a> for more information.
  * <p>
  * To return the adjacency list in the response, leave
  * <code>adjacency_table</code> empty. To return the adjacency list in a table
@@ -11192,10 +11179,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
     var actual_request = {
         graph_name: request.graph_name,
         queries: request.queries,
-        edge_to_node: (request.edge_to_node !== undefined && request.edge_to_node !== null) ? request.edge_to_node : true,
-        edge_or_node_int_ids: request.edge_or_node_int_ids,
-        edge_or_node_string_ids: request.edge_or_node_string_ids,
-        edge_or_node_wkt_ids: request.edge_or_node_wkt_ids,
+        restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
         adjacency_table: (request.adjacency_table !== undefined && request.adjacency_table !== null) ? request.adjacency_table : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -11213,52 +11197,17 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
  * node(s), also known as an adjacency list, depending on what's been provided
  * to the endpoint; providing edges will return nodes and providing nodes will
- * return edges. There are two ways to provide edge(s) or node(s) to be
- * queried: using column names and <a
+ * return edges. The edge(s) or node(s) to be queried are specified using
+ * column names and <a
  * href="../../graph_solver/network_graph_solver.html#query-identifiers"
- * target="_top">query identifiers</a> with the <code>queries</code> with or
- * using a list of specific IDs with one of the
- * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
- * <code>edge_or_node_wkt_ids</code> arrays and <code>edge_to_node</code> to
- * determine if the IDs are edges or nodes.
+ * target="_top">query identifiers</a> with the <code>queries</code>.
  * <p>
  * To determine the node(s) or edge(s) adjacent to a value from a given column,
  * provide a list of column names aliased as a particular query identifier to
  * <code>queries</code>. This field can be populated with column values from
  * any table as long as the type is supported by the given identifier. See <a
  * href="../../graph_solver/network_graph_solver.html#query-identifiers"
- * target="_top">Query Identifiers</a> for more information. I
- * <p>
- * To query for nodes that are adjacent to a given set of edges, set
- * <code>edge_to_node</code> to <code>true</code> and provide values to the
- * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
- * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in the
- * arrays are edges and the corresponding adjacency list array in the response
- * will be populated with nodes.
- * <p>
- * To query for edges that are adjacent to a given set of nodes, set
- * <code>edge_to_node</code> to <code>false</code> and provide values to the
- * <code>edge_or_node_int_ids</code>, <code>edge_or_node_string_ids</code>, and
- * <code>edge_or_node_wkt_ids</code> arrays; it is assumed the values in arrays
- * are nodes and the given node(s) will be queried for adjacent edges and the
- * corresponding adjacency list array in the response will be populated with
- * edges.
- * <p>
- * To query for adjacencies relative to a given column and a given set of
- * edges/nodes, the <code>queries</code> and <code>edge_or_node_int_ids</code>
- * / <code>edge_or_node_string_ids</code> / <code>edge_or_node_wkt_ids</code>
- * parameters can be used in conjuction with each other. If both
- * <code>queries</code> and one of the arrays are populated, values from
- * <code>queries</code> will be prioritized over values in the array and all
- * values parsed from the <code>queries</code> array will be appended to the
- * corresponding arrays (depending on the type). If using both
- * <code>queries</code> and the edge_or_node arrays, the types must match,
- * e.g., if <code>queries</code> utilizes the 'QUERY_NODE_ID' identifier, only
- * the <code>edge_or_node_int_ids</code> array should be used. Note that using
- * <code>queries</code> will override <code>edge_to_node</code>, so if
- * <code>queries</code> contains a node-based query identifier, e.g.,
- * 'table.column AS QUERY_NODE_ID', it is assumed that the
- * <code>edge_or_node_int_ids</code> will contain node IDs.
+ * target="_top">Query Identifiers</a> for more information.
  * <p>
  * To return the adjacency list in the response, leave
  * <code>adjacency_table</code> empty. To return the adjacency list in a table
@@ -11278,28 +11227,19 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                            'table.column AS QUERY_NODE_ID' or 'table.column
  *                            AS QUERY_EDGE_WKTLINE'. Multiple columns can be
  *                            used as long as the same identifier is used for
- *                            all columns. Passing in a query identifier will
- *                            override the <code>edge_to_node</code> parameter.
- * @param {Boolean} edge_to_node  If set to <code>true</code>, the given
- *                                edge(s) will be queried for adjacent nodes.
- *                                If set to <code>false</code>, the given
- *                                node(s) will be queried for adjacent edges.
- *                                Supported values:
- *                                <ul>
- *                                        <li> true
- *                                        <li> false
- *                                </ul>
- *                                The default value is true.
- * @param {Number[]} edge_or_node_int_ids  The unique list of edge or node
- *                                         integer identifiers that will be
- *                                         queried for adjacencies.
- * @param {String[]} edge_or_node_string_ids  The unique list of edge or node
- *                                            string identifiers that will be
- *                                            queried for adjacencies.
- * @param {String[]} edge_or_node_wkt_ids  The unique list of edge or node
- *                                         WKTPOINT or WKTLINE string
- *                                         identifiers that will be queried for
- *                                         adjacencies.
+ *                            all columns.
+ * @param {String[]} restrictions  Additional restrictions to apply to the
+ *                                 nodes/edges of an existing graph.
+ *                                 Restrictions must be specified using <a
+ *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 target="_top">identifiers</a>; identifiers
+ *                                 are grouped as <a
+ *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 target="_top">combinations</a>. Identifiers
+ *                                 can be used with existing column names,
+ *                                 e.g., 'table.column AS
+ *                                 RESTRICTIONS_EDGE_ID', or expressions, e.g.,
+ *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED'.
  * @param {String} adjacency_table  Name of the table to store the resulting
  *                                  adjacencies. If left blank, the query
  *                                  results are instead returned in the
@@ -11308,33 +11248,55 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  <code>false</code>.
  * @param {Object} options  Additional parameters
  *                          <ul>
- *                                  <li> 'number_of_rings': Sets the number of
- *                          rings of edges around the node to query for
- *                          adjacency, with '1' being the edges directly
- *                          attached to the queried nodes. For example, if
- *                          <code>number_of_rings</code> is set to '2', the
- *                          edge(s) directly attached to the queried nodes will
- *                          be returned; in addition, the edge(s) attached to
- *                          the node(s) attached to the initial ring of edge(s)
- *                          surrounding the queried node(s) will be returned.
- *                          This setting is ignored if
- *                          <code>edge_to_node</code> is set to
- *                          <code>true</code>. This setting cannot be less than
- *                          '1'.  The default value is '1'.
- *                                  <li> 'include_all_edges': This parameter is
- *                          only applicable if the queried graph is directed
- *                          and <code>edge_to_node</code> is set to
- *                          <code>false</code>. If set to <code>true</code>,
- *                          all inbound edges and outbound edges relative to
- *                          the node will be returned. If set to
- *                          <code>false</code>, only outbound edges relative to
- *                          the node will be returned.
+ *                                  <li> 'rings': Sets the number of rings of
+ *                          edges around the node to query for adjacency, with
+ *                          '1' being the edges directly attached to the
+ *                          queried nodes. For example, if <code>rings</code>
+ *                          is set to '2', the edge(s) directly attached to the
+ *                          queried nodes will be returned; in addition, the
+ *                          edge(s) attached to the node(s) attached to the
+ *                          initial ring of edge(s) surrounding the queried
+ *                          node(s) will be returned. This setting cannot be
+ *                          less than '1'.  The default value is '1'.
+ *                                  <li> 'force_undirected': This parameter is
+ *                          only applicable if the queried graph is directed.
+ *                          If set to <code>true</code>, all inbound edges and
+ *                          outbound edges relative to the node will be
+ *                          returned. If set to <code>false</code>, only
+ *                          outbound edges relative to the node will be
+ *                          returned.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'blocked_nodes': When false, allow a
+ *                          restricted node to be part of a valid traversal but
+ *                          not a target. Otherwise, queries are blocked by
+ *                          restricted nodes.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'limit': When specified, limits the
+ *                          number of query results. Note that if the
+ *                          <code>target_nodes_table</code> is requested
+ *                          (non-empty), this will limit the size of the
+ *                          corresponding table.  The default value is an empty
+ *                          dict ( {} ).
+ *                                  <li> 'target_nodes_table': If non-empty,
+ *                          returns a table containing the list of the final
+ *                          nodes reached during the traversal. Only valid if
+ *                          blocked_nodes is false.  The default value is ''.
+ *                                  <li> 'restriction_threshold_value':
+ *                          Value-based restriction comparison. Any node or
+ *                          edge with a RESTRICTIONS_VALUECOMPARED value
+ *                          greater than the
+ *                          <code>restriction_threshold_value</code> will not
+ *                          be included in the solution.
  *                                  <li> 'export_query_results': Returns query
  *                          results in the response if set to
  *                          <code>true</code>.
@@ -11367,14 +11329,11 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.query_graph = function(graph_name, queries, edge_to_node, edge_or_node_int_ids, edge_or_node_string_ids, edge_or_node_wkt_ids, adjacency_table, options, callback) {
+GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjacency_table, options, callback) {
     var actual_request = {
         graph_name: graph_name,
         queries: queries,
-        edge_to_node: (edge_to_node !== undefined && edge_to_node !== null) ? edge_to_node : true,
-        edge_or_node_int_ids: edge_or_node_int_ids,
-        edge_or_node_string_ids: edge_or_node_string_ids,
-        edge_or_node_wkt_ids: edge_or_node_wkt_ids,
+        restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
         adjacency_table: (adjacency_table !== undefined && adjacency_table !== null) ? adjacency_table : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -12712,6 +12671,10 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          greater than the
  *                          <code>restriction_threshold_value</code> will not
  *                          be included in the solution.
+ *                                  <li> 'uniform_weights': When speficied,
+ *                          assigns the given value to all the edges in the
+ *                          graph. Note that weights specified in
+ *                          @{weights_on_edges} override this value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -13353,6 +13316,17 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                applied to the y axis.
  *                                </ul>
  *                                The default value is 'none'.
+ *                                        <li> 'min_max_scaled': If this
+ *                                options is set to "false", this endpoint
+ *                                expects request's min/max values are not yet
+ *                                scaled. They will be scaled according to
+ *                                scale_type_x or scale_type_y for response. If
+ *                                this options is set to "true", this endpoint
+ *                                expects request's min/max values are already
+ *                                scaled according to
+ *                                scale_type_x/scale_type_y. Response's min/max
+ *                                values will be equal to request's min/max
+ *                                values.  The default value is 'false'.
  *                                        <li> 'jitter_x': Amplitude of
  *                                horizontal jitter applied to non-numeric x
  *                                column values.  The default value is '0.0'.
