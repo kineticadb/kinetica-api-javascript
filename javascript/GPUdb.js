@@ -116,7 +116,38 @@ function GPUdb(url, options) {
     } else {
         Object.defineProperty(this, "authorization", { value: "" });
     }
+
+
+    // Set the default value of the GPUdb#force_infinity_nan_conversion_to_null property
+    this._force_infinity_nan_conversion_to_null = false;
+
+    /*
+     * The flag to indicate if quoted "Infinity", "-Infinity", and "NaN"
+     * values returned by Kinetica will be converted to null.  Regular
+     * Infinity, -Infinity, and NaN are automatically handled; but
+     * the quoted versions need special handling that is an expensive
+     * operation.  Default is false.
+     *
+     * @name GPUdb#force_infinity_nan_conversion_to_null
+     * @type Boolean
+     * @readonly
+     */
+    Object.defineProperty( this, "force_infinity_nan_conversion_to_null",
+                           {
+                               enumerable: true,
+                               get: function() { return this._force_infinity_nan_conversion_to_null; },
+                               set: function( newValue ) {
+                                   // Value must be boolean
+                                   if ( [true, false].indexOf( newValue ) == -1 ) {
+                                       throw "Value must be true or false"; }
+
+                                   // Only allow setting a boolean value
+                                   this._force_infinity_nan_conversion_to_null = Boolean( newValue );
+                               }
+                           } );
+
 }
+
 
 /**
  * Submits an arbitrary request to GPUdb.
@@ -746,7 +777,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.3.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.4.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -758,6 +789,7 @@ Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.3.0"
  * @static
  */
 Object.defineProperty(GPUdb, "END_OF_SET", { value: -9999 });
+
 
 /**
  * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
@@ -779,6 +811,79 @@ GPUdb.decode = function(o) {
         return JSON.parse(o);
     }
 };
+
+
+
+/**
+ * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
+ * JSON object(s).
+ *
+ * @param {String | String[]} o The JSON string(s) to decode.
+ * @returns {Object | Object[]} The decoded JSON object(s).
+ */
+GPUdb.prototype.decode = function(o) {
+    // Force quoted "Infinity", "-Infinity", and "NaN" to be converted
+    // to null
+    if ( this.force_infinity_nan_conversion_to_null === true ) {
+        return GPUdb.decode_no_inf_nan( o );
+    }
+
+    // Regular conversion, no special transformation needed
+    return GPUdb.decode_regular( o );
+};
+
+
+/**
+ * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
+ * JSON object(s).
+ *
+ * @param {String | String[]} o The JSON string(s) to decode.
+ * @returns {Object | Object[]} The decoded JSON object(s).
+ */
+GPUdb.decode_regular = function(o) {
+    if (Array.isArray(o)) {
+        var result = [];
+
+        for (var i = 0; i < o.length; i++) {
+            result.push( GPUdb.decode_regular(o[i]) );
+        }
+
+        return result;
+    } else {
+        return JSON.parse(o);
+    }
+};
+    
+
+/**
+ * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
+ * JSON object(s).  Special treatment for quoted "Infinity", "-Infinity",
+ * and "NaN".  Catches those and converts to null.  This is significantly
+ * slower than the regular decode function.
+ *
+ * @param {String | String[]} o The JSON string(s) to decode.
+ * @returns {Object | Object[]} The decoded JSON object(s).
+ */
+GPUdb.decode_no_inf_nan = function(o) {
+    if (Array.isArray(o)) {
+        var result = [];
+
+        for (var i = 0; i < o.length; i++) {
+            result.push( GPUdb.decode_no_inf_nan( o[i] ) );
+        }
+
+        return result;
+    } else {
+        // Check for 
+        return JSON.parse( o, function(k, v) {
+            if (v === "Infinity") return null;
+            else if (v === "-Infinity") return null;
+            else if (v === "NaN") return null;
+            else return v;
+        } );
+    }
+};
+
 
 /**
  * Encodes a JSON object, or array of JSON objects, into JSON string(s) to be
@@ -2001,10 +2106,12 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/aggregate/groupby", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -2012,7 +2119,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/aggregate/groupby", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -2242,10 +2349,12 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/aggregate/groupby", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -2253,7 +2362,7 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
         });
     } else {
         var data = this.submit_request("/aggregate/groupby", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -2959,10 +3068,12 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/aggregate/unique", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -2970,7 +3081,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/aggregate/unique", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -3112,10 +3223,12 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/aggregate/unique", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -3123,7 +3236,7 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
         });
     } else {
         var data = this.submit_request("/aggregate/unique", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -3167,10 +3280,12 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/aggregate/unpivot", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -3178,7 +3293,7 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/aggregate/unpivot", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -3306,10 +3421,12 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/aggregate/unpivot", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -3317,7 +3434,7 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
         });
     } else {
         var data = this.submit_request("/aggregate/unpivot", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -3589,7 +3706,7 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               <li> 'communicator_test':
  *                                       Invoke the communicator test and
  *                                       report timing results. Value string is
- *                                       is a comma separated list of
+ *                                       is a semicolon separated list of
  *                                       <key>=<value> expressions.
  *                                       Expressions are:
  *                                       num_transactions=<num> where num is
@@ -3707,8 +3824,11 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * target="_top">foreign key</a>
  * on a particular column.
  * <p>
- * Manage a <a href="../../concepts/tables.html#partitioning"
- * target="_top">range-partitioned</a>
+ * Manage a
+ * <a href="../../concepts/tables.html#partitioning-by-range"
+ * target="_top">range-partitioned</a> or a
+ * <a href="../../concepts/tables.html#partitioning-by-list-manual"
+ * target="_top">manual list-partitioned</a>
  * table's partitions.
  * <p>
  * Set (or reset) the <a href="../../rm/concepts.html#tier-strategies"
@@ -3783,8 +3903,11 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * target="_top">foreign key</a>
  * on a particular column.
  * <p>
- * Manage a <a href="../../concepts/tables.html#partitioning"
- * target="_top">range-partitioned</a>
+ * Manage a
+ * <a href="../../concepts/tables.html#partitioning-by-range"
+ * target="_top">range-partitioned</a> or a
+ * <a href="../../concepts/tables.html#partitioning-by-list-manual"
+ * target="_top">manual list-partitioned</a>
  * table's partitions.
  * <p>
  * Set (or reset) the <a href="../../rm/concepts.html#tier-strategies"
@@ -3831,8 +3954,12 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         target="_top">index</a> on the column name specified
  *                         in <code>value</code>. If this column does not have
  *                         indexing turned on, an error will be returned.
- *                                 <li> 'move_to_collection': Moves a table
- *                         into a collection <code>value</code>.
+ *                                 <li> 'move_to_collection': Moves a table or
+ *                         view into a collection named <code>value</code>.  If
+ *                         the collection provided is non-existent, the
+ *                         collection will be automatically created. If
+ *                         <code>value</code> is empty, then the table or view
+ *                         will be top-level.
  *                                 <li> 'protected': Sets whether the given
  *                         <code>table_name</code> should be <a
  *                         href="../../concepts/protection.html"
@@ -3888,20 +4015,27 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         <code>value</code> should be the foreign_key_name
  *                         specified when creating the key or the complete
  *                         string used to define it.
- *                                 <li> 'add_partition': Adds a partition (for
- *                         range-partitioned or list-partitioned tables)
- *                         specified in <code>value</code>.  See <a
- *                         href="../../concepts/tables.html#partitioning-by-range-example"
- *                         target="_top">range partitioning example</a> for
- *                         example format.
+ *                                 <li> 'add_partition': Adds the partition
+ *                         specified in <code>value</code>, to either a <a
+ *                         href="../../concepts/tables.html#partitioning-by-range"
+ *                         target="_top">range-partitioned</a> or <a
+ *                         href="../../concepts/tables.html#partitioning-by-list-manual"
+ *                         target="_top">manual list-partitioned</a> table.
  *                                 <li> 'remove_partition': Removes the
- *                         partition specified in <code>value</code> and
- *                         relocates all its data to the default partition (for
- *                         range-partitioned or list-partition tables).
+ *                         partition specified in <code>value</code> (and
+ *                         relocates all of its data to the default partition)
+ *                         from either a <a
+ *                         href="../../concepts/tables.html#partitioning-by-range"
+ *                         target="_top">range-partitioned</a> or <a
+ *                         href="../../concepts/tables.html#partitioning-by-list-manual"
+ *                         target="_top">manual list-partitioned</a> table.
  *                                 <li> 'delete_partition': Deletes the
- *                         partition specified in <code>value</code> and its
- *                         data (for range-partitioned or list-partitioned
- *                         tables).
+ *                         partition specified in <code>value</code> (and all
+ *                         of its data) from either a <a
+ *                         href="../../concepts/tables.html#partitioning-by-range"
+ *                         target="_top">range-partitioned</a> or <a
+ *                         href="../../concepts/tables.html#partitioning-by-list-manual"
+ *                         target="_top">manual list-partitioned</a> table.
  *                                 <li> 'set_global_access_mode': Sets the
  *                         global access mode (i.e. locking) for the table
  *                         specified in <code>table_name</code>. Specify the
@@ -4860,8 +4994,12 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          href="../../graph_solver/network_graph_solver.html#id-combos"
  *                          target="_top">combinations</a>. Identifiers can be
  *                          used with existing column names, e.g.,
- *                          'table.column AS NODE_ID', or expressions, e.g.,
- *                          'ST_MAKEPOINT(column1, column2) AS NODE_WKTPOINT'.
+ *                          'table.column AS NODE_ID', expressions, e.g.,
+ *                          'ST_MAKEPOINT(column1, column2) AS NODE_WKTPOINT',
+ *                          or raw values, e.g., '{9, 10, 11} AS NODE_ID'. If
+ *                          using raw values in an identifier combination, the
+ *                          number of values specified must match across the
+ *                          combination.
  * @param {String[]} edges  Edges represent the required fundamental
  *                          topological unit of a graph that typically connect
  *                          nodes. Edges must be specified using <a
@@ -4871,8 +5009,12 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          href="../../graph_solver/network_graph_solver.html#id-combos"
  *                          target="_top">combinations</a>. Identifiers can be
  *                          used with existing column names, e.g.,
- *                          'table.column AS EDGE_ID', or expressions, e.g.,
- *                          'SUBSTR(column, 1, 6) AS EDGE_NODE1_NAME'.
+ *                          'table.column AS EDGE_ID', expressions, e.g.,
+ *                          'SUBSTR(column, 1, 6) AS EDGE_NODE1_NAME', or raw
+ *                          values, e.g., "{'family', 'coworker'} AS
+ *                          EDGE_LABEL". If using raw values in an identifier
+ *                          combination, the number of values specified must
+ *                          match across the combination.
  * @param {String[]} weights  Weights represent a method of informing the graph
  *                            solver of the cost of including a given edge in a
  *                            solution. Weights must be specified using <a
@@ -4882,9 +5024,12 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                            href="../../graph_solver/network_graph_solver.html#id-combos"
  *                            target="_top">combinations</a>. Identifiers can
  *                            be used with existing column names, e.g.,
- *                            'table.column AS WEIGHTS_EDGE_ID', or
- *                            expressions, e.g., 'ST_LENGTH(wkt) AS
- *                            WEIGHTS_VALUESPECIFIED'.
+ *                            'table.column AS WEIGHTS_EDGE_ID', expressions,
+ *                            e.g., 'ST_LENGTH(wkt) AS WEIGHTS_VALUESPECIFIED',
+ *                            or raw values, e.g., '{4, 15} AS
+ *                            WEIGHTS_VALUESPECIFIED'. If using raw values in
+ *                            an identifier combination, the number of values
+ *                            specified must match across the combination.
  * @param {String[]} restrictions  Restrictions represent a method of informing
  *                                 the graph solver which edges and/or nodes
  *                                 should be ignored for the solution.
@@ -4896,8 +5041,13 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                 target="_top">combinations</a>. Identifiers
  *                                 can be used with existing column names,
  *                                 e.g., 'table.column AS
- *                                 RESTRICTIONS_EDGE_ID', or expressions, e.g.,
- *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED'.
+ *                                 RESTRICTIONS_EDGE_ID', expressions, e.g.,
+ *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED', or
+ *                                 raw values, e.g., '{0, 0, 0, 1} AS
+ *                                 RESTRICTIONS_ONOFFCOMPARED'. If using raw
+ *                                 values in an identifier combination, the
+ *                                 number of values specified must match across
+ *                                 the combination.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'restriction_threshold_value':
@@ -5630,7 +5780,7 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
- *                          The default value is 'false'.
+ *                          The default value is 'true'.
  *                                  <li> 'view_id': view this projection is
  *                          part of.  The default value is ''.
  *                          </ul>
@@ -5977,9 +6127,9 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'INTERVAL': Use <a
  *                          href="../../concepts/tables.html#partitioning-by-interval"
  *                          target="_top">interval partitioning</a>.
- *                                  <li> 'LIST': Allows specifying a list of
- *                          VALUES for a partition, or optionally to create an
- *                          AUTOMATIC partition for each unique value
+ *                                  <li> 'LIST': Use <a
+ *                          href="../../concepts/tables.html#partitioning-by-list"
+ *                          target="_top">list partitioning</a>.
  *                          </ul>
  *                                  <li> 'partition_keys': Comma-separated list
  *                          of partition keys, which are the columns or column
@@ -5990,15 +6140,19 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          Comma-separated list of partition definitions,
  *                          whose format depends on the choice of
  *                          <code>partition_type</code>.  See <a
- *                          href="../../concepts/tables.html#partitioning-by-range-example"
- *                          target="_top">range partitioning example</a> or <a
- *                          href="../../concepts/tables.html#partitioning-by-interval-example"
- *                          target="_top">interval partitioning example</a> for
- *                          example formats.
+ *                          href="../../concepts/tables.html#partitioning-by-range"
+ *                          target="_top">range partitioning</a>, <a
+ *                          href="../../concepts/tables.html#partitioning-by-interval"
+ *                          target="_top">interval partitioning</a>, or <a
+ *                          href="../../concepts/tables.html#partitioning-by-list"
+ *                          target="_top">list partitioning</a> for example
+ *                          formats.
  *                                  <li> 'is_automatic_partition': If true, a
  *                          new partition will be created for values which
  *                          don't fall into an existing partition.  Currently
- *                          only supported for LIST partitions
+ *                          only supported for <a
+ *                          href="../../concepts/tables.html#partitioning-by-list"
+ *                          target="_top">list partitions</a>.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -7468,10 +7622,12 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/execute/sql", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -7479,7 +7635,7 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/execute/sql", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -7666,10 +7822,12 @@ GPUdb.prototype.execute_sql = function(statement, offset, limit, request_schema_
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/execute/sql", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -7677,7 +7835,7 @@ GPUdb.prototype.execute_sql = function(statement, offset, limit, request_schema_
         });
     } else {
         var data = this.submit_request("/execute/sql", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -9260,10 +9418,12 @@ GPUdb.prototype.get_records_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.records_json);
+                data.data = self.decode(data.records_json);
                 delete data.records_json;
             }
 
@@ -9271,7 +9431,7 @@ GPUdb.prototype.get_records_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/get/records", actual_request);
-        data.data = GPUdb.decode(data.records_json);
+        data.data = self.decode(data.records_json);
         delete data.records_json;
         return data;
     }
@@ -9345,10 +9505,12 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.records_json);
+                data.data = self.decode(data.records_json);
                 delete data.records_json;
             }
 
@@ -9356,7 +9518,7 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
         });
     } else {
         var data = this.submit_request("/get/records", actual_request);
-        data.data = GPUdb.decode(data.records_json);
+        data.data = self.decode(data.records_json);
         delete data.records_json;
         return data;
     }
@@ -9400,10 +9562,12 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records/bycolumn", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -9411,7 +9575,7 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/get/records/bycolumn", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -9498,10 +9662,12 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records/bycolumn", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.json_encoded_response);
+                data.data = self.decode(data.json_encoded_response);
                 delete data.json_encoded_response;
             }
 
@@ -9509,7 +9675,7 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
         });
     } else {
         var data = this.submit_request("/get/records/bycolumn", actual_request);
-        data.data = GPUdb.decode(data.json_encoded_response);
+        data.data = self.decode(data.json_encoded_response);
         delete data.json_encoded_response;
         return data;
     }
@@ -9547,10 +9713,12 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records/byseries", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.list_records_json);
+                data.data = self.decode(data.list_records_json);
                 delete data.list_records_json;
             }
 
@@ -9558,7 +9726,7 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
         });
     } else {
         var data = this.submit_request("/get/records/byseries", actual_request);
-        data.data = GPUdb.decode(data.list_records_json);
+        data.data = self.decode(data.list_records_json);
         delete data.list_records_json;
         return data;
     }
@@ -9613,10 +9781,12 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records/byseries", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.list_records_json);
+                data.data = self.decode(data.list_records_json);
                 delete data.list_records_json;
             }
 
@@ -9624,7 +9794,7 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
         });
     } else {
         var data = this.submit_request("/get/records/byseries", actual_request);
-        data.data = GPUdb.decode(data.list_records_json);
+        data.data = self.decode(data.list_records_json);
         delete data.list_records_json;
         return data;
     }
@@ -9658,10 +9828,12 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records/fromcollection", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.records_json);
+                data.data = self.decode(data.records_json);
                 delete data.records_json;
             }
 
@@ -9669,7 +9841,7 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
         });
     } else {
         var data = this.submit_request("/get/records/fromcollection", actual_request);
-        data.data = GPUdb.decode(data.records_json);
+        data.data = self.decode(data.records_json);
         delete data.records_json;
         return data;
     }
@@ -9723,10 +9895,12 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
         options: (options !== undefined && options !== null) ? options : {}
     };
 
+    var self = this;
+
     if (callback !== undefined && callback !== null) {
         this.submit_request("/get/records/fromcollection", actual_request, function(err, data) {
             if (err === null) {
-                data.data = GPUdb.decode(data.records_json);
+                data.data = self.decode(data.records_json);
                 delete data.records_json;
             }
 
@@ -9734,7 +9908,7 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
         });
     } else {
         var data = this.submit_request("/get/records/fromcollection", actual_request);
-        data.data = GPUdb.decode(data.records_json);
+        data.data = self.decode(data.records_json);
         delete data.records_json;
         return data;
     }
@@ -10537,9 +10711,9 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
- * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
- * pick the symbol displayed for each point.
+ * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
+ * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
+ * is used to pick the symbol displayed for each point.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -10572,9 +10746,9 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../rest/wms_rest.html" target="_top">WMS</a>) if the 'dosymbology'
- * parameter is 'true' then the value of the 'SYMBOLCODE' column is used to
- * pick the symbol displayed for each point.
+ * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
+ * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
+ * is used to pick the symbol displayed for each point.
  *
  * @param {String} symbol_id  The id of the symbol being added. This is the
  *                            same id that should be in the 'SYMBOLCODE' column
@@ -10863,8 +11037,12 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  are grouped as <a
  *                                  href="../../graph_solver/network_graph_solver.html#match-combinations"
  *                                  target="_top">combinations</a>. Identifiers
- *                                  are used with existing column names, e.g.,
- *                                  'table.column AS SAMPLE_WKTPOINT'.
+ *                                  can be used with: existing column names,
+ *                                  e.g., 'table.column AS SAMPLE_X';
+ *                                  expressions, e.g., 'ST_MAKEPOINT(table.x,
+ *                                  table.y) AS SAMPLE_WKTPOINT'; or raw
+ *                                  values, e.g., '{1, 2, 10} AS
+ *                                  SAMPLE_TRIPID'.
  * @param {String} solve_method  The type of solver to use for graph matching.
  *                               Supported values:
  *                               <ul>
@@ -11144,15 +11322,12 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
  * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
  * node(s), also known as an adjacency list, depending on what's been provided
  * to the endpoint; providing edges will return nodes and providing nodes will
- * return edges. The edge(s) or node(s) to be queried are specified using
- * column names and <a
- * href="../../graph_solver/network_graph_solver.html#query-identifiers"
- * target="_top">query identifiers</a> with the <code>queries</code>.
+ * return edges.
  * <p>
  * To determine the node(s) or edge(s) adjacent to a value from a given column,
- * provide a list of column names aliased as a particular query identifier to
- * <code>queries</code>. This field can be populated with column values from
- * any table as long as the type is supported by the given identifier. See <a
+ * provide a list of values to <code>queries</code>. This field can be
+ * populated with column values from any table as long as the type is supported
+ * by the given identifier. See <a
  * href="../../graph_solver/network_graph_solver.html#query-identifiers"
  * target="_top">Query Identifiers</a> for more information.
  * <p>
@@ -11197,15 +11372,12 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
  * node(s), also known as an adjacency list, depending on what's been provided
  * to the endpoint; providing edges will return nodes and providing nodes will
- * return edges. The edge(s) or node(s) to be queried are specified using
- * column names and <a
- * href="../../graph_solver/network_graph_solver.html#query-identifiers"
- * target="_top">query identifiers</a> with the <code>queries</code>.
+ * return edges.
  * <p>
  * To determine the node(s) or edge(s) adjacent to a value from a given column,
- * provide a list of column names aliased as a particular query identifier to
- * <code>queries</code>. This field can be populated with column values from
- * any table as long as the type is supported by the given identifier. See <a
+ * provide a list of values to <code>queries</code>. This field can be
+ * populated with column values from any table as long as the type is supported
+ * by the given identifier. See <a
  * href="../../graph_solver/network_graph_solver.html#query-identifiers"
  * target="_top">Query Identifiers</a> for more information.
  * <p>
@@ -11223,11 +11395,16 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * @param {String} graph_name  Name of the graph resource to query.
  * @param {String[]} queries  Nodes or edges to be queried specified using <a
  *                            href="../../graph_solver/network_graph_solver.html#query-identifiers"
- *                            target="_top">query identifiers</a>, e.g.,
- *                            'table.column AS QUERY_NODE_ID' or 'table.column
- *                            AS QUERY_EDGE_WKTLINE'. Multiple columns can be
- *                            used as long as the same identifier is used for
- *                            all columns.
+ *                            target="_top">query identifiers</a>. Identifiers
+ *                            can be used with existing column names, e.g.,
+ *                            'table.column AS QUERY_NODE_ID', raw values,
+ *                            e.g., '{0, 2} AS QUERY_NODE_ID', or expressions,
+ *                            e.g., 'ST_MAKEPOINT(table.x, table.y) AS
+ *                            QUERY_NODE_WKTPOINT'. Multiple values can be
+ *                            provided as long as the same identifier is used
+ *                            for all values. If using raw values in an
+ *                            identifier combination, the number of values
+ *                            specified must match across the combination.
  * @param {String[]} restrictions  Additional restrictions to apply to the
  *                                 nodes/edges of an existing graph.
  *                                 Restrictions must be specified using <a
@@ -11238,59 +11415,71 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                 target="_top">combinations</a>. Identifiers
  *                                 can be used with existing column names,
  *                                 e.g., 'table.column AS
- *                                 RESTRICTIONS_EDGE_ID', or expressions, e.g.,
- *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED'.
+ *                                 RESTRICTIONS_EDGE_ID', expressions, e.g.,
+ *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED', or
+ *                                 raw values, e.g., '{0, 0, 0, 1} AS
+ *                                 RESTRICTIONS_ONOFFCOMPARED'. If using raw
+ *                                 values in an identifier combination, the
+ *                                 number of values specified must match across
+ *                                 the combination.
  * @param {String} adjacency_table  Name of the table to store the resulting
  *                                  adjacencies. If left blank, the query
  *                                  results are instead returned in the
  *                                  response even if
  *                                  <code>export_query_results</code> is set to
- *                                  <code>false</code>.
+ *                                  <code>false</code>. If the
+ *                                  'QUERY_TARGET_NODE_LABEL' <a
+ *                                  href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ *                                  target="_top">query identifier</a> is used
+ *                                  in <code>queries</code>, then two
+ *                                  additional columns will be available:
+ *                                  'PATH_ID' and 'RING_ID'. See
+ *                                              <a
+ *                                  href="../../graph_solver/network_graph_solver.html#using-labels"
+ *                                  target="_top">Using Labels</a> for more
+ *                                  information.
  * @param {Object} options  Additional parameters
  *                          <ul>
- *                                  <li> 'rings': Sets the number of rings of
- *                          edges around the node to query for adjacency, with
- *                          '1' being the edges directly attached to the
- *                          queried nodes. For example, if <code>rings</code>
- *                          is set to '2', the edge(s) directly attached to the
- *                          queried nodes will be returned; in addition, the
- *                          edge(s) attached to the node(s) attached to the
- *                          initial ring of edge(s) surrounding the queried
- *                          node(s) will be returned. This setting cannot be
- *                          less than '1'.  The default value is '1'.
+ *                                  <li> 'rings': Only applicable when querying
+ *                          nodes. Sets the number of rings around the node to
+ *                          query for adjacency, with '1' being the edges
+ *                          directly attached to the queried node. Also known
+ *                          as number of hops. For example, if
+ *                          <code>rings</code> is set to '2', the edge(s)
+ *                          directly attached to the queried node(s) will be
+ *                          returned; in addition, the edge(s) attached to the
+ *                          node(s) attached to the initial ring of edge(s)
+ *                          surrounding the queried node(s) will be returned.
+ *                          This setting cannot be less than '1'.  The default
+ *                          value is '1'.
  *                                  <li> 'force_undirected': This parameter is
- *                          only applicable if the queried graph is directed.
- *                          If set to <code>true</code>, all inbound edges and
- *                          outbound edges relative to the node will be
- *                          returned. If set to <code>false</code>, only
- *                          outbound edges relative to the node will be
- *                          returned.
+ *                          only applicable if the queried graph
+ *                          <code>graph_name</code> is directed and when
+ *                          querying nodes. If set to <code>true</code>, all
+ *                          inbound edges and outbound edges relative to the
+ *                          node will be returned. If set to
+ *                          <code>false</code>, only outbound edges relative to
+ *                          the node will be returned.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'blocked_nodes': When false, allow a
- *                          restricted node to be part of a valid traversal but
- *                          not a target. Otherwise, queries are blocked by
- *                          restricted nodes.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
  *                                  <li> 'limit': When specified, limits the
  *                          number of query results. Note that if the
- *                          <code>target_nodes_table</code> is requested
- *                          (non-empty), this will limit the size of the
- *                          corresponding table.  The default value is an empty
- *                          dict ( {} ).
- *                                  <li> 'target_nodes_table': If non-empty,
- *                          returns a table containing the list of the final
- *                          nodes reached during the traversal. Only valid if
- *                          blocked_nodes is false.  The default value is ''.
+ *                          <code>target_nodes_table</code> is provided, the
+ *                          size of the corresponding table will be limited by
+ *                          the <code>limit</code> value.  The default value is
+ *                          an empty dict ( {} ).
+ *                                  <li> 'target_nodes_table': Name of the
+ *                          table to store the list of the final nodes reached
+ *                          during the traversal. If the
+ *                          'QUERY_TARGET_NODE_LABEL' <a
+ *                          href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ *                          target="_top">query identifier</a> is NOT used in
+ *                          <code>queries</code>, the table will not be
+ *                          created.  The default value is ''.
  *                                  <li> 'restriction_threshold_value':
  *                          Value-based restriction comparison. Any node or
  *                          edge with a RESTRICTIONS_VALUECOMPARED value
@@ -11298,14 +11487,21 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          <code>restriction_threshold_value</code> will not
  *                          be included in the solution.
  *                                  <li> 'export_query_results': Returns query
- *                          results in the response if set to
- *                          <code>true</code>.
+ *                          results in the response. If set to
+ *                          <code>true</code>, the
+ *                          <code>adjacency_list_int_array</code> (if the query
+ *                          was based on IDs), @{adjacency_list_string_array}
+ *                          (if the query was based on names), or
+ *                          @{output_adjacency_list_wkt_array} (if the query
+ *                          was based on WKTs) will be populated with the
+ *                          results. If set to <code>false</code>, none of the
+ *                          arrays will be populated.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
- *                          The default value is 'true'.
+ *                          The default value is 'false'.
  *                                  <li> 'enable_graph_draw': If set to
  *                          <code>true</code>, adds a WKT-type column named
  *                          'QUERY_EDGE_WKTLINE' to the given
@@ -12506,14 +12702,19 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                     target="_top">combinations</a>.
  *                                     Identifiers can be used with existing
  *                                     column names, e.g., 'table.column AS
- *                                     WEIGHTS_EDGE_ID', or expressions, e.g.,
+ *                                     WEIGHTS_EDGE_ID', expressions, e.g.,
  *                                     'ST_LENGTH(wkt) AS
+ *                                     WEIGHTS_VALUESPECIFIED', or raw values,
+ *                                     e.g., '{4, 15, 2} AS
  *                                     WEIGHTS_VALUESPECIFIED'. Any provided
  *                                     weights will be added (in the case of
  *                                     'WEIGHTS_VALUESPECIFIED') to or
  *                                     multiplied with (in the case of
  *                                     'WEIGHTS_FACTORSPECIFIED') the existing
- *                                     weight(s).
+ *                                     weight(s). If using raw values in an
+ *                                     identifier combination, the number of
+ *                                     values specified must match across the
+ *                                     combination.
  * @param {String[]} restrictions  Additional restrictions to apply to the
  *                                 nodes/edges of an existing graph.
  *                                 Restrictions must be specified using <a
@@ -12524,8 +12725,13 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                 target="_top">combinations</a>. Identifiers
  *                                 can be used with existing column names,
  *                                 e.g., 'table.column AS
- *                                 RESTRICTIONS_EDGE_ID', or expressions, e.g.,
- *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED'. If
+ *                                 RESTRICTIONS_EDGE_ID', expressions, e.g.,
+ *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED', or
+ *                                 raw values, e.g., '{0, 0, 0, 1} AS
+ *                                 RESTRICTIONS_ONOFFCOMPARED'. If using raw
+ *                                 values in an identifier combination, the
+ *                                 number of values specified must match across
+ *                                 the combination. If
  *                                 <code>remove_previous_restrictions</code> is
  *                                 set to <code>true</code>, any provided
  *                                 restrictions will replace the existing
@@ -12546,7 +12752,12 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                      <li> 'PAGE_RANK': Solves for the
  *                              probability of each destination node being
  *                              visited based on the links of the graph
- *                              topology.
+ *                              topology. Weights are not required to use this
+ *                              solver.
+ *                                      <li> 'PROBABILITY_RANK': Solves for the
+ *                              transitional probability (Hidden Markov) for
+ *                              each node based on the weights (probability
+ *                              assigned over given edges).
  *                                      <li> 'CENTRALITY': Solves for the
  *                              degree of a node to depict how many pairs of
  *                              individuals that would have to go through the
@@ -12635,6 +12846,16 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          and instead outputs the nodes within the radius
  *                          sorted by ascending cost. If set to '0.0', the
  *                          setting is ignored.  The default value is '0.0'.
+ *                                  <li> 'min_solution_radius': For
+ *                          <code>SHORTEST_PATH</code> and
+ *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
+ *                          Applicable only when
+ *                          <code>max_solution_radius</code> is set. Sets the
+ *                          minimum solution cost radius, which ignores the
+ *                          <code>destination_node_ids</code> list and instead
+ *                          outputs the nodes within the radius sorted by
+ *                          ascending cost. If set to '0.0', the setting is
+ *                          ignored.  The default value is '0.0'.
  *                                  <li> 'max_solution_targets': For
  *                          <code>SHORTEST_PATH</code> and
  *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
@@ -12671,10 +12892,11 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          greater than the
  *                          <code>restriction_threshold_value</code> will not
  *                          be included in the solution.
- *                                  <li> 'uniform_weights': When speficied,
+ *                                  <li> 'uniform_weights': When specified,
  *                          assigns the given value to all the edges in the
- *                          graph. Note that weights specified in
- *                          @{weights_on_edges} override this value.
+ *                          graph. Note that weights provided in
+ *                          <code>weights_on_edges</code> will override this
+ *                          value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -13806,7 +14028,7 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                                  <li> 'labels_font_size': The default value
  *                          is '12'.
  *                                  <li> 'labels_font_family': The default
- *                          value is 'arial'.
+ *                          value is 'sans'.
  *                                  <li> 'labels_search_window': The default
  *                          value is '4'.
  *                                  <li> 'labels_intralevel_separation': The
@@ -13815,6 +14037,12 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                          default value is '20'.
  *                                  <li> 'labels_max_angle': The default value
  *                          is '60'.
+ *                                  <li> 'isochrone_concavity': The default
+ *                          value is '-1'.
+ *                                  <li> 'isochrone_output_table': The default
+ *                          value is ''.
+ *                                  <li> 'isochrone_image': The default value
+ *                          is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -14167,6 +14395,251 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
         this.submit_request("/visualize/image/labels", actual_request, callback);
     } else {
         var data = this.submit_request("/visualize/image/labels", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
+    var actual_request = {
+        graph_name: request.graph_name,
+        weights_on_edges: (request.weights_on_edges !== undefined && request.weights_on_edges !== null) ? request.weights_on_edges : [],
+        source_node: request.source_node,
+        restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
+        max_solution_radius: (request.max_solution_radius !== undefined && request.max_solution_radius !== null) ? request.max_solution_radius : "-1.0",
+        num_levels: (request.num_levels !== undefined && request.num_levels !== null) ? request.num_levels : "1",
+        generate_image: (request.generate_image !== undefined && request.generate_image !== null) ? request.generate_image : true,
+        projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
+        image_width: (request.image_width !== undefined && request.image_width !== null) ? request.image_width : 512,
+        image_height: (request.image_height !== undefined && request.image_height !== null) ? request.image_height : -1,
+        style_options: request.style_options,
+        solve_options: (request.solve_options !== undefined && request.solve_options !== null) ? request.solve_options : {},
+        contour_options: (request.contour_options !== undefined && request.contour_options !== null) ? request.contour_options : {},
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/visualize/isochrone", actual_request, callback);
+    } else {
+        var data = this.submit_request("/visualize/isochrone", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} graph_name
+ * @param {String[]} weights_on_edges
+ * @param {String} source_node
+ * @param {String[]} restrictions
+ * @param {Number} max_solution_radius
+ * @param {Number} num_levels
+ * @param {Boolean} generate_image
+ * @param {String} projection
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> '3857'
+ *                                     <li> '102100'
+ *                                     <li> '900913'
+ *                                     <li> 'EPSG:4326'
+ *                                     <li> 'PLATE_CARREE'
+ *                                     <li> 'EPSG:900913'
+ *                                     <li> 'EPSG:102100'
+ *                                     <li> 'EPSG:3857'
+ *                                     <li> 'WEB_MERCATOR'
+ *                             </ul>
+ *                             The default value is 'PLATE_CARREE'.
+ * @param {Number} image_width
+ * @param {Number} image_height
+ * @param {Object} style_options
+ *                                <ul>
+ *                                        <li> 'line_size': The default value
+ *                                is '3'.
+ *                                        <li> 'color': The default value is
+ *                                'FF696969'.
+ *                                        <li> 'bg_color': The default value is
+ *                                '00000000'.
+ *                                        <li> 'text_color': The default value
+ *                                is 'FF000000'.
+ *                                        <li> 'colormap':
+ *                                Supported values:
+ *                                <ul>
+ *                                        <li> 'jet'
+ *                                        <li> 'accent'
+ *                                        <li> 'afmhot'
+ *                                        <li> 'autumn'
+ *                                        <li> 'binary'
+ *                                        <li> 'blues'
+ *                                        <li> 'bone'
+ *                                        <li> 'brbg'
+ *                                        <li> 'brg'
+ *                                        <li> 'bugn'
+ *                                        <li> 'bupu'
+ *                                        <li> 'bwr'
+ *                                        <li> 'cmrmap'
+ *                                        <li> 'cool'
+ *                                        <li> 'coolwarm'
+ *                                        <li> 'copper'
+ *                                        <li> 'cubehelix'
+ *                                        <li> 'dark2'
+ *                                        <li> 'flag'
+ *                                        <li> 'gist_earth'
+ *                                        <li> 'gist_gray'
+ *                                        <li> 'gist_heat'
+ *                                        <li> 'gist_ncar'
+ *                                        <li> 'gist_rainbow'
+ *                                        <li> 'gist_stern'
+ *                                        <li> 'gist_yarg'
+ *                                        <li> 'gnbu'
+ *                                        <li> 'gnuplot2'
+ *                                        <li> 'gnuplot'
+ *                                        <li> 'gray'
+ *                                        <li> 'greens'
+ *                                        <li> 'greys'
+ *                                        <li> 'hot'
+ *                                        <li> 'hsv'
+ *                                        <li> 'inferno'
+ *                                        <li> 'magma'
+ *                                        <li> 'nipy_spectral'
+ *                                        <li> 'ocean'
+ *                                        <li> 'oranges'
+ *                                        <li> 'orrd'
+ *                                        <li> 'paired'
+ *                                        <li> 'pastel1'
+ *                                        <li> 'pastel2'
+ *                                        <li> 'pink'
+ *                                        <li> 'piyg'
+ *                                        <li> 'plasma'
+ *                                        <li> 'prgn'
+ *                                        <li> 'prism'
+ *                                        <li> 'pubu'
+ *                                        <li> 'pubugn'
+ *                                        <li> 'puor'
+ *                                        <li> 'purd'
+ *                                        <li> 'purples'
+ *                                        <li> 'rainbow'
+ *                                        <li> 'rdbu'
+ *                                        <li> 'rdgy'
+ *                                        <li> 'rdpu'
+ *                                        <li> 'rdylbu'
+ *                                        <li> 'rdylgn'
+ *                                        <li> 'reds'
+ *                                        <li> 'seismic'
+ *                                        <li> 'set1'
+ *                                        <li> 'set2'
+ *                                        <li> 'set3'
+ *                                        <li> 'spectral'
+ *                                        <li> 'spring'
+ *                                        <li> 'summer'
+ *                                        <li> 'terrain'
+ *                                        <li> 'viridis'
+ *                                        <li> 'winter'
+ *                                        <li> 'wistia'
+ *                                        <li> 'ylgn'
+ *                                        <li> 'ylgnbu'
+ *                                        <li> 'ylorbr'
+ *                                        <li> 'ylorrd'
+ *                                </ul>
+ *                                The default value is 'jet'.
+ *                                </ul>
+ * @param {Object} solve_options
+ *                                <ul>
+ *                                        <li> 'remove_previous_restrictions':
+ *                                Supported values:
+ *                                <ul>
+ *                                        <li> 'true'
+ *                                        <li> 'false'
+ *                                </ul>
+ *                                The default value is 'false'.
+ *                                        <li> 'restriction_threshold_value':
+ *                                        <li> 'uniform_weights':
+ *                                </ul>
+ * @param {Object} contour_options
+ *                                  <ul>
+ *                                          <li> 'search_radius': The default
+ *                                  value is '20'.
+ *                                          <li> 'grid_size': The default value
+ *                                  is '100'.
+ *                                          <li> 'color_isolines': The default
+ *                                  value is 'true'.
+ *                                          <li> 'add_labels': The default
+ *                                  value is 'false'.
+ *                                          <li> 'labels_font_size': The
+ *                                  default value is '12'.
+ *                                          <li> 'labels_font_family': The
+ *                                  default value is 'arial'.
+ *                                          <li> 'labels_search_window': The
+ *                                  default value is '4'.
+ *                                          <li>
+ *                                  'labels_intralevel_separation': The default
+ *                                  value is '4'.
+ *                                          <li>
+ *                                  'labels_interlevel_separation': The default
+ *                                  value is '20'.
+ *                                          <li> 'labels_max_angle': The
+ *                                  default value is '60'.
+ *                                  </ul>
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> 'levels_table': The default value is
+ *                          ''.
+ *                                  <li> 'solve_table': The default value is
+ *                          ''.
+ *                                  <li> 'is_replicated': The default value is
+ *                          'true'.
+ *                                  <li> 'data_min_x':
+ *                                  <li> 'data_max_x':
+ *                                  <li> 'data_min_y':
+ *                                  <li> 'data_max_y':
+ *                                  <li> 'concavity_level': The default value
+ *                          is '0'.
+ *                                  <li> 'solve_direction':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'from_source'
+ *                                  <li> 'to_source'
+ *                          </ul>
+ *                          The default value is 'from_source'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.visualize_isochrone = function(graph_name, weights_on_edges, source_node, restrictions, max_solution_radius, num_levels, generate_image, projection, image_width, image_height, style_options, solve_options, contour_options, options, callback) {
+    var actual_request = {
+        graph_name: graph_name,
+        weights_on_edges: (weights_on_edges !== undefined && weights_on_edges !== null) ? weights_on_edges : [],
+        source_node: source_node,
+        restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
+        max_solution_radius: (max_solution_radius !== undefined && max_solution_radius !== null) ? max_solution_radius : "-1.0",
+        num_levels: (num_levels !== undefined && num_levels !== null) ? num_levels : "1",
+        generate_image: (generate_image !== undefined && generate_image !== null) ? generate_image : true,
+        projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
+        image_width: (image_width !== undefined && image_width !== null) ? image_width : 512,
+        image_height: (image_height !== undefined && image_height !== null) ? image_height : -1,
+        style_options: style_options,
+        solve_options: (solve_options !== undefined && solve_options !== null) ? solve_options : {},
+        contour_options: (contour_options !== undefined && contour_options !== null) ? contour_options : {},
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/visualize/isochrone", actual_request, callback);
+    } else {
+        var data = this.submit_request("/visualize/isochrone", actual_request);
         return data;
     }
 };
