@@ -777,7 +777,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.4.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.5.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1908,6 +1908,14 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'rebuild_on_error':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'verify_nulls': When enabled, verifies
+ *                          that null values are set to zero
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -3441,7 +3449,7 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
 };
 
 /**
- * Alters properties of exisiting resource group to facilitate resource
+ * Alters the properties of an exisiting resource group to facilitate resource
  * management.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -3470,7 +3478,7 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
 };
 
 /**
- * Alters properties of exisiting resource group to facilitate resource
+ * Alters the properties of an exisiting resource group to facilitate resource
  * management.
  *
  * @param {String} name  Name of the group to be altered. Must be an existing
@@ -3489,10 +3497,14 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                  of memory usable in the given tier at one
  *                                  time for this group.
  *                                  </ul>
- * @param {String} ranking  If the resource group ranking has to be updated,
+ * @param {String} ranking  If the resource group ranking is to be updated,
  *                          this indicates the relative ranking among existing
  *                          resource groups where this resource group will be
- *                          moved. Left bank if not changing the ranking.
+ *                          moved; leave blank if not changing the ranking.
+ *                          When using <code>before</code> or
+ *                          <code>after</code>, specify which resource group
+ *                          this one will be inserted before or after in
+ *                          <code>adjoining_resource_group</code>.
  *                          Supported values:
  *                          <ul>
  *                                  <li> ''
@@ -3502,11 +3514,13 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                  <li> 'after'
  *                          </ul>
  *                          The default value is ''.
- * @param {String} adjoining_resource_group  If the ranking is 'before' or
- *                                           'after', this field indicates the
- *                                           resource group before or after
- *                                           which the current group will be
- *                                           placed otherwise left blank.
+ * @param {String} adjoining_resource_group  If <code>ranking</code> is
+ *                                           <code>before</code> or
+ *                                           <code>after</code>, this field
+ *                                           indicates the resource group
+ *                                           before or after which the current
+ *                                           group will be placed; otherwise,
+ *                                           leave blank.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'max_cpu_concurrency': Maximum number
@@ -5857,7 +5871,10 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  </ul>
  * @param {String} ranking  Indicates the relative ranking among existing
  *                          resource groups where this new resource group will
- *                          be placed.
+ *                          be placed.  When using <code>before</code> or
+ *                          <code>after</code>, specify which resource group
+ *                          this one will be inserted before or after in
+ *                          <code>adjoining_resource_group</code>.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'first'
@@ -5865,10 +5882,13 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  <li> 'before'
  *                                  <li> 'after'
  *                          </ul>
- * @param {String} adjoining_resource_group  Name of the resource group
- *                                           relative to which this group will
- *                                           be placed. Must be specified when
- *                                           ranking is before or after
+ * @param {String} adjoining_resource_group  If <code>ranking</code> is
+ *                                           <code>before</code> or
+ *                                           <code>after</code>, this field
+ *                                           indicates the resource group
+ *                                           before or after which the current
+ *                                           group will be placed; otherwise,
+ *                                           leave blank.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'max_cpu_concurrency': Maximum number
@@ -6209,16 +6229,17 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
 };
 
 /**
- * Creates a monitor that watches for new records inserted into a particular
- * table (identified by <code>table_name</code>) and forwards copies to
- * subscribers via ZMQ. After this call completes, subscribe to the returned
+ * Creates a monitor that watches for table modification events such as insert,
+ * update or delete on a particular table (identified by
+ * <code>table_name</code>) and forwards event notifications to subscribers via
+ * ZMQ. After this call completes, subscribe to the returned
  * <code>topic_id</code> on the ZMQ table monitor port (default 9002). Each
- * time an insert operation on the table completes, a multipart message is
+ * time a modification operation on the table completes, a multipart message is
  * published for that topic; the first part contains only the topic ID, and
- * each subsequent part contains one binary-encoded Avro object that was
- * inserted. The monitor will continue to run (regardless of whether or not
- * there are any subscribers) until deactivated with
- * {@linkcode GPUdb#clear_table_monitor}.
+ * each subsequent part contains one binary-encoded Avro object that
+ * corresponds to the event and can be decoded using <code>type_schema</code>.
+ * The monitor will continue to run (regardless of whether or not there are any
+ * subscribers) until deactivated with {@linkcode GPUdb#clear_table_monitor}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6243,20 +6264,37 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
 };
 
 /**
- * Creates a monitor that watches for new records inserted into a particular
- * table (identified by <code>table_name</code>) and forwards copies to
- * subscribers via ZMQ. After this call completes, subscribe to the returned
+ * Creates a monitor that watches for table modification events such as insert,
+ * update or delete on a particular table (identified by
+ * <code>table_name</code>) and forwards event notifications to subscribers via
+ * ZMQ. After this call completes, subscribe to the returned
  * <code>topic_id</code> on the ZMQ table monitor port (default 9002). Each
- * time an insert operation on the table completes, a multipart message is
+ * time a modification operation on the table completes, a multipart message is
  * published for that topic; the first part contains only the topic ID, and
- * each subsequent part contains one binary-encoded Avro object that was
- * inserted. The monitor will continue to run (regardless of whether or not
- * there are any subscribers) until deactivated with
- * {@linkcode GPUdb#clear_table_monitor}.
+ * each subsequent part contains one binary-encoded Avro object that
+ * corresponds to the event and can be decoded using <code>type_schema</code>.
+ * The monitor will continue to run (regardless of whether or not there are any
+ * subscribers) until deactivated with {@linkcode GPUdb#clear_table_monitor}.
  *
  * @param {String} table_name  Name of the table to monitor. Must not refer to
  *                             a collection.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'event':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'insert': Get notifications of new
+ *                          record insertions. The new row images are forwarded
+ *                          to the subscribers.
+ *                                  <li> 'update': Get notifications of update
+ *                          operations. The modified row count information is
+ *                          forwarded to the subscribers.
+ *                                  <li> 'delete': Get notifications of delete
+ *                          operations. The deleted row count information is
+ *                          forwarded to the subscribers.
+ *                          </ul>
+ *                          The default value is 'insert'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -6739,10 +6777,10 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             the cardinality (the number of unique values) is
  *                             expected to be low. This property can save a
  *                             large amount of memory.
- *                                     <li> 'init_with_now': For columns with
- *                             attributes of date, time, datetime or timestamp,
- *                             at insert time, replace empty strings and
- *                             invalid timestamps with NOW()
+ *                                     <li> 'init_with_now': For 'date',
+ *                             'time', 'datetime', or 'timestamp' column types,
+ *                             replace empty strings and invalid timestamps
+ *                             with 'NOW()' upon insert.
  *                             </ul>
  *                             The default value is an empty dict ( {} ).
  * @param {Object} options  Optional parameters.
@@ -11065,6 +11103,10 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               time and/or distance between points to
  *                               influence one or more shortest paths across
  *                               the sample points.
+ *                                       <li> 'match_od_pairs': Matches
+ *                               <code>sample_points</code> to find the most
+ *                               probable path between origin and destination
+ *                               pairs with cost constraints
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -11512,6 +11554,16 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          the <a href="../../api/rest/wms_rest.html"
  *                          target="_top">/wms</a> endpoint can then be made to
  *                          display the query results on a map.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'and_labels': If set to
+ *                          <code>true</code>, the result of the query has
+ *                          entities that satisfy all of the target labels,
+ *                          instead of any.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -12738,7 +12790,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                 restrictions. If
  *                                 <code>remove_previous_restrictions</code> is
  *                                 set to <code>false</code>, any provided
- *                                 weights will be added (in the case of
+ *                                 restrictions will be added (in the case of
  *                                 'RESTRICTIONS_VALUECOMPARED') to or replaced
  *                                 (in the case of
  *                                 'RESTRICTIONS_ONOFFCOMPARED').
@@ -14400,6 +14452,12 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
 };
 
 /**
+ * Generate an image containing isolines for travel results using an existing
+ * graph. Isolines represent curves of equal cost, with cost typically
+ * referring to the time or distance assigned as the weights of the underlying
+ * graph. See <a href="../../graph_solver/network_graph_solver.html"
+ * target="_top">Network Graph Solvers</a> for more information on graphs.
+ * .
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -14408,20 +14466,17 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
 GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
     var actual_request = {
         graph_name: request.graph_name,
-        weights_on_edges: (request.weights_on_edges !== undefined && request.weights_on_edges !== null) ? request.weights_on_edges : [],
         source_node: request.source_node,
-        restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
         max_solution_radius: (request.max_solution_radius !== undefined && request.max_solution_radius !== null) ? request.max_solution_radius : "-1.0",
+        weights_on_edges: (request.weights_on_edges !== undefined && request.weights_on_edges !== null) ? request.weights_on_edges : [],
+        restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
         num_levels: (request.num_levels !== undefined && request.num_levels !== null) ? request.num_levels : "1",
         generate_image: (request.generate_image !== undefined && request.generate_image !== null) ? request.generate_image : true,
-        projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
-        image_width: (request.image_width !== undefined && request.image_width !== null) ? request.image_width : 512,
-        image_height: (request.image_height !== undefined && request.image_height !== null) ? request.image_height : -1,
+        levels_table: (request.levels_table !== undefined && request.levels_table !== null) ? request.levels_table : "",
         style_options: request.style_options,
         solve_options: (request.solve_options !== undefined && request.solve_options !== null) ? request.solve_options : {},
         contour_options: (request.contour_options !== undefined && request.contour_options !== null) ? request.contour_options : {},
@@ -14437,41 +14492,105 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
 };
 
 /**
+ * Generate an image containing isolines for travel results using an existing
+ * graph. Isolines represent curves of equal cost, with cost typically
+ * referring to the time or distance assigned as the weights of the underlying
+ * graph. See <a href="../../graph_solver/network_graph_solver.html"
+ * target="_top">Network Graph Solvers</a> for more information on graphs.
+ * .
  *
- * @param {String} graph_name
- * @param {String[]} weights_on_edges
- * @param {String} source_node
- * @param {String[]} restrictions
- * @param {Number} max_solution_radius
- * @param {Number} num_levels
- * @param {Boolean} generate_image
- * @param {String} projection
- *                             Supported values:
- *                             <ul>
- *                                     <li> '3857'
- *                                     <li> '102100'
- *                                     <li> '900913'
- *                                     <li> 'EPSG:4326'
- *                                     <li> 'PLATE_CARREE'
- *                                     <li> 'EPSG:900913'
- *                                     <li> 'EPSG:102100'
- *                                     <li> 'EPSG:3857'
- *                                     <li> 'WEB_MERCATOR'
- *                             </ul>
- *                             The default value is 'PLATE_CARREE'.
- * @param {Number} image_width
- * @param {Number} image_height
- * @param {Object} style_options
+ * @param {String} graph_name  Name of the graph on which the isochrone is to
+ *                             be computed.
+ * @param {String} source_node  Starting vertex on the underlying graph from/to
+ *                              which the isochrones are created.
+ * @param {Number} max_solution_radius  Extent of the search radius around
+ *                                      <code>source_node</code>. Set to '-1.0'
+ *                                      for unrestricted search radius.
+ * @param {String[]} weights_on_edges  Additional weights to apply to the edges
+ *                                     of an existing graph. Weights must be
+ *                                     specified using <a
+ *                                     href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                     target="_top">identifiers</a>;
+ *                                     identifiers are grouped as <a
+ *                                     href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                     target="_top">combinations</a>.
+ *                                     Identifiers can be used with existing
+ *                                     column names, e.g., 'table.column AS
+ *                                     WEIGHTS_EDGE_ID', or expressions, e.g.,
+ *                                     'ST_LENGTH(wkt) AS
+ *                                     WEIGHTS_VALUESPECIFIED'. Any provided
+ *                                     weights will be added (in the case of
+ *                                     'WEIGHTS_VALUESPECIFIED') to or
+ *                                     multiplied with (in the case of
+ *                                     'WEIGHTS_FACTORSPECIFIED') the existing
+ *                                     weight(s).
+ * @param {String[]} restrictions  Additional restrictions to apply to the
+ *                                 nodes/edges of an existing graph.
+ *                                 Restrictions must be specified using <a
+ *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 target="_top">identifiers</a>; identifiers
+ *                                 are grouped as <a
+ *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 target="_top">combinations</a>. Identifiers
+ *                                 can be used with existing column names,
+ *                                 e.g., 'table.column AS
+ *                                 RESTRICTIONS_EDGE_ID', or expressions, e.g.,
+ *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED'. If
+ *                                 <code>remove_previous_restrictions</code> is
+ *                                 set to <code>true</code>, any provided
+ *                                 restrictions will replace the existing
+ *                                 restrictions. If
+ *                                 <code>remove_previous_restrictions</code> is
+ *                                 set to <code>false</code>, any provided
+ *                                 restrictions will be added (in the case of
+ *                                 'RESTRICTIONS_VALUECOMPARED') to or replaced
+ *                                 (in the case of
+ *                                 'RESTRICTIONS_ONOFFCOMPARED').
+ * @param {Number} num_levels  Number of equally-separated isochrones to
+ *                             compute.
+ * @param {Boolean} generate_image  If set to <code>true</code>, generates a
+ *                                  PNG image of the isochrones in the
+ *                                  response.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                          <li> true
+ *                                          <li> false
+ *                                  </ul>
+ *                                  The default value is true.
+ * @param {String} levels_table  Name of the table to output the isochrones,
+ *                               containing levels and their corresponding WKT
+ *                               geometry. If no value is provided, the table
+ *                               is not generated.
+ * @param {Object} style_options  Various style related options of the
+ *                                isochrone image.
  *                                <ul>
- *                                        <li> 'line_size': The default value
+ *                                        <li> 'line_size': The width of the
+ *                                contour lines in pixels.  The default value
  *                                is '3'.
- *                                        <li> 'color': The default value is
- *                                'FF696969'.
- *                                        <li> 'bg_color': The default value is
+ *                                        <li> 'color': Color of generated
+ *                                isolines. All color values must be in the
+ *                                format RRGGBB or AARRGGBB (to specify the
+ *                                alpha value). If alpha is specified and
+ *                                flooded contours are enabled, it will be used
+ *                                for as the transparency of the latter.  The
+ *                                default value is 'FF696969'.
+ *                                        <li> 'bg_color': When
+ *                                <code>generate_image</code> is set to
+ *                                <code>true</code>, background color of the
+ *                                generated image. All color values must be in
+ *                                the format RRGGBB or AARRGGBB (to specify the
+ *                                alpha value).  The default value is
  *                                '00000000'.
- *                                        <li> 'text_color': The default value
- *                                is 'FF000000'.
- *                                        <li> 'colormap':
+ *                                        <li> 'text_color': When
+ *                                <code>add_labels</code> is set to
+ *                                <code>true</code>, color for the labels. All
+ *                                color values must be in the format RRGGBB or
+ *                                AARRGGBB (to specify the alpha value).  The
+ *                                default value is 'FF000000'.
+ *                                        <li> 'colormap': Colormap for
+ *                                contours or fill-in regions when applicable.
+ *                                All color values must be in the format RRGGBB
+ *                                or AARRGGBB (to specify the alpha value)
  *                                Supported values:
  *                                <ul>
  *                                        <li> 'jet'
@@ -14552,9 +14671,13 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                </ul>
  *                                The default value is 'jet'.
  *                                </ul>
- * @param {Object} solve_options
+ * @param {Object} solve_options  Solver specific parameters
  *                                <ul>
  *                                        <li> 'remove_previous_restrictions':
+ *                                Ignore the restrictions applied to the graph
+ *                                during the creation stage and only use the
+ *                                restrictions specified in this request if set
+ *                                to <code>true</code>.
  *                                Supported values:
  *                                <ul>
  *                                        <li> 'true'
@@ -14562,52 +14685,172 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                </ul>
  *                                The default value is 'false'.
  *                                        <li> 'restriction_threshold_value':
- *                                        <li> 'uniform_weights':
+ *                                Value-based restriction comparison. Any node
+ *                                or edge with a 'RESTRICTIONS_VALUECOMPARED'
+ *                                value greater than the
+ *                                <code>restriction_threshold_value</code> will
+ *                                not be included in the solution.
+ *                                        <li> 'uniform_weights': When
+ *                                specified, assigns the given value to all the
+ *                                edges in the graph. Note that weights
+ *                                provided in <code>weights_on_edges</code>
+ *                                will override this value.
  *                                </ul>
- * @param {Object} contour_options
+ * @param {Object} contour_options  Solver specific parameters
  *                                  <ul>
- *                                          <li> 'search_radius': The default
- *                                  value is '20'.
- *                                          <li> 'grid_size': The default value
- *                                  is '100'.
- *                                          <li> 'color_isolines': The default
- *                                  value is 'true'.
- *                                          <li> 'add_labels': The default
- *                                  value is 'false'.
- *                                          <li> 'labels_font_size': The
- *                                  default value is '12'.
- *                                          <li> 'labels_font_family': The
- *                                  default value is 'arial'.
- *                                          <li> 'labels_search_window': The
+ *                                          <li> 'projection': Spatial
+ *                                  Reference System (i.e. EPSG Code).
+ *                                  Supported values:
+ *                                  <ul>
+ *                                          <li> '3857'
+ *                                          <li> '102100'
+ *                                          <li> '900913'
+ *                                          <li> 'EPSG:4326'
+ *                                          <li> 'PLATE_CARREE'
+ *                                          <li> 'EPSG:900913'
+ *                                          <li> 'EPSG:102100'
+ *                                          <li> 'EPSG:3857'
+ *                                          <li> 'WEB_MERCATOR'
+ *                                  </ul>
+ *                                  The default value is 'PLATE_CARREE'.
+ *                                          <li> 'width': When
+ *                                  <code>generate_image</code> is set to
+ *                                  <code>true</code>, width of the generated
+ *                                  image.  The default value is '512'.
+ *                                          <li> 'height': When
+ *                                  <code>generate_image</code> is set to
+ *                                  <code>true</code>, height of the generated
+ *                                  image. If the default value is used, the
+ *                                  <code>height</code> is set to the value
+ *                                  resulting from multiplying the aspect ratio
+ *                                  by the <code>width</code>.  The default
+ *                                  value is '-1'.
+ *                                          <li> 'search_radius': When
+ *                                  interpolating the graph solution to
+ *                                  generate the isochrone, neighborhood of
+ *                                  influence of sample data (in percent of the
+ *                                  image/grid).  The default value is '20'.
+ *                                          <li> 'grid_size': When
+ *                                  interpolating the graph solution to
+ *                                  generate the isochrone, number of
+ *                                  subdivisions along the x axis when building
+ *                                  the grid (the y is computed using the
+ *                                  aspect ratio of the output image).  The
+ *                                  default value is '100'.
+ *                                          <li> 'color_isolines': Color each
+ *                                  isoline according to the colormap;
+ *                                  otherwise, use the foreground color.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                          <li> 'true'
+ *                                          <li> 'false'
+ *                                  </ul>
+ *                                  The default value is 'true'.
+ *                                          <li> 'add_labels': If set to
+ *                                  <code>true</code>, add labels to the
+ *                                  isolines.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                          <li> 'true'
+ *                                          <li> 'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                                          <li> 'labels_font_size': When
+ *                                  <code>add_labels</code> is set to
+ *                                  <code>true</code>, size of the font (in
+ *                                  pixels) to use for labels.  The default
+ *                                  value is '12'.
+ *                                          <li> 'labels_font_family': When
+ *                                  <code>add_labels</code> is set to
+ *                                  <code>true</code>, font name to be used
+ *                                  when adding labels.  The default value is
+ *                                  'arial'.
+ *                                          <li> 'labels_search_window': When
+ *                                  <code>add_labels</code> is set to
+ *                                  <code>true</code>, a search window is used
+ *                                  to rate the local quality of each isoline.
+ *                                  Smooth, continuous, long stretches with
+ *                                  relatively flat angles are favored. The
+ *                                  provided value is multiplied by the
+ *                                  <code>labels_font_size</code> to calculate
+ *                                  the final window size.  The default value
+ *                                  is '4'.
+ *                                          <li>
+ *                                  'labels_intralevel_separation': When
+ *                                  <code>add_labels</code> is set to
+ *                                  <code>true</code>, this value determines
+ *                                  the  distance (in multiples of the
+ *                                  <code>labels_font_size</code>) to use when
+ *                                  separating labels of different values.  The
  *                                  default value is '4'.
  *                                          <li>
- *                                  'labels_intralevel_separation': The default
- *                                  value is '4'.
- *                                          <li>
- *                                  'labels_interlevel_separation': The default
- *                                  value is '20'.
- *                                          <li> 'labels_max_angle': The
- *                                  default value is '60'.
+ *                                  'labels_interlevel_separation': When
+ *                                  <code>add_labels</code> is set to
+ *                                  <code>true</code>, this value determines
+ *                                  the distance (in percent of the total
+ *                                  window size) to use when separating labels
+ *                                  of the same value.  The default value is
+ *                                  '20'.
+ *                                          <li> 'labels_max_angle': When
+ *                                  <code>add_labels</code> is set to
+ *                                  <code>true</code>, maximum angle (in
+ *                                  degrees) from the vertical to use when
+ *                                  adding labels.  The default value is '60'.
  *                                  </ul>
- * @param {Object} options
+ * @param {Object} options  Additional parameters
  *                          <ul>
- *                                  <li> 'levels_table': The default value is
- *                          ''.
- *                                  <li> 'solve_table': The default value is
- *                          ''.
- *                                  <li> 'is_replicated': The default value is
- *                          'true'.
- *                                  <li> 'data_min_x':
- *                                  <li> 'data_max_x':
- *                                  <li> 'data_min_y':
- *                                  <li> 'data_max_y':
- *                                  <li> 'concavity_level': The default value
- *                          is '0'.
- *                                  <li> 'solve_direction':
+ *                                  <li> 'solve_table': Name of the table to
+ *                          host intermediate solve results containing the
+ *                          position and cost for each vertex in the graph. If
+ *                          the default value is used, a temporary table is
+ *                          created and deleted once the solution is
+ *                          calculated.  The default value is ''.
+ *                                  <li> 'is_replicated': If set to
+ *                          <code>true</code>, replicate the
+ *                          <code>solve_table</code>.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'from_source'
- *                                  <li> 'to_source'
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'data_min_x': Lower bound for the x
+ *                          values. If not provided, it will be computed from
+ *                          the bounds of the input data.
+ *                                  <li> 'data_max_x': Upper bound for the x
+ *                          values. If not provided, it will be computed from
+ *                          the bounds of the input data.
+ *                                  <li> 'data_min_y': Lower bound for the y
+ *                          values. If not provided, it will be computed from
+ *                          the bounds of the input data.
+ *                                  <li> 'data_max_y': Upper bound for the y
+ *                          values. If not provided, it will be computed from
+ *                          the bounds of the input data.
+ *                                  <li> 'concavity_level': Factor to qualify
+ *                          the concavity of the isochrone curves. The lower
+ *                          the value, the more convex (with '0' being
+ *                          completely convex and '1' being the most concave).
+ *                          The default value is '0.5'.
+ *                                  <li> 'use_priority_queue_solvers': sets the
+ *                          solver methods explicitly if true
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': uses the solvers scheduled for
+ *                          'shortest_path' and 'inverse_shortest_path' based
+ *                          on solve_direction
+ *                                  <li> 'false': uses the solvers
+ *                          'priority_queue' and 'inverse_priority_queue' based
+ *                          on solve_direction
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'solve_direction': Specify whether we
+ *                          are going to the source node, or starting from it.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'from_source': Shortest path to get to
+ *                          the source (inverse Dijkstra)
+ *                                  <li> 'to_source': Shortest path to source
+ *                          (Dijkstra)
  *                          </ul>
  *                          The default value is 'from_source'.
  *                          </ul>
@@ -14616,20 +14859,17 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
  * 
- * @private
  */
-GPUdb.prototype.visualize_isochrone = function(graph_name, weights_on_edges, source_node, restrictions, max_solution_radius, num_levels, generate_image, projection, image_width, image_height, style_options, solve_options, contour_options, options, callback) {
+GPUdb.prototype.visualize_isochrone = function(graph_name, source_node, max_solution_radius, weights_on_edges, restrictions, num_levels, generate_image, levels_table, style_options, solve_options, contour_options, options, callback) {
     var actual_request = {
         graph_name: graph_name,
-        weights_on_edges: (weights_on_edges !== undefined && weights_on_edges !== null) ? weights_on_edges : [],
         source_node: source_node,
-        restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
         max_solution_radius: (max_solution_radius !== undefined && max_solution_radius !== null) ? max_solution_radius : "-1.0",
+        weights_on_edges: (weights_on_edges !== undefined && weights_on_edges !== null) ? weights_on_edges : [],
+        restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
         num_levels: (num_levels !== undefined && num_levels !== null) ? num_levels : "1",
         generate_image: (generate_image !== undefined && generate_image !== null) ? generate_image : true,
-        projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
-        image_width: (image_width !== undefined && image_width !== null) ? image_width : 512,
-        image_height: (image_height !== undefined && image_height !== null) ? image_height : -1,
+        levels_table: (levels_table !== undefined && levels_table !== null) ? levels_table : "",
         style_options: style_options,
         solve_options: (solve_options !== undefined && solve_options !== null) ? solve_options : {},
         contour_options: (contour_options !== undefined && contour_options !== null) ? contour_options : {},
