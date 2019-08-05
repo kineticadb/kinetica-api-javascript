@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.5.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.6.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1496,6 +1496,13 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                          always balanced in accordance with their primary
  *                          key or shard key. Cannot be used simultaneously
  *                          with <code>table_whitelist</code>.
+ *                                  <li> 'aggressiveness': Influences how much
+ *                          data to send per rebalance round.  A higher
+ *                          aggressiveness setting will complete the rebalance
+ *                          faster.  A lower aggressiveness setting will take
+ *                          longer, but allow for better interleaving between
+ *                          the rebalance and other queries. Allowed values are
+ *                          1 through 10.  The default value is '1'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -1605,6 +1612,14 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'aggressiveness': Influences how much
+ *                          data to send per rebalance round, during the
+ *                          rebalance portion of removing ranks.  A higher
+ *                          aggressiveness setting will complete the rebalance
+ *                          faster.  A lower aggressiveness setting will take
+ *                          longer, but allow for better interleaving between
+ *                          the rebalance and other queries. Allowed values are
+ *                          1 through 10.  The default value is '1'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -1820,12 +1835,17 @@ GPUdb.prototype.admin_show_jobs_request = function(request, callback) {
  *
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> 'show_details':
+ *                                  <li> 'show_async_jobs': If
+ *                          <code>true</code>, then the completed async jobs
+ *                          are also included in the response. By default, once
+ *                          the async jobs are completed they are no longer
+ *                          included in the jobs list.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -5030,13 +5050,9 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'truncate_strings': If set to
- *                          {true}@{, it allows to append unbounded string to
- *                          charN string. If 'truncate_strings' is 'true', the
- *                          desination column is charN datatype, and the source
- *                          column is unnbounded string, it will truncate the
- *                          source string to length of N first, and then append
- *                          the truncated string to the destination charN
- *                          column. The default value is false.
+ *                          {true}@{, it allows appending longer strings to
+ *                          smaller charN string columns by truncating the
+ *                          longer string to fit.  The default value is false.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -11192,6 +11208,86 @@ GPUdb.prototype.get_vectortile = function(table_names, column_names, layers, til
 };
 
 /**
+ * Grants a proc-level permission to a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.grant_permission_proc_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.grant_permission_proc_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        proc_name: request.proc_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/grant/permission/proc", actual_request, callback);
+};
+
+/**
+ * Grants a proc-level permission to a user or role.
+ *
+ * @param {String} name  Name of the user or role to which the permission will
+ *                       be granted. Must be an existing user or role.
+ * @param {String} permission  Permission to grant to the user or role.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'proc_execute': Execute access to
+ *                             the proc.
+ *                             </ul>
+ * @param {String} proc_name  Name of the proc to which the permission grants
+ *                            access. Must be an existing proc, or an empty
+ *                            string to grant access to all procs.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.grant_permission_proc = function(name, permission, proc_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.grant_permission_proc(name, permission, proc_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        permission: permission,
+        proc_name: proc_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/grant/permission/proc", actual_request, callback);
+};
+
+/**
  * Grants a system-level permission to a user or role.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -11733,6 +11829,16 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                  <li> 'return_record_ids': If
  *                          <code>true</code> then return the internal record
  *                          id along for each inserted record.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'truncate_strings': If set to
+ *                          {true}@{, any strings which are too long for their
+ *                          charN string fields will be truncated to fit.  The
+ *                          default value is false.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -12809,6 +12915,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
         queries: request.queries,
         restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
         adjacency_table: (request.adjacency_table !== undefined && request.adjacency_table !== null) ? request.adjacency_table : "",
+        rings: (request.rings !== undefined && request.rings !== null) ? request.rings : "1",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -12886,20 +12993,19 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  href="../../graph_solver/network_graph_solver.html#using-labels"
  *                                  target="_top">Using Labels</a> for more
  *                                  information.
+ * @param {Number} rings  Only applicable when querying nodes. Sets the number
+ *                        of rings around the node to query for adjacency, with
+ *                        '1' being the edges directly attached to the queried
+ *                        node. Also known as number of hops. For example, if
+ *                        it is set to '2', the edge(s) directly attached to
+ *                        the queried node(s) will be returned; in addition,
+ *                        the edge(s) attached to the node(s) attached to the
+ *                        initial ring of edge(s) surrounding the queried
+ *                        node(s) will be returned. This setting can be '0' in
+ *                        which case if the node type id label, it'll then
+ *                        query for all that has the same property.
  * @param {Object} options  Additional parameters
  *                          <ul>
- *                                  <li> 'rings': Only applicable when querying
- *                          nodes. Sets the number of rings around the node to
- *                          query for adjacency, with '1' being the edges
- *                          directly attached to the queried node. Also known
- *                          as number of hops. For example, if
- *                          <code>rings</code> is set to '2', the edge(s)
- *                          directly attached to the queried node(s) will be
- *                          returned; in addition, the edge(s) attached to the
- *                          node(s) attached to the initial ring of edge(s)
- *                          surrounding the queried node(s) will be returned.
- *                          This setting cannot be less than '1'.  The default
- *                          value is '1'.
  *                                  <li> 'force_undirected': This parameter is
  *                          only applicable if the queried graph
  *                          <code>graph_name</code> is directed and when
@@ -12922,12 +13028,9 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          an empty dict ( {} ).
  *                                  <li> 'target_nodes_table': Name of the
  *                          table to store the list of the final nodes reached
- *                          during the traversal. If the
- *                          'QUERY_TARGET_NODE_LABEL' <a
- *                          href="../../graph_solver/network_graph_solver.html#query-identifiers"
- *                          target="_top">query identifier</a> is NOT used in
- *                          <code>queries</code>, the table will not be
- *                          created.  The default value is ''.
+ *                          during the traversal. If this value is not given
+ *                          it'll default to adjacemcy_table+'_nodes'.  The
+ *                          default value is ''.
  *                                  <li> 'restriction_threshold_value':
  *                          Value-based restriction comparison. Any node or
  *                          edge with a RESTRICTIONS_VALUECOMPARED value
@@ -12982,12 +13085,12 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjacency_table, options, callback) {
+GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjacency_table, rings, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.query_graph(graph_name, queries, restrictions, adjacency_table, options, function(err, response) {
+            self.query_graph(graph_name, queries, restrictions, adjacency_table, rings, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -13002,10 +13105,92 @@ GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjace
         queries: queries,
         restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
         adjacency_table: (adjacency_table !== undefined && adjacency_table !== null) ? adjacency_table : "",
+        rings: (rings !== undefined && rings !== null) ? rings : "1",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/query/graph", actual_request, callback);
+};
+
+/**
+ * Revokes a proc-level permission from a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.revoke_permission_proc_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.revoke_permission_proc_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        proc_name: request.proc_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/revoke/permission/proc", actual_request, callback);
+};
+
+/**
+ * Revokes a proc-level permission from a user or role.
+ *
+ * @param {String} name  Name of the user or role from which the permission
+ *                       will be revoked. Must be an existing user or role.
+ * @param {String} permission  Permission to revoke from the user or role.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'proc_execute': Execute access to
+ *                             the proc.
+ *                             </ul>
+ * @param {String} proc_name  Name of the proc to which the permission grants
+ *                            access. Must be an existing proc, or an empty
+ *                            string if the permission grants access to all
+ *                            procs.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.revoke_permission_proc = function(name, permission, proc_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.revoke_permission_proc(name, permission, proc_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        permission: permission,
+        proc_name: proc_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/revoke/permission/proc", actual_request, callback);
 };
 
 /**
@@ -13245,6 +13430,87 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
     };
 
     this.submit_request("/revoke/role", actual_request, callback);
+};
+
+/**
+ * Shows information and characteristics of graphs that exist on the graph
+ * server, depending on the options specified.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_graph_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_graph_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: (request.graph_name !== undefined && request.graph_name !== null) ? request.graph_name : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/show/graph", actual_request, callback);
+};
+
+/**
+ * Shows information and characteristics of graphs that exist on the graph
+ * server, depending on the options specified.
+ *
+ * @param {String} graph_name  Name of the graph on which to retrieve
+ *                             information. If empty, information about all
+ *                             graphs is returned.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'show_original_request': If set to
+ *                          <code>true</code>, the request that was originally
+ *                          used.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_graph = function(graph_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_graph(graph_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: (graph_name !== undefined && graph_name !== null) ? graph_name : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/show/graph", actual_request, callback);
 };
 
 /**
