@@ -777,7 +777,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.6.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.7.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -2917,12 +2917,12 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  * be used for numeric valued binning-columns, a min, max and interval are
  * specified. The number of bins, nbins, is the integer upper bound of
  * (max-min)/interval. Values that fall in the range
- * [min+n\*interval,min+(n+1)\*interval) are placed in the nth bin where n
- * ranges from 0..nbin-2. The final bin is [min+(nbin-1)\*interval,max]. In the
- * second method, <code>options</code> bin_values specifies a list of binning
- * column values. Binning-columns whose value matches the nth member of the
- * bin_values list are placed in the nth bin. When a list is provided the
- * binning-column must be of type string or int.
+ * [min+n*interval,min+(n+1)*interval) are placed in the nth bin where n ranges
+ * from 0..nbin-2. The final bin is [min+(nbin-1)*interval,max]. In the second
+ * method, <code>options</code> bin_values specifies a list of binning column
+ * values. Binning-columns whose value matches the nth member of the bin_values
+ * list are placed in the nth bin. When a list is provided the binning-column
+ * must be of type string or int.
  * <p>
  * NOTE:  The Kinetica instance being accessed must be running a CUDA
  * (GPU-based) build to service this request.
@@ -2973,12 +2973,12 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  * be used for numeric valued binning-columns, a min, max and interval are
  * specified. The number of bins, nbins, is the integer upper bound of
  * (max-min)/interval. Values that fall in the range
- * [min+n\*interval,min+(n+1)\*interval) are placed in the nth bin where n
- * ranges from 0..nbin-2. The final bin is [min+(nbin-1)\*interval,max]. In the
- * second method, <code>options</code> bin_values specifies a list of binning
- * column values. Binning-columns whose value matches the nth member of the
- * bin_values list are placed in the nth bin. When a list is provided the
- * binning-column must be of type string or int.
+ * [min+n*interval,min+(n+1)*interval) are placed in the nth bin where n ranges
+ * from 0..nbin-2. The final bin is [min+(nbin-1)*interval,max]. In the second
+ * method, <code>options</code> bin_values specifies a list of binning column
+ * values. Binning-columns whose value matches the nth member of the bin_values
+ * list are placed in the nth bin. When a list is provided the binning-column
+ * must be of type string or int.
  * <p>
  * NOTE:  The Kinetica instance being accessed must be running a CUDA
  * (GPU-based) build to service this request.
@@ -3000,7 +3000,7 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  * @param {Number} end  The upper bound of the binning-column.
  * @param {Number} interval  The interval of a bin. Set members fall into bin i
  *                           if the binning-column falls in the range
- *                           [start+interval``*``i, start+interval``*``(i+1)).
+ *                           [start+interval*i, start+interval*(i+1)).
  * @param {Object} options  Map of optional parameters:
  *                          <ul>
  *                                  <li> 'additional_column_names': A list of
@@ -6672,6 +6672,11 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             since the Unix epoch: 00:00:00 Jan 1 1970.
  *                             Dates represented by a timestamp must fall
  *                             between the year 1000 and the year 2900.
+ *                                     <li> 'ulong': Valid only for 'string'
+ *                             columns.  It represents an unsigned long integer
+ *                             data type. The string can only be interpreted as
+ *                             an unsigned long data type with minimum value of
+ *                             zero, and maximum value of 18446744073709551615.
  *                                     <li> 'decimal': Valid only for 'string'
  *                             columns.  It represents a SQL type NUMERIC(19,
  *                             4) data type.  There can be up to 15 digits
@@ -7628,6 +7633,11 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                          mount point.) Each name specified must the name of
  *                          an existing KiFS directory.  The default value is
  *                          ''.
+ *                                  <li> 'run_tag': A string that, if not
+ *                          empty, can be used in subsequent calls to
+ *                          {@linkcode GPUdb#show_proc_status} or
+ *                          {@linkcode GPUdb#kill_proc} to identify the proc
+ *                          instance.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -10133,6 +10143,9 @@ GPUdb.prototype.grant_permission_system_request = function(request, callback) {
  *                             <ul>
  *                                     <li> 'system_admin': Full access to all
  *                             data and system functions.
+ *                                     <li> 'system_user_admin': Access to
+ *                             administer users and roles that do not have
+ *                             system_admin permission.
  *                                     <li> 'system_write': Read and write
  *                             access to all tables.
  *                                     <li> 'system_read': Read-only access to
@@ -10960,6 +10973,12 @@ GPUdb.prototype.kill_proc_request = function(request, callback) {
  *                         completed, this does nothing. If not specified, all
  *                         running proc instances will be killed.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'run_tag': Kill only proc instances
+ *                          where a matching run tag was provided to
+ *                          {@linkcode GPUdb#execute_proc}.  The default
+ *                          value is ''.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
@@ -11197,6 +11216,11 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               <code>sample_points</code> to find the most
  *                               probable path between origin and destination
  *                               pairs with cost constraints
+ *                                       <li> 'match_supply_demand': Matches
+ *                               <code>sample_points</code> to optimize
+ *                               scheduling multiple supplies (trucks) with
+ *                               varying sizes to varying demand sites with
+ *                               varying capacities per depot
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -11274,6 +11298,19 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          solver. The default behavior for the endpoint is to
  *                          use time to determine the destination point.  The
  *                          default value is 'POINT NULL'.
+ *                                  <li> 'partial_loading': For the
+ *                          <code>match_supply_demand</code> solver only. When
+ *                          false (non-default), trucks do not off-load at the
+ *                          demand (store) side if the remainder is less than
+ *                          the store's need
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Partial off loading at
+ *                          multiple store (demand) locations
+ *                                  <li> 'false': No partial off loading
+ *                          allowed if supply is less than the store's demand.
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -11783,6 +11820,9 @@ GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
  *                             <ul>
  *                                     <li> 'system_admin': Full access to all
  *                             data and system functions.
+ *                                     <li> 'system_user_admin': Access to
+ *                             administer users and roles that do not have
+ *                             system_admin permission.
  *                                     <li> 'system_write': Read and write
  *                             access to all tables.
  *                                     <li> 'system_read': Read-only access to
@@ -12004,6 +12044,53 @@ GPUdb.prototype.show_graph = function(graph_name, options, callback) {
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.show_graph_grammar_request = function(request, callback) {
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/graph/grammar", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/graph/grammar", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ * @private
+ */
+GPUdb.prototype.show_graph_grammar = function(options, callback) {
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/graph/grammar", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/graph/grammar", actual_request);
+        return data;
+    }
+};
+
+/**
  * Shows information about a proc.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -12120,6 +12207,10 @@ GPUdb.prototype.show_proc_status_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'run_tag': Limit statuses to proc
+ *                          instances where a matching run tag was provided to
+ *                          {@linkcode GPUdb#execute_proc}.  The default
+ *                          value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
