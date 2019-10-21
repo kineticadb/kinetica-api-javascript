@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.7.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.8.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -4036,6 +4036,16 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               <li> 'chunk_size': Sets the
  *                                       chunk size of all new sets to the
  *                                       specified integer value.
+ *                                               <li> 'evict_columns': Attempts
+ *                                       to evict columns from memory to the
+ *                                       persistent store.  Value string is a
+ *                                       semicolon separated list of entries,
+ *                                       each entry being a table name
+ *                                       optionally followed by a comma and a
+ *                                       comma separated list of column names
+ *                                       to attempt to evict.  An empty value
+ *                                       string will attempt to evict all
+ *                                       tables and columns.
  *                                               <li> 'execution_mode': Sets
  *                                       the execution_mode for kernel
  *                                       executions to the specified string
@@ -5050,9 +5060,9 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'truncate_strings': If set to
- *                          {true}@{, it allows appending longer strings to
- *                          smaller charN string columns by truncating the
- *                          longer string to fit.  The default value is false.
+ *                          <code>true</code>, it allows inserting longer
+ *                          strings into smaller charN string columns by
+ *                          truncating the longer strings to fit.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5658,11 +5668,14 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'sync_db': If set to
- *                          <code>true</code>, the graph will be updated if its
- *                          source table(s) is updated. If set to
- *                          <code>false</code>, the graph will not be updated
- *                          if the source table(s) is updated.
+ *                                  <li> 'sync_db': If set to <code>true</code>
+ *                          and <code>save_persist</code> is set to
+ *                          <code>true</code>, the graph will be fully
+ *                          reconstructed upon a database restart and be
+ *                          updated to align with any source table(s) updates
+ *                          made since the creation of the graph. If dynamic
+ *                          graph updates upon table inserts are desired, use
+ *                          <code>add_table_monitor</code> instead.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5671,7 +5684,13 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'add_table_monitor': Adds a table
  *                          monitor to every table used in the creation of the
- *                          graph. For more details on table monitors, see
+ *                          graph; this table monitor will trigger the graph to
+ *                          update dynamically upon inserts to the source
+ *                          table(s). Note that upon database restart, if
+ *                          <code>save_persist</code> is also set to
+ *                          <code>true</code>, the graph will be fully
+ *                          reconstructed and the table monitors will be
+ *                          reattached. For more details on table monitors, see
  *                          {@linkcode GPUdb#create_table_monitor}.
  *                          Supported values:
  *                          <ul>
@@ -11849,9 +11868,9 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'truncate_strings': If set to
- *                          {true}@{, any strings which are too long for their
- *                          charN string fields will be truncated to fit.  The
- *                          default value is false.
+ *                          <code>true</code>, any strings which are too long
+ *                          for their target charN string columns will be
+ *                          truncated to fit.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -12310,15 +12329,20 @@ GPUdb.prototype.kill_proc_request = function(request, callback) {
 /**
  * Kills a running proc instance.
  *
- * @param {String} run_id  The run ID of the running proc instance. If the run
- *                         ID is not found or the proc instance has already
- *                         completed, this does nothing. If not specified, all
- *                         running proc instances will be killed.
+ * @param {String} run_id  The run ID of a running proc instance. If a proc
+ *                         with a matching run ID is not found or the proc
+ *                         instance has already completed, no procs will be
+ *                         killed. If not specified, all running proc instances
+ *                         will be killed.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> 'run_tag': Kill only proc instances
- *                          where a matching run tag was provided to
- *                          {@linkcode GPUdb#execute_proc}.  The default
+ *                                  <li> 'run_tag': If <code>run_id</code> is
+ *                          specified, kill the proc instance that has a
+ *                          matching run ID and a matching run tag that was
+ *                          provided to {@linkcode GPUdb#execute_proc}. If
+ *                          <code>run_id</code> is not specified, kill the proc
+ *                          instance(s) where a matching run tag was provided
+ *                          to {@linkcode GPUdb#execute_proc}.  The default
  *                          value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -13030,27 +13054,28 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  href="../../graph_solver/network_graph_solver.html#using-labels"
  *                                  target="_top">Using Labels</a> for more
  *                                  information.
- * @param {Number} rings  Only applicable when querying nodes. Sets the number
- *                        of rings around the node to query for adjacency, with
- *                        '1' being the edges directly attached to the queried
- *                        node. Also known as number of hops. For example, if
- *                        it is set to '2', the edge(s) directly attached to
- *                        the queried node(s) will be returned; in addition,
- *                        the edge(s) attached to the node(s) attached to the
- *                        initial ring of edge(s) surrounding the queried
- *                        node(s) will be returned. This setting can be '0' in
- *                        which case if the node type id label, it'll then
- *                        query for all that has the same property.
+ * @param {Number} rings  Sets the number of rings around the node to query for
+ *                        adjacency, with '1' being the edges directly attached
+ *                        to the queried node. Also known as number of hops.
+ *                        For example, if it is set to '2', the edge(s)
+ *                        directly attached to the queried node(s) will be
+ *                        returned; in addition, the edge(s) attached to the
+ *                        node(s) attached to the initial ring of edge(s)
+ *                        surrounding the queried node(s) will be returned. If
+ *                        the value is set to '0', any nodes that meet the
+ *                        criteria in <code>queries</code> and
+ *                        <code>restrictions</code> will be returned. This
+ *                        parameter is only applicable when querying nodes.
  * @param {Object} options  Additional parameters
  *                          <ul>
- *                                  <li> 'force_undirected': This parameter is
+ *                                  <li> 'force_undirected': If set to
+ *                          <code>true</code>, all inbound edges and outbound
+ *                          edges relative to the node will be returned. If set
+ *                          to <code>false</code>, only outbound edges relative
+ *                          to the node will be returned. This parameter is
  *                          only applicable if the queried graph
  *                          <code>graph_name</code> is directed and when
- *                          querying nodes. If set to <code>true</code>, all
- *                          inbound edges and outbound edges relative to the
- *                          node will be returned. If set to
- *                          <code>false</code>, only outbound edges relative to
- *                          the node will be returned.
+ *                          querying nodes.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -13065,8 +13090,10 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          an empty dict ( {} ).
  *                                  <li> 'target_nodes_table': Name of the
  *                          table to store the list of the final nodes reached
- *                          during the traversal. If this value is not given
- *                          it'll default to adjacemcy_table+'_nodes'.  The
+ *                          during the traversal. If this value is left as the
+ *                          default, the table name will default to the
+ *                          <code>adjacency_table</code> value plus a '_nodes'
+ *                          suffix, e.g., '<adjacency_table_name>_nodes'.  The
  *                          default value is ''.
  *                                  <li> 'restriction_threshold_value':
  *                          Value-based restriction comparison. Any node or
@@ -13078,9 +13105,10 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          results in the response. If set to
  *                          <code>true</code>, the
  *                          <code>adjacency_list_int_array</code> (if the query
- *                          was based on IDs), @{adjacency_list_string_array}
- *                          (if the query was based on names), or
- *                          @{output_adjacency_list_wkt_array} (if the query
+ *                          was based on IDs),
+ *                          <code>adjacency_list_string_array</code> (if the
+ *                          query was based on names), or
+ *                          <code>adjacency_list_wkt_array</code> (if the query
  *                          was based on WKTs) will be populated with the
  *                          results. If set to <code>false</code>, none of the
  *                          arrays will be populated.
@@ -13474,7 +13502,7 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
 
 /**
  * Shows information and characteristics of graphs that exist on the graph
- * server, depending on the options specified.
+ * server.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -13508,16 +13536,16 @@ GPUdb.prototype.show_graph_request = function(request, callback) {
 
 /**
  * Shows information and characteristics of graphs that exist on the graph
- * server, depending on the options specified.
+ * server.
  *
  * @param {String} graph_name  Name of the graph on which to retrieve
- *                             information. If empty, information about all
- *                             graphs is returned.
+ *                             information. If left as the default value,
+ *                             information about all graphs is returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'show_original_request': If set to
  *                          <code>true</code>, the request that was originally
- *                          used.
+ *                          used to create the graph is also returned as JSON.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -13739,11 +13767,11 @@ GPUdb.prototype.show_proc_status_request = function(request, callback) {
  * data segment ID (each invocation of the proc command on a data segment is
  * assigned a data segment ID).
  *
- * @param {String} run_id  The run ID of a specific running or completed proc
- *                         instance for which the status will be returned. If
- *                         the run ID is not found, nothing will be returned.
- *                         If not specified, the statuses of all running and
- *                         completed proc instances will be returned.
+ * @param {String} run_id  The run ID of a specific proc instance for which the
+ *                         status will be returned. If a proc with a matching
+ *                         run ID is not found, the response will be empty. If
+ *                         not specified, the statuses of all executed proc
+ *                         instances will be returned.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'clear_complete': If set to
@@ -13757,8 +13785,14 @@ GPUdb.prototype.show_proc_status_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'run_tag': Limit statuses to proc
- *                          instances where a matching run tag was provided to
+ *                                  <li> 'run_tag': If <code>run_id</code> is
+ *                          specified, return the status for a proc instance
+ *                          that has a matching run ID and a matching run tag
+ *                          that was provided to
+ *                          {@linkcode GPUdb#execute_proc}. If
+ *                          <code>run_id</code> is not specified, return
+ *                          statuses for all proc instances where a matching
+ *                          run tag was provided to
  *                          {@linkcode GPUdb#execute_proc}.  The default
  *                          value is ''.
  *                          </ul>
@@ -15190,6 +15224,16 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'truncate_strings': If set to
+ *                          {true}@{, any strings which are too long for their
+ *                          charN string fields will be truncated to fit.  The
+ *                          default value is false.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'use_expressions_in_new_values_maps':
  *                          When set to <code>true</code>, all new values in
  *                          <code>new_values_maps</code> are considered as
@@ -15832,7 +15876,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
         bg_color: request.bg_color,
         style_options: request.style_options,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+        options: (request.options !== undefined && request.options !== null) ? request.options : {},
+        cb_transparency_vec: request.cb_transparency_vec
     };
 
     this.submit_request("/visualize/image/classbreak", actual_request, callback);
@@ -15986,18 +16031,19 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                The default value is 'circle'.
  *                                </ul>
  * @param {Object} options
+ * @param {Number[]} cb_transparency_vec
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  * @private
  */
-GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
+GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, function(err, response) {
+            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -16031,7 +16077,8 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
         projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
         bg_color: bg_color,
         style_options: style_options,
-        options: (options !== undefined && options !== null) ? options : {}
+        options: (options !== undefined && options !== null) ? options : {},
+        cb_transparency_vec: cb_transparency_vec
     };
 
     this.submit_request("/visualize/image/classbreak", actual_request, callback);
