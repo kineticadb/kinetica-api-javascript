@@ -1,6 +1,6 @@
 {
   "name": "GPUdb",
-  "version": "7.0.8.0",
+  "version": "7.0.10.0",
   "description": "GPUdb API",
   "main": "GPUdb.js",
   "author": "GPUdb Inc."

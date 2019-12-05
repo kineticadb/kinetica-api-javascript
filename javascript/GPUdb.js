@@ -777,7 +777,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.8.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.10.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -2053,8 +2053,8 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
 
 /**
  * Calculates unique combinations (groups) of values for the given columns in a
- * given table/view/collection and computes aggregates on each unique
- * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
+ * given table or view and computes aggregates on each unique combination. This
+ * is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
  * For aggregation details and examples, see <a
  * href="../../concepts/aggregation.html" target="_top">Aggregation</a>.  For
@@ -2128,8 +2128,8 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
     var actual_request = {
         table_name: request.table_name,
         column_names: request.column_names,
-        offset: request.offset,
-        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : 1000,
+        offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
+        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : -9999,
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -2155,8 +2155,8 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
 
 /**
  * Calculates unique combinations (groups) of values for the given columns in a
- * given table/view/collection and computes aggregates on each unique
- * combination. This is somewhat analogous to an SQL-style SELECT...GROUP BY.
+ * given table or view and computes aggregates on each unique combination. This
+ * is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
  * For aggregation details and examples, see <a
  * href="../../concepts/aggregation.html" target="_top">Aggregation</a>.  For
@@ -2218,18 +2218,25 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * upon in other cases.  Not available when any of the values of
  * <code>column_names</code> is an unrestricted-length string.
  *
- * @param {String} table_name  Name of the table on which the operation will be
- *                             performed. Must be an existing
- *                             table/view/collection.
+ * @param {String} table_name  Name of an existing table or view on which the
+ *                             operation will be performed.
  * @param {String[]} column_names  List of one or more column names,
  *                                 expressions, and aggregate expressions.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
  *                         through the results).
  * @param {Number} limit  A positive integer indicating the maximum number of
- *                        results to be returned Or END_OF_SET (-9999) to
+ *                        results to be returned, or END_OF_SET (-9999) to
  *                        indicate that the max number of results should be
- *                        returned.
+ *                        returned.  The number of records returned will never
+ *                        exceed the server's own limit, defined by the <a
+ *                        href="../../config/index.html#general"
+ *                        target="_top">max_get_records_size</a> parameter in
+ *                        the server configuration.  Use
+ *                        <code>has_more_records</code> to see if more records
+ *                        exist in the result to be fetched, and
+ *                        <code>offset</code> & <code>limit</code> to request
+ *                        subsequent pages of results.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
@@ -2237,9 +2244,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          in <code>result_table</code>. If the collection
  *                          provided is non-existent, the collection will be
  *                          automatically created. If empty, then the table
- *                          will be a top-level table.  Additionally this
- *                          option is invalid if <code>table_name</code> is a
- *                          collection.
+ *                          will be a top-level table.
  *                                  <li> 'expression': Filter expression to
  *                          apply to the table prior to computing the aggregate
  *                          group by.
@@ -2310,9 +2315,9 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'result_table_generate_pk': If 'true'
- *                          then set a primary key for the result table. Must
- *                          be used in combination with the
+ *                                  <li> 'result_table_generate_pk': If
+ *                          <code>true</code> then set a primary key for the
+ *                          result table. Must be used in combination with the
  *                          <code>result_table</code> option.
  *                          Supported values:
  *                          <ul>
@@ -2324,16 +2329,17 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
  *                          <code>result_table</code>.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for the result table. Must be used in
- *                          combination with the <code>result_table</code>
- *                          option.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for the result table.
+ *                          Must be used in combination with the
+ *                          <code>result_table</code> option.
  *                                  <li> 'create_indexes': Comma-separated list
  *                          of columns on which to create indexes on the result
  *                          table. Must be used in combination with the
  *                          <code>result_table</code> option.
- *                                  <li> 'view_id': view this result table is
- *                          part of.  The default value is ''.
+ *                                  <li> 'view_id': ID of view of which the
+ *                          result table will be a member.  The default value
+ *                          is ''.
  *                                  <li> 'materialize_on_gpu': If
  *                          <code>true</code> then the columns of the groupby
  *                          result table will be cached on the GPU. Must be
@@ -2371,8 +2377,8 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
     var actual_request = {
         table_name: table_name,
         column_names: column_names,
-        offset: offset,
-        limit: (limit !== undefined && limit !== null) ? limit : 1000,
+        offset: (offset !== undefined && offset !== null) ? offset : 0,
+        limit: (limit !== undefined && limit !== null) ? limit : -9999,
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -3045,7 +3051,7 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
 
 /**
  * Returns all the unique values from a particular column (specified by
- * <code>column_name</code>) of a particular table or collection (specified by
+ * <code>column_name</code>) of a particular table or view (specified by
  * <code>table_name</code>). If <code>column_name</code> is a numeric column
  * the values will be in <code>binary_encoded_response</code>. Otherwise if
  * <code>column_name</code> is a string column the values will be in
@@ -3075,8 +3081,8 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * result table will be sharded, in all other cases it will be replicated.
  * Sorting will properly function only if the result table is replicated or if
  * there is only one processing node and should not be relied upon in other
- * cases.  Not available if <code>table_name</code> is a collection or when the
- * value of <code>column_name</code> is an unrestricted-length string.
+ * cases.  Not available if the value of <code>column_name</code> is an
+ * unrestricted-length string.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -3090,8 +3096,8 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
     var actual_request = {
         table_name: request.table_name,
         column_name: request.column_name,
-        offset: request.offset,
-        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : 10000,
+        offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
+        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : -9999,
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -3117,7 +3123,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
 
 /**
  * Returns all the unique values from a particular column (specified by
- * <code>column_name</code>) of a particular table or collection (specified by
+ * <code>column_name</code>) of a particular table or view (specified by
  * <code>table_name</code>). If <code>column_name</code> is a numeric column
  * the values will be in <code>binary_encoded_response</code>. Otherwise if
  * <code>column_name</code> is a string column the values will be in
@@ -3147,11 +3153,11 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * result table will be sharded, in all other cases it will be replicated.
  * Sorting will properly function only if the result table is replicated or if
  * there is only one processing node and should not be relied upon in other
- * cases.  Not available if <code>table_name</code> is a collection or when the
- * value of <code>column_name</code> is an unrestricted-length string.
+ * cases.  Not available if the value of <code>column_name</code> is an
+ * unrestricted-length string.
  *
- * @param {String} table_name  Name of an existing table/collection on which
- *                             the operation will be performed.
+ * @param {String} table_name  Name of an existing table or view on which the
+ *                             operation will be performed.
  * @param {String} column_name  Name of the column or an expression containing
  *                              one or more column names on which the unique
  *                              function would be applied.
@@ -3161,7 +3167,15 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * @param {Number} limit  A positive integer indicating the maximum number of
  *                        results to be returned. Or END_OF_SET (-9999) to
  *                        indicate that the max number of results should be
- *                        returned.
+ *                        returned.  The number of records returned will never
+ *                        exceed the server's own limit, defined by the <a
+ *                        href="../../config/index.html#general"
+ *                        target="_top">max_get_records_size</a> parameter in
+ *                        the server configuration.  Use
+ *                        <code>has_more_records</code> to see if more records
+ *                        exist in the result to be fetched, and
+ *                        <code>offset</code> & <code>limit</code> to request
+ *                        subsequent pages of results.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'collection_name': Name of a
@@ -3169,9 +3183,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          in <code>result_table</code>. If the collection
  *                          provided is non-existent, the collection will be
  *                          automatically created. If empty, then the table
- *                          will be a top-level table.  Additionally this
- *                          option is invalid if <code>table_name</code> is a
- *                          collection.
+ *                          will be a top-level table.
  *                                  <li> 'expression': Optional filter
  *                          expression to apply to the table.
  *                                  <li> 'sort_order': String indicating how
@@ -3188,7 +3200,6 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          restrictions as <a
  *                          href="../../concepts/tables.html"
  *                          target="_top">tables</a>.  Not available if
- *                          <code>table_name</code> is a collection or when
  *                          <code>column_name</code> is an unrestricted-length
  *                          string.
  *                                  <li> 'result_table_persist': If
@@ -3214,9 +3225,9 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'result_table_generate_pk': If 'true'
- *                          then set a primary key for the result table. Must
- *                          be used in combination with the
+ *                                  <li> 'result_table_generate_pk': If
+ *                          <code>true</code> then set a primary key for the
+ *                          result table. Must be used in combination with the
  *                          <code>result_table</code> option.
  *                          Supported values:
  *                          <ul>
@@ -3228,12 +3239,13 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
  *                          <code>result_table</code>.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for the result table. Must be used in
- *                          combination with the <code>result_table</code>
- *                          option.
- *                                  <li> 'view_id': view this result table is
- *                          part of.  The default value is ''.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for the result table.
+ *                          Must be used in combination with the
+ *                          <code>result_table</code> option.
+ *                                  <li> 'view_id': ID of view of which the
+ *                          result table will be a member.  The default value
+ *                          is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -3245,8 +3257,8 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
     var actual_request = {
         table_name: table_name,
         column_name: column_name,
-        offset: offset,
-        limit: (limit !== undefined && limit !== null) ? limit : 10000,
+        offset: (offset !== undefined && offset !== null) ? offset : 0,
+        limit: (limit !== undefined && limit !== null) ? limit : -9999,
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -3393,10 +3405,10 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          input table.  If any alias is given for any column
  *                          name, the alias must be used, rather than the
  *                          original column name.  The default value is ''.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for the result table. Must be used in
- *                          combination with the <code>result_table</code>
- *                          option.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for the result table.
+ *                          Must be used in combination with the
+ *                          <code>result_table</code> option.
  *                                  <li> 'limit': The number of records to
  *                          keep.  The default value is ''.
  *                                  <li> 'ttl': Sets the <a
@@ -3718,8 +3730,8 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       also be limted by resource group
  *                                       limits and/or system load.
  *                                               <li> 'chunk_size': Sets the
- *                                       chunk size of all new sets to the
- *                                       specified integer value.
+ *                                       number of records per chunk to be used
+ *                                       for all new tables.
  *                                               <li> 'evict_columns': Attempts
  *                                       to evict columns from memory to the
  *                                       persistent store.  Value string is a
@@ -3751,14 +3763,14 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       Invoke the communicator test and
  *                                       report timing results. Value string is
  *                                       is a semicolon separated list of
- *                                       <key>=<value> expressions.
+ *                                       [key]=[value] expressions.
  *                                       Expressions are:
- *                                       num_transactions=<num> where num is
+ *                                       num_transactions=[num] where num is
  *                                       the number of request reply
  *                                       transactions to invoke per test;
- *                                       message_size=<bytes> where bytes is
- *                                       the size of the messages to send in
- *                                       bytes; check_values=<enabled> where if
+ *                                       message_size=[bytes] where bytes is
+ *                                       the size in bytes of the messages to
+ *                                       send; check_values=[enabled] where if
  *                                       enabled is true the value of the
  *                                       messages received are verified.
  *                                               <li>
@@ -3780,14 +3792,14 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       the network speed test and report
  *                                       timing results. Value string is a
  *                                       semicolon-separated list of
- *                                       <key>=<value> expressions.  Valid
- *                                       expressions are: seconds=<time> where
+ *                                       [key]=[value] expressions.  Valid
+ *                                       expressions are: seconds=[time] where
  *                                       time is the time in seconds to run the
- *                                       test; data_size=<size> where size is
+ *                                       test; data_size=[bytes] where bytes is
  *                                       the size in bytes of the block to be
- *                                       transferred; threads=<number of
- *                                       threads>; to_ranks=<space-separated
- *                                       list of ranks> where the list of ranks
+ *                                       transferred; threads=[number of
+ *                                       threads]; to_ranks=[space-separated
+ *                                       list of ranks] where the list of ranks
  *                                       is the ranks that rank 0 will send
  *                                       data to and get data from. If to_ranks
  *                                       is unspecified then all worker ranks
@@ -3813,13 +3825,14 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       disable auditing of request bodies.
  *                                               <li> 'audit_data': Enable or
  *                                       disable auditing of request data.
- *                                               <li> 'chunk_cache_enabled':
- *                                       Enable chunk level query caching.
- *                                       Flushes the chunk cache when value is
- *                                       false
- *                                               <li> 'chunk_cache_size': Size
- *                                       of the chunk cache in bytes.  The
- *                                       default value is '10000000'.
+ *                                               <li> 'shadow_agg_size': Size
+ *                                       of the shadow aggregate chunk cache in
+ *                                       bytes.  The default value is
+ *                                       '10000000'.
+ *                                               <li> 'shadow_filter_size':
+ *                                       Size of the shdow filter chunk cache
+ *                                       in bytes.  The default value is
+ *                                       '10000000'.
  *                                               <li>
  *                                       'synchronous_compression': compress
  *                                       vector on set_compression (instead of
@@ -4218,6 +4231,13 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          target="_top">tier strategy examples</a> for
  *                          examples.  This option will be ignored if
  *                          <code>value</code> is also specified.
+ *                                  <li> 'index_type': Type of index to create.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'column': Standard column index.
+ *                                  <li> 'chunk_skip': Chunk skip index.
+ *                          </ul>
+ *                          The default value is 'column'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -4980,8 +5000,14 @@ GPUdb.prototype.collect_statistics = function(table_name, column_names, options,
 
 /**
  * Creates a new graph network using given nodes, edges, weights, and
- * restrictions. See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solvers</a> for more information.
+ * restrictions.
+
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a href="../../graph_solver/examples.html"
+ * target="_top">graph examples</a> before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5012,14 +5038,22 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
 
 /**
  * Creates a new graph network using given nodes, edges, weights, and
- * restrictions. See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solvers</a> for more information.
+ * restrictions.
+
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a href="../../graph_solver/examples.html"
+ * target="_top">graph examples</a> before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to generate.
  * @param {Boolean} directed_graph  If set to <code>true</code>, the graph will
- *                                  be directed (0 to 1, 1 to 2, etc.). If set
- *                                  to <code>false</code>, the graph will not
- *                                  be directed.
+ *                                  be directed. If set to <code>false</code>,
+ *                                  the graph will not be directed. Consult <a
+ *                                  href="../../graph_solver/network_graph_solver.html#directed-graphs"
+ *                                  target="_top">Directed Graphs</a> for more
+ *                                  details.
  *                                  Supported values:
  *                                  <ul>
  *                                          <li> true
@@ -5118,6 +5152,16 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          <code>true</code> and the graph (using
  *                          <code>graph_name</code>) already exists, the graph
  *                          is deleted and recreated.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'modify': If set to <code>true</code>
+ *                          and <code>true</code> and if the graph (using
+ *                          <code>graph_name</code>) already exists, the graph
+ *                          is updated with these components.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5407,9 +5451,9 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          the join table for logging and for show_table.
  *                          optimization needed for large overlapped equi-join
  *                          stencils.  The default value is 'false'.
- *                                  <li> 'chunk_size': Maximum size of a
- *                          joined-chunk for this table. Defaults to the
- *                          gpudb.conf file chunk size
+ *                                  <li> 'chunk_size': Maximum number of
+ *                          records per joined-chunk for this table. Defaults
+ *                          to the gpudb.conf file chunk size
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5687,6 +5731,15 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
  * will be sharded according to the specified columns, regardless of how the
  * source table is sharded.  The source table can even be unsharded or
  * replicated.
+ * <p>
+ * If <code>table_name</code> is empty, selection is performed against a
+ * single-row virtual table.  This can be useful in executing temporal (<a
+ * href="../../concepts/expressions.html#date-time-functions"
+ * target="_top">NOW()</a>), identity (<a
+ * href="../../concepts/expressions.html#user-security-functions"
+ * target="_top">USER()</a>), or constant-based functions (<a
+ * href="../../concepts/expressions.html#scalar-functions"
+ * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5733,9 +5786,21 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * will be sharded according to the specified columns, regardless of how the
  * source table is sharded.  The source table can even be unsharded or
  * replicated.
+ * <p>
+ * If <code>table_name</code> is empty, selection is performed against a
+ * single-row virtual table.  This can be useful in executing temporal (<a
+ * href="../../concepts/expressions.html#date-time-functions"
+ * target="_top">NOW()</a>), identity (<a
+ * href="../../concepts/expressions.html#user-security-functions"
+ * target="_top">USER()</a>), or constant-based functions (<a
+ * href="../../concepts/expressions.html#scalar-functions"
+ * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  *
  * @param {String} table_name  Name of the existing table on which the
- *                             projection is to be applied.
+ *                             projection is to be applied.  An empty table
+ *                             name creates a projection from a single-row
+ *                             virtual table, where columns specified should be
+ *                             constants or constant expressions.
  * @param {String} projection_name  Name of the projection to be created. Has
  *                                  the same naming restrictions as <a
  *                                  href="../../concepts/tables.html"
@@ -5787,14 +5852,14 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for this table.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for this projection.
  *                                  <li> 'create_indexes': Comma-separated list
- *                          of columns on which to create indexes on the output
- *                          table.  The columns specified must be present in
- *                          <code>column_names</code>.  If any alias is given
- *                          for any column name, the alias must be used, rather
- *                          than the original column name.
+ *                          of columns on which to create indexes on the
+ *                          projection.  The columns specified must be present
+ *                          in <code>column_names</code>.  If any alias is
+ *                          given for any column name, the alias must be used,
+ *                          rather than the original column name.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the projection specified
@@ -5823,15 +5888,24 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'preserve_dict_encoding': If
  *                          <code>true</code>, then columns that were dict
  *                          encoded in the source table will be dict encoded in
- *                          the projection table.
+ *                          the projection.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
- *                                  <li> 'view_id': view this projection is
- *                          part of.  The default value is ''.
+ *                                  <li> 'retain_partitions': Determines
+ *                          whether the created projection will retain the
+ *                          partitioning scheme from the source table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'view_id': ID of view of which this
+ *                          projection is a member.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6185,6 +6259,9 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'LIST': Use <a
  *                          href="../../concepts/tables.html#partitioning-by-list"
  *                          target="_top">list partitioning</a>.
+ *                                  <li> 'HASH': Use <a
+ *                          href="../../concepts/tables.html#partitioning-by-hash"
+ *                          target="_top">hash partitioning</a>.
  *                          </ul>
  *                                  <li> 'partition_keys': Comma-separated list
  *                          of partition keys, which are the columns or column
@@ -6198,9 +6275,11 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          href="../../concepts/tables.html#partitioning-by-range"
  *                          target="_top">range partitioning</a>, <a
  *                          href="../../concepts/tables.html#partitioning-by-interval"
- *                          target="_top">interval partitioning</a>, or <a
+ *                          target="_top">interval partitioning</a>, <a
  *                          href="../../concepts/tables.html#partitioning-by-list"
- *                          target="_top">list partitioning</a> for example
+ *                          target="_top">list partitioning</a>, or <a
+ *                          href="../../concepts/tables.html#partitioning-by-hash"
+ *                          target="_top">hash partitioning</a> for example
  *                          formats.
  *                                  <li> 'is_automatic_partition': If true, a
  *                          new partition will be created for values which
@@ -6218,8 +6297,8 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          href="../../concepts/ttl.html"
  *                          target="_top">TTL</a> of the table specified in
  *                          <code>table_name</code>.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for this table.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for this table.
  *                                  <li> 'is_result_table': For a table,
  *                          indicates whether the table is an in-memory table.
  *                          A result table cannot contain store_only,
@@ -6998,22 +7077,22 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          expression 'x = 20 OR x <= 10'.
  *                          </ul>
  *                          The default value is 'union_all'.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for this table.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for this output table.
  *                                  <li> 'create_indexes': Comma-separated list
  *                          of columns on which to create indexes on the output
  *                          table.  The columns specified must be present in
  *                          <code>output_column_names</code>.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the table specified in
- *                          <code>table_name</code>.
+ *                          target="_top">TTL</a> of the output table specified
+ *                          in <code>table_name</code>.
  *                                  <li> 'persist': If <code>true</code>, then
- *                          the table specified in <code>table_name</code> will
- *                          be persisted and will not expire unless a
- *                          <code>ttl</code> is specified.   If
- *                          <code>false</code>, then the table will be an
- *                          in-memory table and will expire unless a
+ *                          the output table specified in
+ *                          <code>table_name</code> will be persisted and will
+ *                          not expire unless a <code>ttl</code> is specified.
+ *                          If <code>false</code>, then the output table will
+ *                          be an in-memory table and will expire unless a
  *                          <code>ttl</code> is specified otherwise.
  *                          Supported values:
  *                          <ul>
@@ -7021,12 +7100,12 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'view_id': view the output table will
- *                          be a part of.  The default value is ''.
+ *                                  <li> 'view_id': ID of view of which this
+ *                          output table is a member.  The default value is ''.
  *                                  <li> 'force_replicated': If
- *                          <code>true</code>, then the table specified in
- *                          <code>table_name</code> will be replicated even if
- *                          the source tables are not.
+ *                          <code>true</code>, then the output table specified
+ *                          in <code>table_name</code> will be replicated even
+ *                          if the source tables are not.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -7697,8 +7776,8 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
 GPUdb.prototype.execute_sql_request = function(request, callback) {
     var actual_request = {
         statement: request.statement,
-        offset: request.offset,
-        limit: request.limit,
+        offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
+        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : -9999,
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         request_schema_str: (request.request_schema_str !== undefined && request.request_schema_str !== null) ? request.request_schema_str : "",
         data: (request.data !== undefined && request.data !== null) ? request.data : [],
@@ -7732,10 +7811,18 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                         results to skip (this can be useful for paging
  *                         through the results).
  * @param {Number} limit  A positive integer indicating the maximum number of
- *                        results to be returned (if not provided the default
- *                        is 10000), or END_OF_SET (-9999) to indicate that the
- *                        maximum number of results allowed by the server
- *                        should be returned.
+ *                        results to be returned, or END_OF_SET (-9999) to
+ *                        indicate that the maximum number of results allowed
+ *                        by the server should be returned.  The number of
+ *                        records returned will never exceed the server's own
+ *                        limit, defined by the <a
+ *                        href="../../config/index.html#general"
+ *                        target="_top">max_get_records_size</a> parameter in
+ *                        the server configuration.  Use
+ *                        <code>has_more_records</code> to see if more records
+ *                        exist in the result to be fetched, and
+ *                        <code>offset</code> & <code>limit</code> to request
+ *                        subsequent pages of results.
  * @param {String} request_schema_str  Avro schema of <code>data</code>.
  * @param {String[]} data  An array of binary-encoded data for the records to
  *                         be binded to the SQL query.
@@ -7897,8 +7984,8 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
 GPUdb.prototype.execute_sql = function(statement, offset, limit, request_schema_str, data, options, callback) {
     var actual_request = {
         statement: statement,
-        offset: offset,
-        limit: limit,
+        offset: (offset !== undefined && offset !== null) ? offset : 0,
+        limit: (limit !== undefined && limit !== null) ? limit : -9999,
         encoding: "json",
         request_schema_str: (request_schema_str !== undefined && request_schema_str !== null) ? request_schema_str : "",
         data: (data !== undefined && data !== null) ? data : [],
@@ -9496,7 +9583,7 @@ GPUdb.prototype.get_records_request = function(request, callback) {
     var actual_request = {
         table_name: request.table_name,
         offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
-        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : 10000,
+        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : -9999,
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -9541,7 +9628,15 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  * @param {Number} limit  A positive integer indicating the maximum number of
  *                        results to be returned. Or END_OF_SET (-9999) to
  *                        indicate that the max number of results should be
- *                        returned.
+ *                        returned.  The number of records returned will never
+ *                        exceed the server's own limit, defined by the <a
+ *                        href="../../config/index.html#general"
+ *                        target="_top">max_get_records_size</a> parameter in
+ *                        the server configuration.  Use
+ *                        <code>has_more_records</code> to see if more records
+ *                        exist in the result to be fetched, and
+ *                        <code>offset</code> & <code>limit</code> to request
+ *                        subsequent pages of results.
  * @param {Object} options
  *                          <ul>
  *                                  <li> 'expression': Optional filter
@@ -9583,7 +9678,7 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
     var actual_request = {
         table_name: table_name,
         offset: (offset !== undefined && offset !== null) ? offset : 0,
-        limit: (limit !== undefined && limit !== null) ? limit : 10000,
+        limit: (limit !== undefined && limit !== null) ? limit : -9999,
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -9623,6 +9718,15 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * calls based on the type of the update, e.g., the contiguity across pages
  * cannot be relied upon.
  * <p>
+ * If <code>table_name</code> is empty, selection is performed against a
+ * single-row virtual table.  This can be useful in executing temporal (<a
+ * href="../../concepts/expressions.html#date-time-functions"
+ * target="_top">NOW()</a>), identity (<a
+ * href="../../concepts/expressions.html#user-security-functions"
+ * target="_top">USER()</a>), or constant-based functions (<a
+ * href="../../concepts/expressions.html#scalar-functions"
+ * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
+ * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
@@ -9639,8 +9743,8 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
     var actual_request = {
         table_name: request.table_name,
         column_names: request.column_names,
-        offset: request.offset,
-        limit: request.limit,
+        offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
+        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : -9999,
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -9680,21 +9784,42 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * calls based on the type of the update, e.g., the contiguity across pages
  * cannot be relied upon.
  * <p>
+ * If <code>table_name</code> is empty, selection is performed against a
+ * single-row virtual table.  This can be useful in executing temporal (<a
+ * href="../../concepts/expressions.html#date-time-functions"
+ * target="_top">NOW()</a>), identity (<a
+ * href="../../concepts/expressions.html#user-security-functions"
+ * target="_top">USER()</a>), or constant-based functions (<a
+ * href="../../concepts/expressions.html#scalar-functions"
+ * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
+ * <p>
  * The response is returned as a dynamic schema. For details see: <a
  * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {String} table_name  Name of the table on which this operation will
- *                             be performed. The table cannot be a parent set.
+ *                             be performed.  An empty table name retrieves one
+ *                             record from a single-row virtual table, where
+ *                             columns specified should be constants or
+ *                             constant expressions.  The table cannot be a
+ *                             parent set.
  * @param {String[]} column_names  The list of column values to retrieve.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
  *                         through the results).
  * @param {Number} limit  A positive integer indicating the maximum number of
- *                        results to be returned (if not provided the default
- *                        is 10000), or END_OF_SET (-9999) to indicate that the
- *                        maximum number of results allowed by the server
- *                        should be returned.
+ *                        results to be returned, or END_OF_SET (-9999) to
+ *                        indicate that the maximum number of results allowed
+ *                        by the server should be returned.  The number of
+ *                        records returned will never exceed the server's own
+ *                        limit, defined by the <a
+ *                        href="../../config/index.html#general"
+ *                        target="_top">max_get_records_size</a> parameter in
+ *                        the server configuration.  Use
+ *                        <code>has_more_records</code> to see if more records
+ *                        exist in the result to be fetched, and
+ *                        <code>offset</code> & <code>limit</code> to request
+ *                        subsequent pages of results.
  * @param {Object} options
  *                          <ul>
  *                                  <li> 'expression': Optional filter
@@ -9739,8 +9864,8 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
     var actual_request = {
         table_name: table_name,
         column_names: column_names,
-        offset: offset,
-        limit: limit,
+        offset: (offset !== undefined && offset !== null) ? offset : 0,
+        limit: (limit !== undefined && limit !== null) ? limit : -9999,
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -9906,7 +10031,7 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
     var actual_request = {
         table_name: request.table_name,
         offset: (request.offset !== undefined && request.offset !== null) ? request.offset : 0,
-        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : 10000,
+        limit: (request.limit !== undefined && request.limit !== null) ? request.limit : -9999,
         encoding: (request.encoding !== undefined && request.encoding !== null) ? request.encoding : "json",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -9950,7 +10075,13 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  * @param {Number} limit  A positive integer indicating the maximum number of
  *                        results to be returned, or END_OF_SET (-9999) to
  *                        indicate that the max number of results should be
- *                        returned.
+ *                        returned.  The number of records returned will never
+ *                        exceed the server's own limit, defined by the <a
+ *                        href="../../config/index.html#general"
+ *                        target="_top">max_get_records_size</a> parameter in
+ *                        the server configuration.  Use <code>offset</code> &
+ *                        <code>limit</code> to request subsequent pages of
+ *                        results.
  * @param {Object} options
  *                          <ul>
  *                                  <li> 'return_record_ids': If 'true' then
@@ -9973,7 +10104,7 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
     var actual_request = {
         table_name: table_name,
         offset: (offset !== undefined && offset !== null) ? offset : 0,
-        limit: (limit !== undefined && limit !== null) ? limit : 10000,
+        limit: (limit !== undefined && limit !== null) ? limit : -9999,
         encoding: "json",
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -10583,6 +10714,40 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'return_individual_errors': If set to
+ *                          <code>true</code>, success will always be returned,
+ *                          and any errors found will be included in the info
+ *                          map.  The "bad_record_indices" entry is a
+ *                          comma-separated list of bad records (0-based).  And
+ *                          if so, there will also be an "error_N" entry for
+ *                          each record with an error, where N is the index
+ *                          (0-based).
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'allow_partial_batch': If set to
+ *                          <code>true</code>, all correct records will be
+ *                          inserted and incorrect records will be rejected and
+ *                          reported.  Otherwise, the entire batch will be
+ *                          rejected if any records are incorrect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'dry_run': If set to
+ *                          <code>true</code>, no data will be saved and any
+ *                          errors will be returned.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -11164,8 +11329,14 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
 /**
  * Matches a directed route implied by a given set of latitude/longitude points
  * to an existing underlying road network graph using a given solution type.
- * See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solvers</a> for more information.
+
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a
+ * href="../../graph_solver/examples.html#match-graph"
+ * target="_top">/match/graph examples</a> before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -11195,8 +11366,14 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
 /**
  * Matches a directed route implied by a given set of latitude/longitude points
  * to an existing underlying road network graph using a given solution type.
- * See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solvers</a> for more information.
+
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a
+ * href="../../graph_solver/examples.html#match-graph"
+ * target="_top">/match/graph examples</a> before using this endpoint.
  *
  * @param {String} graph_name  Name of the underlying geospatial graph resource
  *                             to match to using <code>sample_points</code>.
@@ -11245,6 +11422,10 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               scheduling multiple supplies (trucks) with
  *                               varying sizes to varying demand sites with
  *                               varying capacities per depot
+ *                                       <li> 'match_batch_solves': Matches
+ *                               <code>sample_points</code> source and
+ *                               destination pairs for the shortest path solves
+ *                               in batch mode
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -11335,6 +11516,12 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          allowed if supply is less than the store's demand.
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'max_combinations': For the
+ *                          <code>match_supply_demand</code> solver only. This
+ *                          is the cutoff for the number of generated
+ *                          combinations for sequencing the demand locations -
+ *                          can increase this upto 2M.  The default value is
+ *                          '10000'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -11482,9 +11669,9 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
- *                                  <li> 'chunk_size': Indicates the chunk size
- *                          to be used for the merged table specified in
- *                          <code>table_name</code>.
+ *                                  <li> 'chunk_size': Indicates the number of
+ *                          records per chunk to be used for the merged table
+ *                          specified in <code>table_name</code>.
  *                                  <li> 'view_id': view this result table is
  *                          part of.  The default value is ''.
  *                          </ul>
@@ -11532,8 +11719,13 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
  * <code>adjacency_table</code> and set <code>export_query_results</code> to
  * <code>true</code>.
  * <p>
- * See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solver</a> for more information.
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a
+ * href="../../graph_solver/examples.html#query-graph"
+ * target="_top">/query/graph examples</a> before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -11549,7 +11741,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
         queries: request.queries,
         restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
         adjacency_table: (request.adjacency_table !== undefined && request.adjacency_table !== null) ? request.adjacency_table : "",
-        rings: (request.rings !== undefined && request.rings !== null) ? request.rings : "1",
+        rings: (request.rings !== undefined && request.rings !== null) ? request.rings : 1,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -11583,8 +11775,13 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * <code>adjacency_table</code> and set <code>export_query_results</code> to
  * <code>true</code>.
  * <p>
- * See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solver</a> for more information.
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a
+ * href="../../graph_solver/examples.html#query-graph"
+ * target="_top">/query/graph examples</a> before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to query.
  * @param {String[]} queries  Nodes or edges to be queried specified using <a
@@ -11653,7 +11850,9 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          to the node will be returned. This parameter is
  *                          only applicable if the queried graph
  *                          <code>graph_name</code> is directed and when
- *                          querying nodes.
+ *                          querying nodes. Consult <a
+ *                          href="../../graph_solver/network_graph_solver.html#directed-graphs"
+ *                          target="_top">Directed Graphs</a> for more details.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -11735,7 +11934,7 @@ GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjace
         queries: queries,
         restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
         adjacency_table: (adjacency_table !== undefined && adjacency_table !== null) ? adjacency_table : "",
-        rings: (rings !== undefined && rings !== null) ? rings : "1",
+        rings: (rings !== undefined && rings !== null) ? rings : 1,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -12446,6 +12645,70 @@ GPUdb.prototype.show_security = function(names, options, callback) {
 };
 
 /**
+ * Procedures
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.show_sql_proc_request = function(request, callback) {
+    var actual_request = {
+        procedure_name: (request.procedure_name !== undefined && request.procedure_name !== null) ? request.procedure_name : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/sql/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/sql/proc", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Procedures
+ *
+ * @param {String} procedure_name  Name of the procedure for which to retrieve
+ *                                 the information. If blank, then information
+ *                                 about all procedures is returned.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>false</code> will return an error if the
+ *                          provided  does not exist. If <code>true</code> then
+ *                          it will return an empty result.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * 
+ */
+GPUdb.prototype.show_sql_proc = function(procedure_name, options, callback) {
+    var actual_request = {
+        procedure_name: (procedure_name !== undefined && procedure_name !== null) ? procedure_name : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/sql/proc", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/sql/proc", actual_request);
+        return data;
+    }
+};
+
+/**
  * Retrieves the collected column statistics for the specified table.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -13044,9 +13307,15 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
 /**
  * Solves an existing graph for a type of problem (e.g., shortest path, page
  * rank, travelling salesman, etc.) using source nodes, destination nodes, and
- * additional, optional weights and restrictions. See <a
+ * additional, optional weights and restrictions.
+ * <p>
+ * IMPORTANT: It's highly recommended that you review the <a
  * href="../../graph_solver/network_graph_solver.html" target="_top">Network
- * Graph Solvers</a> for more information.
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a
+ * href="../../graph_solver/examples.html#solve-graph"
+ * target="_top">/solve/graph examples</a> before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -13062,10 +13331,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
         weights_on_edges: (request.weights_on_edges !== undefined && request.weights_on_edges !== null) ? request.weights_on_edges : [],
         restrictions: (request.restrictions !== undefined && request.restrictions !== null) ? request.restrictions : [],
         solver_type: (request.solver_type !== undefined && request.solver_type !== null) ? request.solver_type : "SHORTEST_PATH",
-        source_node_id: request.source_node_id,
-        destination_node_ids: (request.destination_node_ids !== undefined && request.destination_node_ids !== null) ? request.destination_node_ids : [],
-        node_type: (request.node_type !== undefined && request.node_type !== null) ? request.node_type : "NODE_ID",
-        source_node: (request.source_node !== undefined && request.source_node !== null) ? request.source_node : "",
+        source_nodes: (request.source_nodes !== undefined && request.source_nodes !== null) ? request.source_nodes : [],
         destination_nodes: (request.destination_nodes !== undefined && request.destination_nodes !== null) ? request.destination_nodes : [],
         solution_table: (request.solution_table !== undefined && request.solution_table !== null) ? request.solution_table : "graph_solutions",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
@@ -13082,9 +13348,15 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
 /**
  * Solves an existing graph for a type of problem (e.g., shortest path, page
  * rank, travelling salesman, etc.) using source nodes, destination nodes, and
- * additional, optional weights and restrictions. See <a
+ * additional, optional weights and restrictions.
+ * <p>
+ * IMPORTANT: It's highly recommended that you review the <a
  * href="../../graph_solver/network_graph_solver.html" target="_top">Network
- * Graph Solvers</a> for more information.
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a
+ * href="../../graph_solver/examples.html#solve-graph"
+ * target="_top">/solve/graph examples</a> before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to solve.
  * @param {String[]} weights_on_edges  Additional weights to apply to the edges
@@ -13171,65 +13443,23 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                              man routing problem.
  *                                      <li> 'BACKHAUL_ROUTING': Solves for
  *                              optimal routes that connect remote asset nodes
- *                              to the fixed (backbone) asset nodes. When
- *                              <code>BACKHAUL_ROUTING</code> is invoked, the
- *                              <code>destination_nodes</code> or
- *                              <code>destination_node_ids</code> array is used
- *                              for both fixed and remote asset nodes and the
- *                              <code>source_node_id</code> represents the
- *                              number of fixed asset nodes contained in
- *                              <code>destination_nodes</code> /
- *                              <code>destination_node_ids</code>.
+ *                              to the fixed (backbone) asset nodes.
+ *                                      <li> 'ALLPATHS': Solves for paths that
+ *                              would give costs between max and min solution
+ *                              radia - Make sure to limit by the
+ *                              'max_solution_targets' option. Min cost shoudl
+ *                              be >= shortest_path cost.
  *                              </ul>
  *                              The default value is 'SHORTEST_PATH'.
- * @param {Number} source_node_id  If <code>node_type</code> is
- *                                 <code>NODE_ID</code>, the node ID (integer)
- *                                 of the source (starting point) for the graph
- *                                 solution. If the <code>solver_type</code> is
- *                                 set to <code>BACKHAUL_ROUTING</code>, this
- *                                 number represents the number of fixed asset
- *                                 nodes contained in
- *                                 <code>destination_nodes</code>, e.g., if
- *                                 <code>source_node_id</code> is set to 24,
- *                                 the first 24 nodes listed in
- *                                 <code>destination_nodes</code> /
- *                                 <code>destination_node_ids</code> are the
- *                                 fixed asset nodes and the rest of the nodes
- *                                 in the array are remote assets.
- * @param {Number[]} destination_node_ids  List of destination node indices, or
- *                                         indices for pageranks. If the
- *                                         <code>solver_type</code> is set to
- *                                         <code>BACKHAUL_ROUTING</code>, it is
- *                                         the list of all fixed and remote
- *                                         asset nodes.
- * @param {String} node_type  Source and destination node identifier type.
- *                            Supported values:
- *                            <ul>
- *                                    <li> 'NODE_ID': The graph's nodes were
- *                            identified as integers, e.g., 1234.
- *                                    <li> 'NODE_WKTPOINT': The graph's nodes
- *                            were identified as geospatial coordinates, e.g.,
- *                            'POINT(1.0 2.0)'.
- *                                    <li> 'NODE_NAME': The graph's nodes were
- *                            identified as strings, e.g., 'Arlington'.
- *                            </ul>
- *                            The default value is 'NODE_ID'.
- * @param {String} source_node  If <code>node_type</code> is
- *                              <code>NODE_WKTPOINT</code> or
- *                              <code>NODE_NAME</code>, the node (string) of
- *                              the source (starting point) for the graph
- *                              solution.
- * @param {String[]} destination_nodes  If <code>node_type</code> is
- *                                      <code>NODE_WKTPOINT</code> or
- *                                      <code>NODE_NAME</code>, the list of
- *                                      destination node or page rank indices
- *                                      (strings) for the graph solution. If
- *                                      the <code>solver_type</code> is set to
- *                                      <code>BACKHAUL_ROUTING</code>, it is
- *                                      the list of all fixed and remote asset
- *                                      nodes. The string type should be
- *                                      consistent with the
- *                                      <code>node_type</code> parameter.
+ * @param {String[]} source_nodes  It can be one of the nodal identifiers -
+ *                                 e.g: 'NODE_WKTPOINT' for source nodes. For
+ *                                 <code>BACKHAUL_ROUTING</code>, this list
+ *                                 depicts the fixed assets.
+ * @param {String[]} destination_nodes  It can be one of the nodal identifiers
+ *                                      - e.g: 'NODE_WKTPOINT' for destination
+ *                                      (target) nodes. For
+ *                                      <code>BACKHAUL_ROUTING</code>, this
+ *                                      list depicts the remote assets.
  * @param {String} solution_table  Name of the table to store the solution.
  * @param {Object} options  Additional parameters
  *                          <ul>
@@ -13237,17 +13467,17 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          <code>SHORTEST_PATH</code> and
  *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
  *                          Sets the maximum solution cost radius, which
- *                          ignores the <code>destination_node_ids</code> list
- *                          and instead outputs the nodes within the radius
- *                          sorted by ascending cost. If set to '0.0', the
- *                          setting is ignored.  The default value is '0.0'.
+ *                          ignores the <code>destination_nodes</code> list and
+ *                          instead outputs the nodes within the radius sorted
+ *                          by ascending cost. If set to '0.0', the setting is
+ *                          ignored.  The default value is '0.0'.
  *                                  <li> 'min_solution_radius': For
  *                          <code>SHORTEST_PATH</code> and
  *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
  *                          Applicable only when
  *                          <code>max_solution_radius</code> is set. Sets the
  *                          minimum solution cost radius, which ignores the
- *                          <code>destination_node_ids</code> list and instead
+ *                          <code>destination_nodes</code> list and instead
  *                          outputs the nodes within the radius sorted by
  *                          ascending cost. If set to '0.0', the setting is
  *                          ignored.  The default value is '0.0'.
@@ -13255,8 +13485,8 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          <code>SHORTEST_PATH</code> and
  *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
  *                          Sets the maximum number of solution targets, which
- *                          ignores the <code>destination_node_ids</code> list
- *                          and instead outputs no more than n number of nodes
+ *                          ignores the <code>destination_nodes</code> list and
+ *                          instead outputs no more than n number of nodes
  *                          sorted by ascending cost where n is equal to the
  *                          setting value. If set to 0, the setting is ignored.
  *                          The default value is '0'.
@@ -13299,16 +13529,13 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                   operation.
  * 
  */
-GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restrictions, solver_type, source_node_id, destination_node_ids, node_type, source_node, destination_nodes, solution_table, options, callback) {
+GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restrictions, solver_type, source_nodes, destination_nodes, solution_table, options, callback) {
     var actual_request = {
         graph_name: graph_name,
         weights_on_edges: (weights_on_edges !== undefined && weights_on_edges !== null) ? weights_on_edges : [],
         restrictions: (restrictions !== undefined && restrictions !== null) ? restrictions : [],
         solver_type: (solver_type !== undefined && solver_type !== null) ? solver_type : "SHORTEST_PATH",
-        source_node_id: source_node_id,
-        destination_node_ids: (destination_node_ids !== undefined && destination_node_ids !== null) ? destination_node_ids : [],
-        node_type: (node_type !== undefined && node_type !== null) ? node_type : "NODE_ID",
-        source_node: (source_node !== undefined && source_node !== null) ? source_node : "",
+        source_nodes: (source_nodes !== undefined && source_nodes !== null) ? source_nodes : [],
         destination_nodes: (destination_nodes !== undefined && destination_nodes !== null) ? destination_nodes : [],
         solution_table: (solution_table !== undefined && solution_table !== null) ? solution_table : "graph_solutions",
         options: (options !== undefined && options !== null) ? options : {}
@@ -13451,9 +13678,9 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'truncate_strings': If set to
- *                          {true}@{, any strings which are too long for their
- *                          charN string fields will be truncated to fit.  The
- *                          default value is false.
+ *                          <code>true</code>, any strings which are too long
+ *                          for their charN string fields will be truncated to
+ *                          fit.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -14812,7 +15039,7 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * graph. Isolines represent curves of equal cost, with cost typically
  * referring to the time or distance assigned as the weights of the underlying
  * graph. See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solvers</a> for more information on graphs.
+ * target="_top">Network Graphs & Solvers</a> for more information on graphs.
  * .
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -14852,7 +15079,7 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * graph. Isolines represent curves of equal cost, with cost typically
  * referring to the time or distance assigned as the weights of the underlying
  * graph. See <a href="../../graph_solver/network_graph_solver.html"
- * target="_top">Network Graph Solvers</a> for more information on graphs.
+ * target="_top">Network Graphs & Solvers</a> for more information on graphs.
  * .
  *
  * @param {String} graph_name  Name of the graph on which the isochrone is to
