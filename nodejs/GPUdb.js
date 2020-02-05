@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.10.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.11.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1503,6 +1503,13 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                          longer, but allow for better interleaving between
  *                          the rebalance and other queries. Allowed values are
  *                          1 through 10.  The default value is '1'.
+ *                                  <li> 'compact_after_rebalance': Perform
+ *                          compaction of deleted records once the rebalance
+ *                          completes, to reclaim memory and disk space.
+ *                          Default is true.  The default value is 'true'.
+ *                                  <li> 'compact_only': Only perform
+ *                          compaction, do not rebalance. Default is false.
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -2495,11 +2502,16 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> 'view_id': ID of view of which the
  *                          result table will be a member.  The default value
  *                          is ''.
- *                                  <li> 'materialize_on_gpu': If
- *                          <code>true</code> then the columns of the groupby
- *                          result table will be cached on the GPU. Must be
- *                          used in combination with the
- *                          <code>result_table</code> option.
+ *                                  <li> 'materialize_on_gpu': No longer used.
+ *                          See <a href="../../rm/concepts.html"
+ *                          target="_top">Resource Management Concepts</a> for
+ *                          information about how resources are managed, <a
+ *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          Strategy Concepts</a> for how resources are
+ *                          targeted for VRAM, and <a
+ *                          href="../../rm/usage.html#tier-strategies"
+ *                          target="_top">Tier Strategy Usage</a> for how to
+ *                          specify a table's priority in VRAM.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -3688,9 +3700,16 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          <code>result_table</code>.
  *                                  <li> 'view_id': view this result table is
  *                          part of.  The default value is ''.
- *                                  <li> 'materialize_on_gpu': If
- *                          <code>true</code> then the output columns will be
- *                          cached on the GPU.
+ *                                  <li> 'materialize_on_gpu': No longer used.
+ *                          See <a href="../../rm/concepts.html"
+ *                          target="_top">Resource Management Concepts</a> for
+ *                          information about how resources are managed, <a
+ *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          Strategy Concepts</a> for how resources are
+ *                          targeted for VRAM, and <a
+ *                          href="../../rm/usage.html#tier-strategies"
+ *                          target="_top">Tier Strategy Usage</a> for how to
+ *                          specify a table's priority in VRAM.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -4065,6 +4084,11 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       device, default (engine decides) or an
  *                                       integer value that indicates max chunk
  *                                       size to exec on host
+ *                                               <li>
+ *                                       'external_files_directory': Sets the
+ *                                       root directory path where external
+ *                                       table data files are accessed from.
+ *                                       Path must exist on the head node
  *                                               <li> 'flush_to_disk': Flushes
  *                                       any changes to any tables to the
  *                                       persistent store.  These changes
@@ -4154,6 +4178,14 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       vector on set_compression (instead of
  *                                       waiting for background thread).  The
  *                                       default value is 'false'.
+ *                                               <li>
+ *                                       'enable_overlapped_equi_join': Enable
+ *                                       overlapped-equi-join filter.  The
+ *                                       default value is 'true'.
+ *                                               <li>
+ *                                       'enable_compound_equi_join': Enable
+ *                                       compound-equi-join filter plan type.
+ *                                       The default value is 'false'.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -4333,16 +4365,24 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         <ul>
  *                                 <li> 'allow_homogeneous_tables': No longer
  *                         supported; action will be ignored.
- *                                 <li> 'create_index': Creates an <a
+ *                                 <li> 'create_index': Creates either a <a
  *                         href="../../concepts/indexes.html#column-index"
- *                         target="_top">index</a> on the column name specified
- *                         in <code>value</code>. If this column is already
- *                         indexed, an error will be returned.
- *                                 <li> 'delete_index': Deletes an existing <a
+ *                         target="_top">column (attribute) index</a> or <a
+ *                         href="../../concepts/indexes.html#chunk-skip-index"
+ *                         target="_top">chunk skip index</a>, depending on the
+ *                         specified <code>index_type</code>, on the column
+ *                         name specified in <code>value</code>. If this column
+ *                         already has the specified index, an error will be
+ *                         returned.
+ *                                 <li> 'delete_index': Deletes either a <a
  *                         href="../../concepts/indexes.html#column-index"
- *                         target="_top">index</a> on the column name specified
- *                         in <code>value</code>. If this column does not have
- *                         indexing turned on, an error will be returned.
+ *                         target="_top">column (attribute) index</a> or <a
+ *                         href="../../concepts/indexes.html#chunk-skip-index"
+ *                         target="_top">chunk skip index</a>, depending on the
+ *                         specified <code>index_type</code>, on the column
+ *                         name specified in <code>value</code>. If this column
+ *                         does not have the specified index, an error will be
+ *                         returned.
  *                                 <li> 'move_to_collection': Moves a table or
  *                         view into a collection named <code>value</code>.  If
  *                         the collection provided is non-existent, the
@@ -4563,11 +4603,18 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          target="_top">tier strategy examples</a> for
  *                          examples.  This option will be ignored if
  *                          <code>value</code> is also specified.
- *                                  <li> 'index_type': Type of index to create.
+ *                                  <li> 'index_type': Type of index to create,
+ *                          when <code>action</code> is
+ *                          <code>create_index</code>, or to delete, when
+ *                          <code>action</code> is <code>delete_index</code>.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'column': Standard column index.
- *                                  <li> 'chunk_skip': Chunk skip index.
+ *                                  <li> 'column': Create or delete a <a
+ *                          href="../../concepts/indexes.html#column-index"
+ *                          target="_top">column (attribute) index</a>.
+ *                                  <li> 'chunk_skip': Create or delete a <a
+ *                          href="../../concepts/indexes.html#chunk-skip-index"
+ *                          target="_top">chunk skip index</a>.
  *                          </ul>
  *                          The default value is 'column'.
  *                          </ul>
@@ -5499,6 +5546,151 @@ GPUdb.prototype.collect_statistics = function(table_name, column_names, options,
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ * @private
+ */
+GPUdb.prototype.create_external_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_external_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: request.table_name,
+        filepaths: request.filepaths,
+        create_table_options: (request.create_table_options !== undefined && request.create_table_options !== null) ? request.create_table_options : {},
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/create/externaltable", actual_request, callback);
+};
+
+/**
+ *
+ * @param {String} table_name
+ * @param {String[]} filepaths
+ * @param {Object} create_table_options
+ *                                       <ul>
+ *                                               <li> 'type_id': The default
+ *                                       value is ''.
+ *                                       </ul>
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> 'table_type':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'materialized'
+ *                                  <li> 'logical'
+ *                                  <li> 'logical_tmp'
+ *                          </ul>
+ *                          The default value is 'materialized'.
+ *                                  <li> 'file_type':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'delimited_text'
+ *                                  <li> 'parquet'
+ *                          </ul>
+ *                          The default value is 'delimited_text'.
+ *                                  <li> 'loading_mode':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'head'
+ *                                  <li> 'distributed_shared'
+ *                                  <li> 'distributed_local'
+ *                          </ul>
+ *                          The default value is 'head'.
+ *                                  <li> 'error_handling':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'permissive'
+ *                                  <li> 'ignore_bad_records'
+ *                                  <li> 'abort'
+ *                          </ul>
+ *                          The default value is 'Permissive'.
+ *                                  <li> 'batch_size':
+ *                                  <li> 'refresh_method':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'manual'
+ *                                  <li> 'on_start'
+ *                          </ul>
+ *                          The default value is 'manual'.
+ *                                  <li> 'column_formats':
+ *                                  <li> 'default_column_formats':
+ *                                  <li> 'dry_run':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'false'
+ *                                  <li> 'true'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'text_has_header':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'text_delimiter': The default value is
+ *                          ','.
+ *                                  <li> 'text_header_property_delimiter': The
+ *                          default value is '|'.
+ *                                  <li> 'columns_to_load':
+ *                                  <li> 'text_comment_string': The default
+ *                          value is '#'.
+ *                                  <li> 'text_null_string': The default value
+ *                          is ''.
+ *                                  <li> 'text_quote_character': The default
+ *                          value is '"'.
+ *                                  <li> 'text_escape_character':
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ * @private
+ */
+GPUdb.prototype.create_external_table = function(table_name, filepaths, create_table_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_external_table(table_name, filepaths, create_table_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: table_name,
+        filepaths: filepaths,
+        create_table_options: (create_table_options !== undefined && create_table_options !== null) ? create_table_options : {},
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/create/externaltable", actual_request, callback);
+};
+
+/**
  * Creates a new graph network using given nodes, edges, weights, and
  * restrictions.
 
@@ -5666,10 +5858,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'modify': If set to <code>true</code>
- *                          and <code>true</code> and if the graph (using
+ *                                  <li> 'modify': If set to <code>true</code>,
+ *                          <code>recreate</code> is set to <code>true</code>,
+ *                          and the graph (specified using
  *                          <code>graph_name</code>) already exists, the graph
- *                          is updated with these components.
+ *                          is updated with the given components.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5742,13 +5935,23 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'graph_table': If the
- *                          <code>graph_table</code> name is NOT left blank,
- *                          the created graph is also created as a table with
- *                          the given name and following identifier columns:
+ *                                  <li> 'graph_table': If specified, the
+ *                          created graph is also created as a table with the
+ *                          given name and following identifier columns:
  *                          'EDGE_ID', 'EDGE_NODE1_ID', 'EDGE_NODE2_ID'. If
  *                          left blank, no table is created.  The default value
  *                          is ''.
+ *                                  <li> 'remove_label_only': When RESTRICTIONS
+ *                          on labeled entities requested, if set to true this
+ *                          will NOT delete the entity but only the label
+ *                          associated with the entity. Otherwise (default),
+ *                          it'll delete the label AND the entity.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -6431,9 +6634,16 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          for any column name, the alias must be used, rather
  *                          than the original column name.  The default value
  *                          is ''.
- *                                  <li> 'materialize_on_gpu': If
- *                          <code>true</code> then the columns of the
- *                          projection will be cached on the GPU.
+ *                                  <li> 'materialize_on_gpu': No longer used.
+ *                          See <a href="../../rm/concepts.html"
+ *                          target="_top">Resource Management Concepts</a> for
+ *                          information about how resources are managed, <a
+ *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          Strategy Concepts</a> for how resources are
+ *                          targeted for VRAM, and <a
+ *                          href="../../rm/usage.html#tier-strategies"
+ *                          target="_top">Tier Strategy Usage</a> for how to
+ *                          specify a table's priority in VRAM.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -7745,9 +7955,16 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          collection will be automatically created. If empty,
  *                          the output table will be a top-level table.  The
  *                          default value is ''.
- *                                  <li> 'materialize_on_gpu': If
- *                          <code>true</code>, then the columns of the output
- *                          table will be cached on the GPU.
+ *                                  <li> 'materialize_on_gpu': No longer used.
+ *                          See <a href="../../rm/concepts.html"
+ *                          target="_top">Resource Management Concepts</a> for
+ *                          information about how resources are managed, <a
+ *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          Strategy Concepts</a> for how resources are
+ *                          targeted for VRAM, and <a
+ *                          href="../../rm/usage.html#tier-strategies"
+ *                          target="_top">Tier Strategy Usage</a> for how to
+ *                          specify a table's priority in VRAM.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -10613,6 +10830,10 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
 };
 
 /**
+ * Get the status and result of asynchronously running job.  See the
+ * {@linkcode GPUdb#create_job} for starting an asynchronous job.  Some
+ * fields of the response are filled only after the submitted job has finished
+ * execution.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -10645,6 +10866,10 @@ GPUdb.prototype.get_job_request = function(request, callback) {
 };
 
 /**
+ * Get the status and result of asynchronously running job.  See the
+ * {@linkcode GPUdb#create_job} for starting an asynchronous job.  Some
+ * fields of the response are filled only after the submitted job has finished
+ * execution.
  *
  * @param {Number} job_id  A unique identifier for the job whose status and
  *                         result is to be fetched.
@@ -11590,6 +11815,10 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
  *                             applies to tables and views in the collection.
  * @param {String} filter_expression  Reserved for future use.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'columns': Apply security to these
+ *                          columns, comma-separated.  The default value is ''.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -12072,6 +12301,414 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
     };
 
     this.submit_request("/insert/records", actual_request, callback);
+};
+
+/**
+ * Reads from one or more files located on the server into the specified table.
+ * The table will be created if it doesn't already exist. Returns once all
+ * files are processed
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.insert_records_from_files_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records_from_files_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: request.table_name,
+        filepaths: request.filepaths,
+        create_table_options: (request.create_table_options !== undefined && request.create_table_options !== null) ? request.create_table_options : {},
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/insert/records/fromfiles", actual_request, callback);
+};
+
+/**
+ * Reads from one or more files located on the server into the specified table.
+ * The table will be created if it doesn't already exist. Returns once all
+ * files are processed
+ *
+ * @param {String} table_name  Table name to load into. Will be created if it
+ *                             does not already exist
+ * @param {String[]} filepaths  File paths to load.  The paths must be within
+ *                              the configured external_files_directory. Paths
+ *                              may be absolute or relative to the configured
+ *                              external_files_directory, and may also include
+ *                              wildcards.
+ * @param {Object} create_table_options  Options when creating the table.
+ *                                       Includes type to use. The other
+ *                                       options match those in
+ *                                       {@linkcode GPUdb#create_table}
+ *                                       <ul>
+ *                                               <li> 'type_id': Optional: ID
+ *                                       of a currently registered type.  The
+ *                                       default value is ''.
+ *                                               <li> 'no_error_if_exists': If
+ *                                       <code>true</code>, prevents an error
+ *                                       from occurring if the table already
+ *                                       exists and is of the given type.  If a
+ *                                       table with the same ID but a different
+ *                                       type exists, it is still an error.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                               <li> 'collection_name': Name
+ *                                       of a collection which is to contain
+ *                                       the newly created table. If the
+ *                                       collection provided is non-existent,
+ *                                       the collection will be automatically
+ *                                       created. If empty, then the newly
+ *                                       created table will be a top-level
+ *                                       table.
+ *                                               <li> 'is_collection':
+ *                                       Indicates whether the new table to be
+ *                                       created will be a collection.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                               <li>
+ *                                       'disallow_homogeneous_tables': No
+ *                                       longer supported; value will be
+ *                                       ignored.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                               <li> 'is_replicated': For a
+ *                                       table, affects the <a
+ *                                       href="../../concepts/tables.html#distribution"
+ *                                       target="_top">distribution scheme</a>
+ *                                       for the table's data.  If true and the
+ *                                       given type has no explicit <a
+ *                                       href="../../concepts/tables.html#shard-key"
+ *                                       target="_top">shard key</a> defined,
+ *                                       the table will be <a
+ *                                       href="../../concepts/tables.html#replication"
+ *                                       target="_top">replicated</a>.  If
+ *                                       false, the table will be <a
+ *                                       href="../../concepts/tables.html#sharding"
+ *                                       target="_top">sharded</a> according to
+ *                                       the shard key specified in the given
+ *                                       <code>type_id</code>, or <a
+ *                                       href="../../concepts/tables.html#random-sharding"
+ *                                       target="_top">randomly sharded</a>, if
+ *                                       no shard key is specified.  Note that
+ *                                       a type containing a shard key cannot
+ *                                       be used to create a replicated table.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                               <li> 'foreign_keys':
+ *                                       Semicolon-separated list of <a
+ *                                       href="../../concepts/tables.html#foreign-keys"
+ *                                       target="_top">foreign keys</a>, of the
+ *                                       format '(source_column_name [, ...])
+ *                                       references
+ *                                       target_table_name(primary_key_column_name
+ *                                       [, ...]) [as foreign_key_name]'.
+ *                                               <li> 'foreign_shard_key':
+ *                                       Foreign shard key of the format
+ *                                       'source_column references
+ *                                       shard_by_column from
+ *                                       target_table(primary_key_column)'.
+ *                                               <li> 'partition_type': <a
+ *                                       href="../../concepts/tables.html#partitioning"
+ *                                       target="_top">Partitioning</a> scheme
+ *                                       to use.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'RANGE': Use <a
+ *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       target="_top">range partitioning</a>.
+ *                                               <li> 'INTERVAL': Use <a
+ *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       target="_top">interval
+ *                                       partitioning</a>.
+ *                                               <li> 'LIST': Use <a
+ *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       target="_top">list partitioning</a>.
+ *                                               <li> 'HASH': Use <a
+ *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       target="_top">hash partitioning</a>.
+ *                                       </ul>
+ *                                               <li> 'partition_keys':
+ *                                       Comma-separated list of partition
+ *                                       keys, which are the columns or column
+ *                                       expressions by which records will be
+ *                                       assigned to partitions defined by
+ *                                       <code>partition_definitions</code>.
+ *                                               <li> 'partition_definitions':
+ *                                       Comma-separated list of partition
+ *                                       definitions, whose format depends on
+ *                                       the choice of
+ *                                       <code>partition_type</code>.  See <a
+ *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       target="_top">range partitioning</a>,
+ *                                       <a
+ *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       target="_top">interval
+ *                                       partitioning</a>, <a
+ *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       target="_top">list partitioning</a>,
+ *                                       or <a
+ *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       target="_top">hash partitioning</a>
+ *                                       for example formats.
+ *                                               <li> 'is_automatic_partition':
+ *                                       If true, a new partition will be
+ *                                       created for values which don't fall
+ *                                       into an existing partition.  Currently
+ *                                       only supported for <a
+ *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       target="_top">list partitions</a>.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                               <li> 'ttl': For a table, sets
+ *                                       the <a href="../../concepts/ttl.html"
+ *                                       target="_top">TTL</a> of the table
+ *                                       specified in <code>table_name</code>.
+ *                                               <li> 'chunk_size': Indicates
+ *                                       the number of records per chunk to be
+ *                                       used for this table.
+ *                                               <li> 'is_result_table': For a
+ *                                       table, indicates whether the table is
+ *                                       an in-memory table. A result table
+ *                                       cannot contain store_only,
+ *                                       text_search, or string columns (charN
+ *                                       columns are acceptable), and it will
+ *                                       not be retained if the server is
+ *                                       restarted.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                               <li> 'strategy_definition':
+ *                                       The <a
+ *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       target="_top">tier strategy</a> for
+ *                                       the table and its columns. See <a
+ *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       target="_top">tier strategy usage</a>
+ *                                       for format and <a
+ *                                       href="../../rm/usage.html#tier-strategies"
+ *                                       target="_top">tier strategy
+ *                                       examples</a> for examples.
+ *                                       </ul>
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'file_type':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'delimited_text': Indicates that the
+ *                          file(s) will be text with columns delimited, e.g. a
+ *                          csv file
+ *                                  <li> 'parquet': Parquet files are not
+ *                          supported yet
+ *                          </ul>
+ *                          The default value is 'delimited_text'.
+ *                                  <li> 'loading_mode': specifies how to
+ *                          divide up data loading among nodes
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'head': The head node loads all data.
+ *                          All files must be visible on the head node
+ *                                  <li> 'distributed_shared': The worker nodes
+ *                          load all data. All files must be visible on all
+ *                          nodes. This is ideal for a shared file system.
+ *                                  <li> 'distributed_local': Each worker node
+ *                          loads all files that it sees. This is suitable when
+ *                          each worker node has its own file system.
+ *                          </ul>
+ *                          The default value is 'head'.
+ *                                  <li> 'error_handling':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'permissive': Records with missing
+ *                          columns are populated with nulls if possible,
+ *                          otherwise malformed records are skipped.
+ *                                  <li> 'ignore_bad_records': Malformed
+ *                          records are skipped over.
+ *                                  <li> 'abort': Aborts ingest when it
+ *                          encounters an error.
+ *                          </ul>
+ *                          The default value is 'Permissive'.
+ *                                  <li> 'truncate_table': Truncates the table
+ *                          prior to loading the files.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'batch_size': Internal tuning
+ *                          parameter, number of records per batch when loading
+ *                          from file
+ *                                  <li> 'column_formats': JSON map of colname
+ *                          to map of format to value. The format a map for
+ *                          each column specified, i.e. { "<columnname>" : {
+ *                          "<annotation1>" : "<format>", "<annotation2>" :
+ *                          "<format>" }, {"<column2name>" : ... }.  See
+ *                          <code>default_column_formats</code> for valid
+ *                          annotations to specify.
+ *                                  <li> 'default_column_formats': Specifies
+ *                          default formats using JSON. For each specified
+ *                          annotation, the format will apply to all columns
+ *                          with that annotation. The format is a map of
+ *                          annotations to formats, i.e. { "<annoation1> :
+ *                          "format", "<annotation2>" : "format", ...}.
+ *                          Allowable annotations are 'date', 'time', and
+ *                          'datetime. Each of those formats are specified with
+ *                          control characters and plain text.  Date or time
+ *                          values are expected in place of the control
+ *                          characters. This is analagous to the Linux
+ *                          strptime() call. The date annoation requires %Y,
+ *                          %m, and %d. The time annoation requires %H, %M, and
+ *                          either %S or %s, not both. The datetime annoation
+ *                          must meet both date and time requirements. The
+ *                          control charcters are:
+ *                                                  %Y 4 digit year,
+ *                                                  %m 2 digit month,
+ *                                                  %d 2 digit day,
+ *                                                  %H 2 digit hour (0 through
+ *                          23),
+ *                                                  %M 2 digit minute,
+ *                                                  %S 2 digit second as an
+ *                          integer,
+ *                                                  %s 2 digit second followed
+ *                          by a decimal point and fractional value (fractional
+ *                          values beyond milliseconds are truncated).
+ *                                                  As an example, {"datetime"
+ *                          : "%m/%d/%Y %H:%M:%S" } would be used to interpret
+ *                          text such as "05/04/2000 12:12:11"
+ *                                  <li> 'dry_run': Walk through the files and
+ *                          determine number of valid records.  Does not load
+ *                          data. Applies the error handling mode to determine
+ *                          valid behavior
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'false': no dry run
+ *                                  <li> 'true': do a dry run
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'text_has_header': Indicates whether
+ *                          the text files have a header or not.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'text_delimiter': Delimiter for csv
+ *                          fields and header row. Must be a single character.
+ *                          The default value is ','.
+ *                                  <li> 'text_header_property_delimiter':
+ *                          Delimiter for column properties in csv header row.
+ *                          The default value is '|'.
+ *                                  <li> 'columns_to_load': Optionally used to
+ *                          specify a subset of columns to load, instead of
+ *                          loading all columns in the file.
+ *                          The columns to use are delimited by a comma. Column
+ *                          numbers can be specified discretely or as a range
+ *                          e.g. '1 .. 4' refers to the first through fourth
+ *                          columns.
+ *                          For example, a value of '5,3,1..2' will create a
+ *                          table with the first column in the table being the
+ *                          fifth column in the file, followed by third column
+ *                          in the file, then the first column, and lastly the
+ *                          second column.
+ *                          Additionally, if the file(s) have a header, names
+ *                          matching the file header names may be provided
+ *                          instead of numbers. Ranges are not supported.
+ *                          For example, a value of 'C, B, A' will create a
+ *                          three column table with column C, followed by
+ *                          column B, followed by column A.
+ *                                  <li> 'text_comment_string': All lines
+ *                          starting with the comment string are ignored. The
+ *                          comment string has no effect unless it appears at
+ *                          the beginning of a line.  The default value is '#'.
+ *                                  <li> 'text_null_string': The value to treat
+ *                          as null.  The default value is ''.
+ *                                  <li> 'text_quote_character': The quote
+ *                          character used to emcpomass a field. Must appear at
+ *                          beginning and end of field to take effect.
+ *                          Delimiters within quotes are not treated as
+ *                          delimiters. Within quoted field, double quotes can
+ *                          be used to escape a single literal quote character.
+ *                          To not have a quote character, specifiy an empty
+ *                          string for this option.  The default value is '"'.
+ *                                  <li> 'text_escape_character': Escape
+ *                          character. Escapes certain character sequences in
+ *                          text. For example, the escape char followed by a
+ *                          literal 'n' escapes to a newline character within
+ *                          the field. The escape character followed by a 't'
+ *                          escapes to a single tab character. Can be used
+ *                          within q quoted string to escape a quote character.
+ *                          An empty value for this option specifies to not
+ *                          have an escape character. Default is no escape
+ *                          character.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.insert_records_from_files = function(table_name, filepaths, create_table_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records_from_files(table_name, filepaths, create_table_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        table_name: table_name,
+        filepaths: filepaths,
+        create_table_options: (create_table_options !== undefined && create_table_options !== null) ? create_table_options : {},
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/insert/records/fromfiles", actual_request, callback);
 };
 
 /**
@@ -13112,6 +13749,266 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
 };
 
 /**
+ * Update an existing graph network using given nodes, edges, weights,
+ * restrictions, and options.
+
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a href="../../graph_solver/examples.html"
+ * target="_top">graph examples</a> before using this endpoint.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.modify_graph_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.modify_graph_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: request.graph_name,
+        nodes: request.nodes,
+        edges: request.edges,
+        weights: request.weights,
+        restrictions: request.restrictions,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/modify/graph", actual_request, callback);
+};
+
+/**
+ * Update an existing graph network using given nodes, edges, weights,
+ * restrictions, and options.
+
+ * IMPORTANT: It's highly recommended that you review the <a
+ * href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * Graphs & Solvers</a> concepts documentation, the <a
+ * href="../../graph_solver/examples/graph_rest_guide.html" target="_top">Graph
+ * REST Tutorial</a>, and/or some <a href="../../graph_solver/examples.html"
+ * target="_top">graph examples</a> before using this endpoint.
+ *
+ * @param {String} graph_name  Name of the graph resource to modify.
+ * @param {String[]} nodes  Nodes with which to update existing
+ *                          <code>nodes</code> in graph specified by
+ *                          <code>graph_name</code>. Review <a
+ *                          href="../../graph_solver/network_graph_solver.html#nodes"
+ *                          target="_top">Nodes</a> for more information. Nodes
+ *                          must be specified using <a
+ *                          href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                          target="_top">identifiers</a>; identifiers are
+ *                          grouped as <a
+ *                          href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                          target="_top">combinations</a>. Identifiers can be
+ *                          used with existing column names, e.g.,
+ *                          'table.column AS NODE_ID', expressions, e.g.,
+ *                          'ST_MAKEPOINT(column1, column2) AS NODE_WKTPOINT',
+ *                          or raw values, e.g., '{9, 10, 11} AS NODE_ID'. If
+ *                          using raw values in an identifier combination, the
+ *                          number of values specified must match across the
+ *                          combination. Identifier combination(s) do not have
+ *                          to match the method used to create the graph, e.g.,
+ *                          if column names were specified to create the graph,
+ *                          expressions or raw values could also be used to
+ *                          modify the graph.
+ * @param {String[]} edges  Edges with which to update existing
+ *                          <code>edges</code> in graph specified by
+ *                          <code>graph_name</code>. Review <a
+ *                          href="../../graph_solver/network_graph_solver.html#edges"
+ *                          target="_top">Edges</a> for more information. Edges
+ *                          must be specified using <a
+ *                          href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                          target="_top">identifiers</a>; identifiers are
+ *                          grouped as <a
+ *                          href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                          target="_top">combinations</a>. Identifiers can be
+ *                          used with existing column names, e.g.,
+ *                          'table.column AS EDGE_ID', expressions, e.g.,
+ *                          'SUBSTR(column, 1, 6) AS EDGE_NODE1_NAME', or raw
+ *                          values, e.g., "{'family', 'coworker'} AS
+ *                          EDGE_LABEL". If using raw values in an identifier
+ *                          combination, the number of values specified must
+ *                          match across the combination. Identifier
+ *                          combination(s) do not have to match the method used
+ *                          to create the graph, e.g., if column names were
+ *                          specified to create the graph, expressions or raw
+ *                          values could also be used to modify the graph.
+ * @param {String[]} weights  Weights with which to update existing
+ *                            <code>weights</code> in graph specified by
+ *                            <code>graph_name</code>. Review <a
+ *                            href="../../graph_solver/network_graph_solver.html#graph-weights"
+ *                            target="_top">Weights</a> for more information.
+ *                            Weights must be specified using <a
+ *                            href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                            target="_top">identifiers</a>; identifiers are
+ *                            grouped as <a
+ *                            href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                            target="_top">combinations</a>. Identifiers can
+ *                            be used with existing column names, e.g.,
+ *                            'table.column AS WEIGHTS_EDGE_ID', expressions,
+ *                            e.g., 'ST_LENGTH(wkt) AS WEIGHTS_VALUESPECIFIED',
+ *                            or raw values, e.g., '{4, 15} AS
+ *                            WEIGHTS_VALUESPECIFIED'. If using raw values in
+ *                            an identifier combination, the number of values
+ *                            specified must match across the combination.
+ *                            Identifier combination(s) do not have to match
+ *                            the method used to create the graph, e.g., if
+ *                            column names were specified to create the graph,
+ *                            expressions or raw values could also be used to
+ *                            modify the graph.
+ * @param {String[]} restrictions  Restrictions with which to update existing
+ *                                 <code>restrictions</code> in graph specified
+ *                                 by <code>graph_name</code>. Review <a
+ *                                 href="../../graph_solver/network_graph_solver.html#graph-restrictions"
+ *                                 target="_top">Restrictions</a> for more
+ *                                 information. Restrictions must be specified
+ *                                 using <a
+ *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 target="_top">identifiers</a>; identifiers
+ *                                 are grouped as <a
+ *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 target="_top">combinations</a>. Identifiers
+ *                                 can be used with existing column names,
+ *                                 e.g., 'table.column AS
+ *                                 RESTRICTIONS_EDGE_ID', expressions, e.g.,
+ *                                 'column/2 AS RESTRICTIONS_VALUECOMPARED', or
+ *                                 raw values, e.g., '{0, 0, 0, 1} AS
+ *                                 RESTRICTIONS_ONOFFCOMPARED'. If using raw
+ *                                 values in an identifier combination, the
+ *                                 number of values specified must match across
+ *                                 the combination. Identifier combination(s)
+ *                                 do not have to match the method used to
+ *                                 create the graph, e.g., if column names were
+ *                                 specified to create the graph, expressions
+ *                                 or raw values could also be used to modify
+ *                                 the graph.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'restriction_threshold_value':
+ *                          Value-based restriction comparison. Any node or
+ *                          edge with a RESTRICTIONS_VALUECOMPARED value
+ *                          greater than the
+ *                          <code>restriction_threshold_value</code> will not
+ *                          be included in the graph.
+ *                                  <li> 'export_create_results': If set to
+ *                          <code>true</code>, returns the graph topology in
+ *                          the response as arrays.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'enable_graph_draw': If set to
+ *                          <code>true</code>, adds a 'EDGE_WKTLINE' column
+ *                          identifier to the specified
+ *                          <code>graph_table</code> so the graph can be viewed
+ *                          via WMS; for social and non-geospatial graphs, the
+ *                          'EDGE_WKTLINE' column identifier will be populated
+ *                          with spatial coordinates derived from a flattening
+ *                          layout algorithm so the graph can still be viewed.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'save_persist': If set to
+ *                          <code>true</code>, the graph will be saved in the
+ *                          persist directory (see the <a
+ *                          href="../../config/index.html" target="_top">config
+ *                          reference</a> for more information). If set to
+ *                          <code>false</code>, the graph will be removed when
+ *                          the graph server is shutdown.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'add_table_monitor': Adds a table
+ *                          monitor to every table used in the creation of the
+ *                          graph; this table monitor will trigger the graph to
+ *                          update dynamically upon inserts to the source
+ *                          table(s). Note that upon database restart, if
+ *                          <code>save_persist</code> is also set to
+ *                          <code>true</code>, the graph will be fully
+ *                          reconstructed and the table monitors will be
+ *                          reattached. For more details on table monitors, see
+ *                          {@linkcode GPUdb#create_table_monitor}.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'graph_table': If specified, the
+ *                          created graph is also created as a table with the
+ *                          given name and following identifier columns:
+ *                          'EDGE_ID', 'EDGE_NODE1_ID', 'EDGE_NODE2_ID'. If
+ *                          left blank, no table is created.  The default value
+ *                          is ''.
+ *                                  <li> 'remove_label_only': When RESTRICTIONS
+ *                          on labeled entities requested, if set to true this
+ *                          will NOT delete the entity but only the label
+ *                          associated with the entity. Otherwise (default),
+ *                          it'll delete the label AND the entity.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ * 
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restrictions, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.modify_graph(graph_name, nodes, edges, weights, restrictions, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: graph_name,
+        nodes: nodes,
+        edges: edges,
+        weights: weights,
+        restrictions: restrictions,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/modify/graph", actual_request, callback);
+};
+
+/**
  * Employs a topological query on a network graph generated a-priori by
  * {@linkcode GPUdb#create_graph} and returns a list of adjacent edge(s) or
  * node(s), also known as an adjacency list, depending on what's been provided
@@ -13597,6 +14494,10 @@ GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
  *                             access. Must be an existing table, collection,
  *                             or view.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'columns': Apply security to these
+ *                          columns, comma-separated.  The default value is ''.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14251,7 +15152,8 @@ GPUdb.prototype.show_security = function(names, options, callback) {
 };
 
 /**
- * Procedures
+ * Shows information about SQL procedures, including the full definition of
+ * each requested procedure.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -14284,7 +15186,8 @@ GPUdb.prototype.show_sql_proc_request = function(request, callback) {
 };
 
 /**
- * Procedures
+ * Shows information about SQL procedures, including the full definition of
+ * each requested procedure.
  *
  * @param {String} procedure_name  Name of the procedure for which to retrieve
  *                                 the information. If blank, then information
@@ -14292,9 +15195,10 @@ GPUdb.prototype.show_sql_proc_request = function(request, callback) {
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'no_error_if_not_exists': If
- *                          <code>false</code> will return an error if the
- *                          provided  does not exist. If <code>true</code> then
- *                          it will return an empty result.
+ *                          <code>true</code>, no error will be returned if the
+ *                          requested procedure does not exist.  If
+ *                          <code>false</code>, an error will be returned if
+ *                          the requested procedure does not exist.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
