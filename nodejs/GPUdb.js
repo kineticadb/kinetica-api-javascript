@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.11.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.12.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1506,9 +1506,38 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                                  <li> 'compact_after_rebalance': Perform
  *                          compaction of deleted records once the rebalance
  *                          completes, to reclaim memory and disk space.
- *                          Default is true.  The default value is 'true'.
+ *                          Default is true, unless {add_labels}@{key of
+ *                          options repair_incorrectly_sharded_data} is set to
+ *                          <code>true</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 'compact_only': Only perform
  *                          compaction, do not rebalance. Default is false.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'repair_incorrectly_sharded_data':
+ *                          Scans for any data sharded incorrectly and
+ *                          re-routes the correct location. This can be done as
+ *                          part of a typical rebalance after expanding the
+ *                          cluster, or in a standalone fashion when it is
+ *                          believed that data is sharded incorrectly somewhere
+ *                          in the cluster. Compaction will not be performed by
+ *                          default when this is enabled. This option may also
+ *                          lengthen rebalance time, and increase the memory
+ *                          used by the rebalance.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
  *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -5658,6 +5687,9 @@ GPUdb.prototype.create_external_table_request = function(request, callback) {
  *                                  <li> 'text_quote_character': The default
  *                          value is '"'.
  *                                  <li> 'text_escape_character':
+ *                                  <li> 'external_storage_location':
+ *                                  <li> 's3_bucket_name':
+ *                                  <li> 's3_region':
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -7197,17 +7229,27 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
 };
 
 /**
- * Creates a monitor that watches for table modification events such as insert,
- * update or delete on a particular table (identified by
+ * Creates a monitor that watches for table modification events such as
+ * insert, update or delete on a particular table (identified by
  * <code>table_name</code>) and forwards event notifications to subscribers via
- * ZMQ. After this call completes, subscribe to the returned
- * <code>topic_id</code> on the ZMQ table monitor port (default 9002). Each
- * time a modification operation on the table completes, a multipart message is
- * published for that topic; the first part contains only the topic ID, and
- * each subsequent part contains one binary-encoded Avro object that
- * corresponds to the event and can be decoded using <code>type_schema</code>.
- * The monitor will continue to run (regardless of whether or not there are any
- * subscribers) until deactivated with {@linkcode GPUdb#clear_table_monitor}.
+ * ZMQ.
+ * After this call completes, subscribe to the returned <code>topic_id</code>
+ * on the
+ * ZMQ table monitor port (default 9002). Each time a modification operation on
+ * the
+ * table completes, a multipart message is published for that topic; the first
+ * part
+ * contains only the topic ID, and each subsequent part contains one
+ * binary-encoded
+ * Avro object that corresponds to the event and can be decoded using
+ * <code>type_schema</code>. The monitor will continue to run (regardless of
+ * whether
+ * or not there are any subscribers) until deactivated with
+ * {@linkcode GPUdb#clear_table_monitor}.
+ * <p>
+ * For more information on table monitors, see
+ * <a href="../../concepts/table_monitors.html" target="_top">Table
+ * Monitors</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -7240,17 +7282,27 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
 };
 
 /**
- * Creates a monitor that watches for table modification events such as insert,
- * update or delete on a particular table (identified by
+ * Creates a monitor that watches for table modification events such as
+ * insert, update or delete on a particular table (identified by
  * <code>table_name</code>) and forwards event notifications to subscribers via
- * ZMQ. After this call completes, subscribe to the returned
- * <code>topic_id</code> on the ZMQ table monitor port (default 9002). Each
- * time a modification operation on the table completes, a multipart message is
- * published for that topic; the first part contains only the topic ID, and
- * each subsequent part contains one binary-encoded Avro object that
- * corresponds to the event and can be decoded using <code>type_schema</code>.
- * The monitor will continue to run (regardless of whether or not there are any
- * subscribers) until deactivated with {@linkcode GPUdb#clear_table_monitor}.
+ * ZMQ.
+ * After this call completes, subscribe to the returned <code>topic_id</code>
+ * on the
+ * ZMQ table monitor port (default 9002). Each time a modification operation on
+ * the
+ * table completes, a multipart message is published for that topic; the first
+ * part
+ * contains only the topic ID, and each subsequent part contains one
+ * binary-encoded
+ * Avro object that corresponds to the event and can be decoded using
+ * <code>type_schema</code>. The monitor will continue to run (regardless of
+ * whether
+ * or not there are any subscribers) until deactivated with
+ * {@linkcode GPUdb#clear_table_monitor}.
+ * <p>
+ * For more information on table monitors, see
+ * <a href="../../concepts/table_monitors.html" target="_top">Table
+ * Monitors</a>.
  *
  * @param {String} table_name  Name of the table to monitor. Must not refer to
  *                             a collection.
@@ -9063,6 +9115,10 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'view_id': <DEVELOPER>
+ *                          The default value is ''.
+ *                                  <li> 'no_count': <DEVELOPER>
  *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -12304,9 +12360,22 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
 };
 
 /**
- * Reads from one or more files located on the server into the specified table.
- * The table will be created if it doesn't already exist. Returns once all
- * files are processed
+ * Reads from one or more files located on the server and inserts the data into
+ * a new or existing table.
+ * <p>
+ * For CSV files, there are two loading schemes: positional and name-based. The
+ * name-based loading scheme is enabled when the file has a header present and
+ * <code>text_has_header</code> is set to <code>true</code>. In this scheme,
+ * the source file(s) field names must match the target table's column names
+ * exactly; however, the source file can have more fields than the target table
+ * has columns. If <code>error_handling</code> is set to
+ * <code>permissive</code>, the source file can have fewer fields than the
+ * target table has columns. If the name-based loading scheme is being used,
+ * names matching the file header's names may be provided to
+ * <code>columns_to_load</code> instead of numbers, but ranges are not
+ * supported.
+
+ * Returns once all files are processed.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -12341,25 +12410,47 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
 };
 
 /**
- * Reads from one or more files located on the server into the specified table.
- * The table will be created if it doesn't already exist. Returns once all
- * files are processed
+ * Reads from one or more files located on the server and inserts the data into
+ * a new or existing table.
+ * <p>
+ * For CSV files, there are two loading schemes: positional and name-based. The
+ * name-based loading scheme is enabled when the file has a header present and
+ * <code>text_has_header</code> is set to <code>true</code>. In this scheme,
+ * the source file(s) field names must match the target table's column names
+ * exactly; however, the source file can have more fields than the target table
+ * has columns. If <code>error_handling</code> is set to
+ * <code>permissive</code>, the source file can have fewer fields than the
+ * target table has columns. If the name-based loading scheme is being used,
+ * names matching the file header's names may be provided to
+ * <code>columns_to_load</code> instead of numbers, but ranges are not
+ * supported.
+
+ * Returns once all files are processed.
  *
- * @param {String} table_name  Table name to load into. Will be created if it
- *                             does not already exist
- * @param {String[]} filepaths  File paths to load.  The paths must be within
- *                              the configured external_files_directory. Paths
- *                              may be absolute or relative to the configured
- *                              external_files_directory, and may also include
- *                              wildcards.
- * @param {Object} create_table_options  Options when creating the table.
- *                                       Includes type to use. The other
- *                                       options match those in
- *                                       {@linkcode GPUdb#create_table}
+ * @param {String} table_name  Name of the table into which the data will be
+ *                             inserted. If the table does not exist, the table
+ *                             will be created using either an existing
+ *                             <code>type_id</code> or the type inferred from
+ *                             the file.
+ * @param {String[]} filepaths  Absolute or relative filepath(s) from where
+ *                              files will be loaded. Relative filepaths are
+ *                              relative to the defined <a
+ *                              href="../../config/index.html#external-files"
+ *                              target="_top">external_files_directory</a>
+ *                              parameter in the server configuration. The
+ *                              filepaths may include wildcards (*). If the
+ *                              first path ends in .tsv, the text delimiter
+ *                              will be defaulted to a tab character. If the
+ *                              first path ends in .psv, the text delimiter
+ *                              will be defaulted to a pipe character (|).
+ * @param {Object} create_table_options  Options used when creating a new
+ *                                       table.
  *                                       <ul>
- *                                               <li> 'type_id': Optional: ID
- *                                       of a currently registered type.  The
- *                                       default value is ''.
+ *                                               <li> 'type_id': ID of a
+ *                                       currently registered <a
+ *                                       href="../../concepts/types.html"
+ *                                       target="_top">type</a>.  The default
+ *                                       value is ''.
  *                                               <li> 'no_error_if_exists': If
  *                                       <code>true</code>, prevents an error
  *                                       from occurring if the table already
@@ -12380,25 +12471,6 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       created. If empty, then the newly
  *                                       created table will be a top-level
  *                                       table.
- *                                               <li> 'is_collection':
- *                                       Indicates whether the new table to be
- *                                       created will be a collection.
- *                                       Supported values:
- *                                       <ul>
- *                                               <li> 'true'
- *                                               <li> 'false'
- *                                       </ul>
- *                                       The default value is 'false'.
- *                                               <li>
- *                                       'disallow_homogeneous_tables': No
- *                                       longer supported; value will be
- *                                       ignored.
- *                                       Supported values:
- *                                       <ul>
- *                                               <li> 'true'
- *                                               <li> 'false'
- *                                       </ul>
- *                                       The default value is 'false'.
  *                                               <li> 'is_replicated': For a
  *                                       table, affects the <a
  *                                       href="../../concepts/tables.html#distribution"
@@ -12530,156 +12602,177 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> 'file_type':
+ *                                  <li> 'batch_size': Specifies number of
+ *                          records to process before inserting.
+ *                                  <li> 'column_formats': For each target
+ *                          column specified, applies the column-property-bound
+ *                          format to the source data loaded into that column.
+ *                          Each column format will contain a mapping of one or
+ *                          more of its column properties to an appropriate
+ *                          format for each property.  Currently supported
+ *                          column properties include date, time, & datetime.
+ *                          The parameter value must be formatted as a JSON
+ *                          string of maps of column names to maps of column
+ *                          properties to their corresponding column formats,
+ *                          e.g., { "order_date" : { "date" : "%Y.%m.%d" },
+ *                          "order_time" : { "time" : "%H:%M:%S" } }.  See
+ *                          <code>default_column_formats</code> for valid
+ *                          format syntax.
+ *                                  <li> 'columns_to_load': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. Specifies a comma-delimited list of column
+ *                          positions or names to load instead of loading all
+ *                          columns in the file(s); if more than one file is
+ *                          being loaded, the list of columns will apply to all
+ *                          files. Column numbers can be specified discretely
+ *                          or as a range, e.g., a value of '5,7,1..3' will
+ *                          create a table with the first column in the table
+ *                          being the fifth column in the file, followed by
+ *                          seventh column in the file, then the first column
+ *                          through the fourth column in the file.
+ *                                  <li> 'default_column_formats': Specifies
+ *                          the default format to be applied to source data
+ *                          loaded into columns with the corresponding column
+ *                          property.  This default column-property-bound
+ *                          format can be overridden by specifying a column
+ *                          property & format for a given target column in
+ *                          <code>column_formats</code>. For each specified
+ *                          annotation, the format will apply to all columns
+ *                          with that annotation unless a custom
+ *                          <code>column_formats</code> for that annotation is
+ *                          specified. The parameter value must be formatted as
+ *                          a JSON string that is a map of column properties to
+ *                          their respective column formats, e.g., { "date" :
+ *                          "%Y.%m.%d", "time" : "%H:%M:%S" }. Column formats
+ *                          are specified as a string of control characters and
+ *                          plain text. The supported control characters are
+ *                          'Y', 'm', 'd', 'H', 'M', 'S', and 's', which follow
+ *                          the Linux 'strptime()' specification, as well as
+ *                          's', which specifies seconds and fractional seconds
+ *                          (though the fractional component will be truncated
+ *                          past milliseconds). Formats for the 'date'
+ *                          annotation must include the 'Y', 'm', and 'd'
+ *                          control characters. Formats for the 'time'
+ *                          annotation must include the 'H', 'M', and either
+ *                          'S' or 's' (but not both) control characters.
+ *                          Formats for the 'datetime' annotation meet both the
+ *                          'date' and 'time' control character requirements.
+ *                          For example, '{"datetime" : "%m/%d/%Y %H:%M:%S" }'
+ *                          would be used to interpret text as "05/04/2000
+ *                          12:12:11"
+ *                                  <li> 'dry_run': If set to
+ *                          <code>true</code>, no data will be inserted but the
+ *                          file will be read with the applied
+ *                          <code>error_handling</code> mode and the number of
+ *                          valid records that would be normally inserted are
+ *                          returned.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'delimited_text': Indicates that the
- *                          file(s) will be text with columns delimited, e.g. a
- *                          csv file
- *                                  <li> 'parquet': Parquet files are not
- *                          supported yet
+ *                                  <li> 'false'
+ *                                  <li> 'true'
  *                          </ul>
- *                          The default value is 'delimited_text'.
- *                                  <li> 'loading_mode': specifies how to
- *                          divide up data loading among nodes
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'head': The head node loads all data.
- *                          All files must be visible on the head node
- *                                  <li> 'distributed_shared': The worker nodes
- *                          load all data. All files must be visible on all
- *                          nodes. This is ideal for a shared file system.
- *                                  <li> 'distributed_local': Each worker node
- *                          loads all files that it sees. This is suitable when
- *                          each worker node has its own file system.
- *                          </ul>
- *                          The default value is 'head'.
- *                                  <li> 'error_handling':
+ *                          The default value is 'false'.
+ *                                  <li> 'error_handling': Specifies how errors
+ *                          should be handled upon insertion.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'permissive': Records with missing
- *                          columns are populated with nulls if possible,
- *                          otherwise malformed records are skipped.
+ *                          columns are populated with nulls if possible;
+ *                          otherwise, the malformed records are skipped.
  *                                  <li> 'ignore_bad_records': Malformed
- *                          records are skipped over.
- *                                  <li> 'abort': Aborts ingest when it
- *                          encounters an error.
+ *                          records are skipped.
+ *                                  <li> 'abort': Stops current insertion and
+ *                          aborts entire operation when an error is
+ *                          encountered.
  *                          </ul>
  *                          The default value is 'Permissive'.
- *                                  <li> 'truncate_table': Truncates the table
- *                          prior to loading the files.
+ *                                  <li> 'file_type': File type for the
+ *                          file(s).
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'delimited_text': Indicates the
+ *                          file(s) are in delimited text format, e.g., CSV,
+ *                          TSV, PSV, etc.
  *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'batch_size': Internal tuning
- *                          parameter, number of records per batch when loading
- *                          from file
- *                                  <li> 'column_formats': JSON map of colname
- *                          to map of format to value. The format a map for
- *                          each column specified, i.e. { "<columnname>" : {
- *                          "<annotation1>" : "<format>", "<annotation2>" :
- *                          "<format>" }, {"<column2name>" : ... }.  See
- *                          <code>default_column_formats</code> for valid
- *                          annotations to specify.
- *                                  <li> 'default_column_formats': Specifies
- *                          default formats using JSON. For each specified
- *                          annotation, the format will apply to all columns
- *                          with that annotation. The format is a map of
- *                          annotations to formats, i.e. { "<annoation1> :
- *                          "format", "<annotation2>" : "format", ...}.
- *                          Allowable annotations are 'date', 'time', and
- *                          'datetime. Each of those formats are specified with
- *                          control characters and plain text.  Date or time
- *                          values are expected in place of the control
- *                          characters. This is analagous to the Linux
- *                          strptime() call. The date annoation requires %Y,
- *                          %m, and %d. The time annoation requires %H, %M, and
- *                          either %S or %s, not both. The datetime annoation
- *                          must meet both date and time requirements. The
- *                          control charcters are:
- *                                                  %Y 4 digit year,
- *                                                  %m 2 digit month,
- *                                                  %d 2 digit day,
- *                                                  %H 2 digit hour (0 through
- *                          23),
- *                                                  %M 2 digit minute,
- *                                                  %S 2 digit second as an
- *                          integer,
- *                                                  %s 2 digit second followed
- *                          by a decimal point and fractional value (fractional
- *                          values beyond milliseconds are truncated).
- *                                                  As an example, {"datetime"
- *                          : "%m/%d/%Y %H:%M:%S" } would be used to interpret
- *                          text such as "05/04/2000 12:12:11"
- *                                  <li> 'dry_run': Walk through the files and
- *                          determine number of valid records.  Does not load
- *                          data. Applies the error handling mode to determine
- *                          valid behavior
+ *                          The default value is 'delimited_text'.
+ *                                  <li> 'loading_mode': Specifies how to
+ *                          divide data loading among nodes.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'false': no dry run
- *                                  <li> 'true': do a dry run
+ *                                  <li> 'head': The head node loads all data.
+ *                          All files must be available on the head node.
+ *                                  <li> 'distributed_shared': The worker nodes
+ *                          coordinate loading a set of files that are
+ *                          available to all of them. All files must be
+ *                          available on all nodes. This option is best when
+ *                          there is a shared file system.
+ *                                  <li> 'distributed_local': Each worker node
+ *                          loads all files that are available to it. This
+ *                          option is best when each worker node has its own
+ *                          file system.
  *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'text_has_header': Indicates whether
- *                          the text files have a header or not.
+ *                          The default value is 'head'.
+ *                                  <li> 'text_comment_string': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. All lines in the file(s) starting with the
+ *                          provided string are ignored. The comment string has
+ *                          no effect unless it appears at the beginning of a
+ *                          line.  The default value is '#'.
+ *                                  <li> 'text_delimiter': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. Specifies the delimiter for values and
+ *                          columns in the header row (if present). Must be a
+ *                          single character.  The default value is ','.
+ *                                  <li> 'text_escape_character': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only.  The character used in the file(s) to escape
+ *                          certain character sequences in text. For example,
+ *                          the escape character followed by a literal 'n'
+ *                          escapes to a newline character within the field.
+ *                          Can be used within quoted string to escape a quote
+ *                          character. An empty value for this option does not
+ *                          specify an escape character.
+ *                                  <li> 'text_has_header': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. Indicates whether the delimited text files
+ *                          have a header row.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
- *                                  <li> 'text_delimiter': Delimiter for csv
- *                          fields and header row. Must be a single character.
- *                          The default value is ','.
- *                                  <li> 'text_header_property_delimiter':
- *                          Delimiter for column properties in csv header row.
- *                          The default value is '|'.
- *                                  <li> 'columns_to_load': Optionally used to
- *                          specify a subset of columns to load, instead of
- *                          loading all columns in the file.
- *                          The columns to use are delimited by a comma. Column
- *                          numbers can be specified discretely or as a range
- *                          e.g. '1 .. 4' refers to the first through fourth
- *                          columns.
- *                          For example, a value of '5,3,1..2' will create a
- *                          table with the first column in the table being the
- *                          fifth column in the file, followed by third column
- *                          in the file, then the first column, and lastly the
- *                          second column.
- *                          Additionally, if the file(s) have a header, names
- *                          matching the file header names may be provided
- *                          instead of numbers. Ranges are not supported.
- *                          For example, a value of 'C, B, A' will create a
- *                          three column table with column C, followed by
- *                          column B, followed by column A.
- *                                  <li> 'text_comment_string': All lines
- *                          starting with the comment string are ignored. The
- *                          comment string has no effect unless it appears at
- *                          the beginning of a line.  The default value is '#'.
- *                                  <li> 'text_null_string': The value to treat
- *                          as null.  The default value is ''.
- *                                  <li> 'text_quote_character': The quote
- *                          character used to emcpomass a field. Must appear at
- *                          beginning and end of field to take effect.
- *                          Delimiters within quotes are not treated as
- *                          delimiters. Within quoted field, double quotes can
- *                          be used to escape a single literal quote character.
- *                          To not have a quote character, specifiy an empty
- *                          string for this option.  The default value is '"'.
- *                                  <li> 'text_escape_character': Escape
- *                          character. Escapes certain character sequences in
- *                          text. For example, the escape char followed by a
- *                          literal 'n' escapes to a newline character within
- *                          the field. The escape character followed by a 't'
- *                          escapes to a single tab character. Can be used
- *                          within q quoted string to escape a quote character.
- *                          An empty value for this option specifies to not
- *                          have an escape character. Default is no escape
- *                          character.
+ *                                  <li> 'text_header_property_delimiter': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. Specifies the delimiter for column properties
+ *                          in the header row (if present). Cannot be set to
+ *                          same value as text_delimiter.  The default value is
+ *                          '|'.
+ *                                  <li> 'text_null_string': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. The value in the file(s) to treat as a null
+ *                          value in the database.  The default value is ''.
+ *                                  <li> 'text_quote_character': For
+ *                          <code>delimited_text</code> <code>file_type</code>
+ *                          only. The quote character used in the file(s),
+ *                          typically encompassing a field value. The character
+ *                          must appear at beginning and end of field to take
+ *                          effect. Delimiters within quoted fields are not
+ *                          treated as delimiters. Within a quoted field,
+ *                          double quotes (") can be used to escape a single
+ *                          literal quote character. To not have a quote
+ *                          character, specify an empty string ("").  The
+ *                          default value is '"'.
+ *                                  <li> 'truncate_table': If set to
+ *                          <code>true</code>, truncates the table specified by
+ *                          <code>table_name</code> prior to loading the
+ *                          file(s).
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -13434,25 +13527,33 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               points, so the prediction is corrected after
  *                               each point. This solution type is the most
  *                               accurate but also the most computationally
- *                               intensive.
+ *                               intensive. Related options:
+ *                               <code>num_segments</code> and
+ *                               <code>chain_width</code>.
  *                                       <li> 'incremental_weighted': Matches
  *                               <code>sample_points</code> to the graph using
  *                               time and/or distance between points to
  *                               influence one or more shortest paths across
- *                               the sample points.
+ *                               the sample points. Related options:
+ *                               <code>num_segments</code>,
+ *                               <code>max_solve_length</code>,
+ *                               <code>time_window_width</code>, and
+ *                               <code>detect_loops</code>.
  *                                       <li> 'match_od_pairs': Matches
  *                               <code>sample_points</code> to find the most
  *                               probable path between origin and destination
- *                               pairs with cost constraints
+ *                               pairs with cost constraints.
  *                                       <li> 'match_supply_demand': Matches
  *                               <code>sample_points</code> to optimize
  *                               scheduling multiple supplies (trucks) with
  *                               varying sizes to varying demand sites with
- *                               varying capacities per depot
+ *                               varying capacities per depot. Related options:
+ *                               <code>partial_loading</code> and
+ *                               <code>max_combinations</code>.
  *                                       <li> 'match_batch_solves': Matches
  *                               <code>sample_points</code> source and
  *                               destination pairs for the shortest path solves
- *                               in batch mode
+ *                               in batch mode.
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -13537,9 +13638,9 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          the store's need
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true': Partial off loading at
+ *                                  <li> 'true': Partial off-loading at
  *                          multiple store (demand) locations
- *                                  <li> 'false': No partial off loading
+ *                                  <li> 'false': No partial off-loading
  *                          allowed if supply is less than the store's demand.
  *                          </ul>
  *                          The default value is 'true'.
@@ -13547,7 +13648,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          <code>match_supply_demand</code> solver only. This
  *                          is the cutoff for the number of generated
  *                          combinations for sequencing the demand locations -
- *                          can increase this upto 2M.  The default value is
+ *                          can increase this up to 2M.  The default value is
  *                          '10000'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
