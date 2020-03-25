@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.13.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.14.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -6980,8 +6980,8 @@ GPUdb.prototype.create_role = function(name, options, callback) {
 
 /**
  * Creates a new table or collection. If a new table is being created,
- * the type of the table is given by <code>type_id</code>, which must the be
- * the ID of
+ * the type of the table is given by <code>type_id</code>, which must be the ID
+ * of
  * a currently registered type (i.e. one created via
  * {@linkcode GPUdb#create_type}). The
  * table will be created inside a collection if the option
@@ -7037,8 +7037,8 @@ GPUdb.prototype.create_table_request = function(request, callback) {
 
 /**
  * Creates a new table or collection. If a new table is being created,
- * the type of the table is given by <code>type_id</code>, which must the be
- * the ID of
+ * the type of the table is given by <code>type_id</code>, which must be the ID
+ * of
  * a currently registered type (i.e. one created via
  * {@linkcode GPUdb#create_type}). The
  * table will be created inside a collection if the option
@@ -7063,7 +7063,7 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *
  * @param {String} table_name  Name of the table to be created. Error for
  *                             requests with existing table of the same name
- *                             and type id may be suppressed by using the
+ *                             and type ID may be suppressed by using the
  *                             <code>no_error_if_exists</code> option.  See <a
  *                             href="../../concepts/tables.html"
  *                             target="_top">Tables</a> for naming
