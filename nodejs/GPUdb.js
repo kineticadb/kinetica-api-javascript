@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.14.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.15.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -7249,22 +7249,20 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
 };
 
 /**
- * Creates a monitor that watches for table modification events such as
- * insert, update or delete on a particular table (identified by
+ * Creates a monitor that watches for a single table modification event
+ * type (insert, update, or delete) on a particular table (identified by
  * <code>table_name</code>) and forwards event notifications to subscribers via
  * ZMQ.
  * After this call completes, subscribe to the returned <code>topic_id</code>
  * on the
- * ZMQ table monitor port (default 9002). Each time a modification operation on
- * the
- * table completes, a multipart message is published for that topic; the first
- * part
- * contains only the topic ID, and each subsequent part contains one
- * binary-encoded
- * Avro object that corresponds to the event and can be decoded using
- * <code>type_schema</code>. The monitor will continue to run (regardless of
- * whether
- * or not there are any subscribers) until deactivated with
+ * ZMQ table monitor port (default 9002). Each time an operation of the given
+ * type
+ * on the table completes, a multipart message is published for that topic; the
+ * first part contains only the topic ID, and each subsequent part contains one
+ * binary-encoded Avro object that corresponds to the event and can be decoded
+ * using <code>type_schema</code>. The monitor will continue to run (regardless
+ * of
+ * whether or not there are any subscribers) until deactivated with
  * {@linkcode GPUdb#clear_table_monitor}.
  * <p>
  * For more information on table monitors, see
@@ -7302,22 +7300,20 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
 };
 
 /**
- * Creates a monitor that watches for table modification events such as
- * insert, update or delete on a particular table (identified by
+ * Creates a monitor that watches for a single table modification event
+ * type (insert, update, or delete) on a particular table (identified by
  * <code>table_name</code>) and forwards event notifications to subscribers via
  * ZMQ.
  * After this call completes, subscribe to the returned <code>topic_id</code>
  * on the
- * ZMQ table monitor port (default 9002). Each time a modification operation on
- * the
- * table completes, a multipart message is published for that topic; the first
- * part
- * contains only the topic ID, and each subsequent part contains one
- * binary-encoded
- * Avro object that corresponds to the event and can be decoded using
- * <code>type_schema</code>. The monitor will continue to run (regardless of
- * whether
- * or not there are any subscribers) until deactivated with
+ * ZMQ table monitor port (default 9002). Each time an operation of the given
+ * type
+ * on the table completes, a multipart message is published for that topic; the
+ * first part contains only the topic ID, and each subsequent part contains one
+ * binary-encoded Avro object that corresponds to the event and can be decoded
+ * using <code>type_schema</code>. The monitor will continue to run (regardless
+ * of
+ * whether or not there are any subscribers) until deactivated with
  * {@linkcode GPUdb#clear_table_monitor}.
  * <p>
  * For more information on table monitors, see
@@ -7328,7 +7324,9 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                             a collection.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> 'event':
+ *                                  <li> 'event': Type of modification event on
+ *                          the target table to be monitored by this table
+ *                          monitor.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'insert': Get notifications of new
@@ -13289,8 +13287,6 @@ GPUdb.prototype.kill_proc = function(run_id, options, callback) {
 };
 
 /**
- * Lists basic information about one or all graphs that exist on the graph
- * server.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -13298,6 +13294,7 @@ GPUdb.prototype.kill_proc = function(run_id, options, callback) {
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
+ * @private
  */
 GPUdb.prototype.list_graph_request = function(request, callback) {
     if (callback === undefined || callback === null) {
@@ -13323,17 +13320,14 @@ GPUdb.prototype.list_graph_request = function(request, callback) {
 };
 
 /**
- * Lists basic information about one or all graphs that exist on the graph
- * server.
  *
- * @param {String} graph_name  Name of the graph on which to retrieve
- *                             information. If empty, information about all
- *                             graphs is returned.
- * @param {Object} options  Optional parameters.
+ * @param {String} graph_name
+ * @param {Object} options
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
+ * @private
  */
 GPUdb.prototype.list_graph = function(graph_name, options, callback) {
     if (callback === undefined || callback === null) {
@@ -13701,6 +13695,27 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          (LINESTRING) towards a particular demand location
  *                          (store id) with its corresponding cost.  The
  *                          default value is 'true'.
+ *                                  <li> 'max_trip_cost': For the
+ *                          <code>match_supply_demand</code> solver only. If
+ *                          this constraint is greater than zero (default) then
+ *                          the trucks will skip travelling from one demand
+ *                          location to another if the cost between them is
+ *                          greater than this number (distance or time). Zero
+ *                          (default) value means no check is performed.  The
+ *                          default value is '0.0'.
+ *                                  <li> 'filter_folding_paths': For the
+ *                          <code>markov_chain</code> solver only. When true
+ *                          (non-default), the paths per sequence combination
+ *                          is checked for folding over patterns and can
+ *                          significantly increase the execution time depending
+ *                          on the chain width and the number of gps samples.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Filter out the folded paths.
+ *                                  <li> 'false': Do not filter out the folded
+ *                          paths
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
@@ -17163,6 +17178,20 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                'false'.
  *                                </ul>
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'image_encoding': Encoding to be
+ *                          applied to the output image. When using JSON
+ *                          serialization it is recommended to specify this as
+ *                          <code>base64</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'base64': Apply base64 encoding to the
+ *                          output image.
+ *                                  <li> 'none': Do not apply any additional
+ *                          encoding to the output image.
+ *                          </ul>
+ *                          The default value is 'none'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  * 
  * @returns {Promise} A promise that will be fulfilled with the response
