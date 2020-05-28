@@ -293,7 +293,7 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
 
                 if (response.status === "OK") {
                     try {
-                        var data = JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                        var data = JSON.parse( response.data_str );
                     } catch (e2) {
                         callback(new Error("Unable to parse response: " + e2), null);
                         return;
@@ -472,7 +472,7 @@ GPUdb.prototype.submit_request_async = function(endpoint, requestString, callbac
 
                     if (response.status === "OK") {
                         try {
-                            var data = JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                            var data = JSON.parse( response.data_str );
                         } catch (e) {
                             callback(new Error("Unable to parse response: " + e), null);
                             return;
@@ -540,7 +540,7 @@ GPUdb.prototype.submit_request_sync = function(endpoint, requestString) {
                 var response = JSON.parse(http.responseText);
 
                 if (response.status === "OK") {
-                    return JSON.parse(response.data_str.replace(/\\U/g,"\\u"));
+                    return JSON.parse( response.data_str );
                 } else {
                     error = new Error(response.message);
                 }
@@ -777,7 +777,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.15.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.16.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -12294,6 +12294,14 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          paths
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'unit_unloading_cost': For the
+ *                          <code>match_supply_demand</code> solver only. The
+ *                          unit cost per load amount to be delivered. If this
+ *                          value is greater than zero (default) then the
+ *                          additional cost of this unit load multiplied by the
+ *                          total dropped load will be added over to the trip
+ *                          cost to the demand location.  The default value is
+ *                          '0.0'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
