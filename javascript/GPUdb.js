@@ -777,7 +777,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.16.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.17.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -3810,8 +3810,11 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       Value string is ignored
  *                                               <li> 'clear_cache': Clears
  *                                       cached results.  Useful to allow
- *                                       repeated timing of endpoints. Value
- *                                       string is ignored
+ *                                       repeated timing of endpoints.  Value
+ *                                       string is the name of the table for
+ *                                       which to clear the cached results, or
+ *                                       an empty string to clear the cached
+ *                                       results for all tables.
  *                                               <li> 'communicator_test':
  *                                       Invoke the communicator test and
  *                                       report timing results. Value string is
@@ -3838,9 +3841,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               <li> 'true'
  *                                               <li> 'false'
  *                                       </ul>
- *                                               <li> 'bulk_add_test': Invoke
- *                                       the bulk add test and report timing
- *                                       results. Value string is ignored.
  *                                               <li> 'network_speed': Invoke
  *                                       the network speed test and report
  *                                       timing results. Value string is a
@@ -5182,6 +5182,7 @@ GPUdb.prototype.create_external_table_request = function(request, callback) {
  *                                  <li> 'external_storage_location':
  *                                  <li> 's3_bucket_name':
  *                                  <li> 's3_region':
+ *                                  <li> 'num_tasks_per_rank':
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -10657,7 +10658,9 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
  *                             access. Must be an existing table, collection,
  *                             or view. If a collection, the permission also
  *                             applies to tables and views in the collection.
- * @param {String} filter_expression  Reserved for future use.
+ * @param {String} filter_expression  Optional filter expression to apply to
+ *                                    this grant.  Only rows that match the
+ *                                    filter will be affected.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'columns': Apply security to these
@@ -11465,6 +11468,9 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'num_tasks_per_rank': Optional: number
+ *                          of tasks for reading file per rank. Default will be
+ *                          external_file_reader_num_tasks
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -12122,15 +12128,6 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               intensive. Related options:
  *                               <code>num_segments</code> and
  *                               <code>chain_width</code>.
- *                                       <li> 'incremental_weighted': Matches
- *                               <code>sample_points</code> to the graph using
- *                               time and/or distance between points to
- *                               influence one or more shortest paths across
- *                               the sample points. Related options:
- *                               <code>num_segments</code>,
- *                               <code>max_solve_length</code>,
- *                               <code>time_window_width</code>, and
- *                               <code>detect_loops</code>.
  *                                       <li> 'match_od_pairs': Matches
  *                               <code>sample_points</code> to find the most
  *                               probable path between origin and destination
@@ -12173,9 +12170,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  <li> 'num_segments': Maximum number of
  *                          potentially matching road segments for each sample
  *                          point. For the <code>markov_chain</code> solver,
- *                          the default is 3; for the
- *                          <code>incremental_weighted</code>, the default is
- *                          5.  The default value is ''.
+ *                          the default is 3.  The default value is '3'.
  *                                  <li> 'search_radius': Maximum search radius
  *                          used when snapping sample points onto potentially
  *                          matching surrounding segments. The default value
@@ -12186,33 +12181,6 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          the sample points lookahead window within the
  *                          Markov kernel; the larger the number, the more
  *                          accurate the solution.  The default value is '9'.
- *                                  <li> 'max_solve_length': For the
- *                          <code>incremental_weighted</code> solver only.
- *                          Maximum number of samples along the path on which
- *                          to solve.  The default value is '200'.
- *                                  <li> 'time_window_width': For the
- *                          <code>incremental_weighted</code> solver only. Time
- *                          window, also known as sampling period, in which
- *                          points are favored. To determine the raw window
- *                          value, the <code>time_window_width</code> value is
- *                          multiplied by the mean sample time (in seconds)
- *                          across all points, e.g., if
- *                          <code>time_window_width</code> is 30 and the mean
- *                          sample time is 2 seconds, points that are sampled
- *                          greater than 60 seconds after the previous point
- *                          are no longer favored in the solution.  The default
- *                          value is '30'.
- *                                  <li> 'detect_loops': For the
- *                          <code>incremental_weighted</code> solver only. If
- *                          <code>true</code>, a loop will be detected and
- *                          traversed even if it would make a shorter path to
- *                          ignore the loop.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
  *                                  <li> 'source': Optional WKT starting point
  *                          from <code>sample_points</code> for the solver. The
  *                          default behavior for the endpoint is to use time to
@@ -12302,6 +12270,33 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          total dropped load will be added over to the trip
  *                          cost to the demand location.  The default value is
  *                          '0.0'.
+ *                                  <li> 'max_num_threads': For the
+ *                          <code>markov_chain</code> solver only. If specified
+ *                          (greater than zero), the maximum number of threads
+ *                          will not be greater than the specified value. It
+ *                          can be lower due to the memory and the number cores
+ *                          available. Default value of zero allows the
+ *                          algorithm to set the maximal number of threads
+ *                          within these constraints.  The default value is
+ *                          '0'.
+ *                                  <li> 'truck_service_limit': For the
+ *                          <code>match_supply_demand</code> solver only. If
+ *                          specified (greather than zero), any truck's total
+ *                          service cost (distance or time) will be limited by
+ *                          the specified value including multiple rounds (if
+ *                          set).  The default value is '0.0'.
+ *                                  <li> 'enable_truck_reuse': For the
+ *                          <code>match_supply_demand</code> solver only. If
+ *                          specified (true), all trucks can be scheduled for
+ *                          second rounds from their originating depots.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Allows reusing trucks for
+ *                          scheduling again.
+ *                                  <li> 'false': Trucks are scheduled only
+ *                          once from their depots.
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -13973,10 +13968,11 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  * empty, information about all collections and top-level tables and views can
  * be returned.
  * <p>
- * If the option <code>get_sizes</code> is set to <code>true</code>, then the
- * sizes (objects and elements) of each table are returned (in
- * <code>sizes</code> and <code>full_sizes</code>), along with the total number
- * of objects in the requested table (in <code>total_size</code> and
+ * If the option <code>get_sizes</code> is set to
+ * <code>true</code>, then the number of records
+ * in each table is returned (in <code>sizes</code> and
+ * <code>full_sizes</code>), along with the total number of objects across all
+ * requested tables (in <code>total_size</code> and
  * <code>total_full_size</code>).
  * <p>
  * For a collection, setting the <code>show_children</code> option to
@@ -14019,10 +14015,11 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  * empty, information about all collections and top-level tables and views can
  * be returned.
  * <p>
- * If the option <code>get_sizes</code> is set to <code>true</code>, then the
- * sizes (objects and elements) of each table are returned (in
- * <code>sizes</code> and <code>full_sizes</code>), along with the total number
- * of objects in the requested table (in <code>total_size</code> and
+ * If the option <code>get_sizes</code> is set to
+ * <code>true</code>, then the number of records
+ * in each table is returned (in <code>sizes</code> and
+ * <code>full_sizes</code>), along with the total number of objects across all
+ * requested tables (in <code>total_size</code> and
  * <code>total_full_size</code>).
  * <p>
  * For a collection, setting the <code>show_children</code> option to
@@ -14051,7 +14048,9 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'true'.
  *                                  <li> 'get_sizes': If <code>true</code> then
- *                          the table sizes will be returned; blank, otherwise.
+ *                          the number of records in each table, along with a
+ *                          cumulative count, will be returned; blank,
+ *                          otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
