@@ -737,7 +737,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.17.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.0.18.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -16504,7 +16504,12 @@ GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restriction
  * in an equality predicate in the expressions.  Furthermore each 'pure primary
  * key' predicate must be unique within a given request.  These restrictions
  * can be removed by utilizing some available options through
- * <code>options</code>.
+ * <code>options</code>.Note that this operation can only be run on an original
+ * table and not on a collection or a result view.
+ * <p>
+ * The <code>update_on_existing_pk</code> option specifies the record collision
+ * policy for tables with a <a href="../../concepts/tables.html#primary-keys"
+ * target="_top">primary key</a>, and is ignored on tables with no primary key.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -16561,7 +16566,12 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  * in an equality predicate in the expressions.  Furthermore each 'pure primary
  * key' predicate must be unique within a given request.  These restrictions
  * can be removed by utilizing some available options through
- * <code>options</code>.
+ * <code>options</code>.Note that this operation can only be run on an original
+ * table and not on a collection or a result view.
+ * <p>
+ * The <code>update_on_existing_pk</code> option specifies the record collision
+ * policy for tables with a <a href="../../concepts/tables.html#primary-keys"
+ * target="_top">primary key</a>, and is ignored on tables with no primary key.
  *
  * @param {String} table_name  Table to be updated. Must be a currently
  *                             existing table and not a collection or view.
@@ -16601,14 +16611,30 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'update_on_existing_pk': Can be used
- *                          to customize behavior when the updated primary key
- *                          value already exists as described in
- *                          {@linkcode GPUdb#insert_records}.
+ *                                  <li> 'update_on_existing_pk': Specifies the
+ *                          record collision policy for tables with a <a
+ *                          href="../../concepts/tables.html#primary-keys"
+ *                          target="_top">primary key</a> when updating columns
+ *                          of the <a
+ *                          href="../../concepts/tables.html#primary-keys"
+ *                          target="_top">primary key</a> or inserting new
+ *                          records.  If <code>true</code>, existing records
+ *                          with primary key values that match those of a
+ *                          record being updated or inserted will be replaced
+ *                          by the updated and new records.  If
+ *                          <code>false</code>, existing records with matching
+ *                          primary key values will remain unchanged, and the
+ *                          updated or new records with primary key values that
+ *                          match those of existing records will be discarded.
+ *                          If the specified table does not have a primary key,
+ *                          then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Overwrite existing records
+ *                          when updated and inserted records have the same
+ *                          primary keys
+ *                                  <li> 'false': Discard updated and inserted
+ *                          records when the same primary keys already exist
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'update_partition': Force qualifying
@@ -17273,6 +17299,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         cb_vals: request.cb_vals,
         cb_pointcolor_attr: request.cb_pointcolor_attr,
         cb_pointcolor_vals: request.cb_pointcolor_vals,
+        cb_pointalpha_attr: request.cb_pointalpha_attr,
+        cb_pointalpha_vals: request.cb_pointalpha_vals,
         cb_pointsize_attr: request.cb_pointsize_attr,
         cb_pointsize_vals: request.cb_pointsize_vals,
         cb_pointshape_attr: request.cb_pointshape_attr,
@@ -17305,6 +17333,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {String[]} cb_vals
  * @param {String} cb_pointcolor_attr
  * @param {String[]} cb_pointcolor_vals
+ * @param {String} cb_pointalpha_attr
+ * @param {String[]} cb_pointalpha_vals
  * @param {String} cb_pointsize_attr
  * @param {String[]} cb_pointsize_vals
  * @param {String} cb_pointshape_attr
@@ -17362,6 +17392,8 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                The default value is 'false'.
  *                                        <li> 'pointcolors': The default value
  *                                is 'FF0000'.
+ *                                        <li> 'cb_pointalphas': The default
+ *                                value is '255'.
  *                                        <li> 'pointsizes': The default value
  *                                is '3'.
  *                                        <li> 'pointoffset_x': The default
@@ -17448,12 +17480,12 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                    object, if no callback function is provided.
  * @private
  */
-GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, callback) {
+GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointalpha_attr, cb_pointalpha_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, function(err, response) {
+            self.visualize_image_classbreak(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointalpha_attr, cb_pointalpha_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -17474,6 +17506,8 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
         cb_vals: cb_vals,
         cb_pointcolor_attr: cb_pointcolor_attr,
         cb_pointcolor_vals: cb_pointcolor_vals,
+        cb_pointalpha_attr: cb_pointalpha_attr,
+        cb_pointalpha_vals: cb_pointalpha_vals,
         cb_pointsize_attr: cb_pointsize_attr,
         cb_pointsize_vals: cb_pointsize_vals,
         cb_pointshape_attr: cb_pointshape_attr,
