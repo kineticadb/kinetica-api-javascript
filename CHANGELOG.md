@@ -4,13 +4,40 @@
 
 ### Version 7.1.0.0 - TBD
 
-#### Notes
--   Version release
+#### Note
 -   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
 
 
 
 ## Version 7.0
+
+### Version 7.0.20.0 - TBD
+
+#### Fixed
+-   Updated the examples to not clear *all* tables, but just the table
+    being used in the example.
+
+#### Note
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+
+
+### Version 7.0.19.0 - TBD
+
+#### Note
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+
+
+### Version 7.0.18.0 - 2020-07-30
+
+#### Notes
+-   Version release
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+
+
+### Version 7.0.17.0 - 2020-07-06
+
+#### Note
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
 
 ### Version 7.0.16.0 - TBD
 
