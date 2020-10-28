@@ -28,14 +28,15 @@ function main()
     var table_name = "my_table";
 
     console.log( "Establishing a connection with GPUdb..." );
-    var gpudb = new GPUdb( "http://localhost:9191" ); // One host
-    var gpudbHA = new GPUdb( ["http://localhost:9191",
-                              "http://localhost:9192"
+    var host = "localhost";
+    var gpudb = new GPUdb( `http://${host}:9191` ); // One host
+    var gpudbHA = new GPUdb( [`http://${host}:9191`,
+                              `http://${host}:9192`
                              ] ); // Multiple hosts as a single list
 
     // Clear the table from the database, in case it was created
     // by a previous run of the example program
-    gpudb.clear_table( table_name );
+    gpudb.clear_table( table_name, null, {"no_error_if_not_exists": "true"} );
 
     // Declare the data type for the table
     var my_type = {

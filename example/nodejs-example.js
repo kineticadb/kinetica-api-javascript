@@ -1,9 +1,10 @@
 var GPUdb = require("../nodejs/GPUdb.js");
 
 console.log("Establishing a connection with GPUdb...");
-var gpudb = new GPUdb("http://localhost:9191"); // Single host
-var gpudbHA = new GPUdb( ["http://localhost:9191",
-                          "http://localhost:9192"
+var host = "localhost";
+var gpudb = new GPUdb(`http://${host}:9191`); // Single host
+var gpudbHA = new GPUdb( [`http://${host}:9191`,
+                          `http://${host}:9192`
                          ] ); // Multiple hosts as a single list
 
 var operation_number = 0;
@@ -46,7 +47,8 @@ var operations = [
     // Clear the table from the database, in case it was created
     // by a previous run of the example program
     function() {
-        gpudb.clear_table(table_name, null, {}, build_callback());
+        gpudb.clear_table( table_name, null, {"no_error_if_not_exists": "true"},
+                           build_callback() );
     },
 
     // Register the data type for the table with GPUdb and get the type's ID

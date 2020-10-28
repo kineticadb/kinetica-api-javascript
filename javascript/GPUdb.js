@@ -146,7 +146,162 @@ function GPUdb(url, options) {
                                }
                            } );
 
-}
+    // Protected headers
+    this._protected_headers = ["Accept", "Authorization", "Content-type", "X-Kinetica-Group"];
+
+    // Custom headers set by users
+    this._custom_http_headers = {};
+    Object.defineProperty( this, "custom_http_headers",
+                           {
+                               enumerable: true,
+                               get: function() { return this._custom_http_headers; },
+                               set: function( value ) {
+                                   // Value must be an object
+                                   if ( typeof( value ) !== 'object' ) {
+                                       throw "Value must be an object";
+                                   }
+
+                                   // Handle nulls (which are also objects)
+                                   if ( value === null ) {
+                                       return;
+                                   }
+
+                                   // Protected headers are not allowed to be overridden
+                                   const headers = Object.keys( value );
+                                   headers.forEach( (header, index) => {
+                                       // Check this header against each of the protecetd ones
+                                       if ( this._protected_headers.indexOf( header ) > -1 ) {
+                                           throw `Cannot override protected header ${header}`;
+                                       }
+                                   } );
+
+                                   this._custom_http_headers =  value;
+                               }
+                           }
+                         );
+} // end GPUdb
+
+
+/**
+ * Adds an HTTP header to the map of additional HTTP headers to send to
+ * the server with each endpoint request.  If the header is already in the map,
+ * its value is replaced with the specified value.  The user is not allowed
+ * to modify the following headers:
+ * <ul>
+ *     <li>  'Accept'
+ *     <li>  'Authorization'
+ *     <li>  'Content-type'
+ *     <li>  'X-Kinetica-Group'
+ *  </ul>
+ *
+ * @param {String} header  The custom header to add.
+ * @param {String} header  The value for the custom header to add.
+ */
+GPUdb.prototype.add_http_header = function( header, value ) {
+    if ( ( header === undefined )
+         || ( header === null )
+         || ( ( typeof header !== 'string' )
+              && !(header instanceof String) )
+         || (header == "") ) {
+        throw `Header ${header} must be a non-empty string!`;
+    }
+
+    // The value must also be a string
+    // The header must be given and be a string (empty strings allowed)
+    if ( ( value === undefined )
+         || ( value === null )
+         || ( ( typeof value !== 'string' )
+              && !(value instanceof String) ) ) {
+        throw `Value ${value} must be a string!`;
+    }
+
+    // Protected headers are not allowed to be overridden
+    if ( this._protected_headers.indexOf( header ) > -1 ) {
+        throw `Cannot override protected header ${header}`;
+    }
+
+    this._custom_http_headers[ header ] = value;
+}  // end add_http_header
+
+
+
+/**
+ * Removes the given HTTP header from the map of additional HTTP headers
+ * to send to GPUdb with each request. The user is not allowed to remove
+ * the following protected headers:
+ * <ul>
+ *     <li>  'Accept'
+ *     <li>  'Authorization'
+ *     <li>  'Content-type'
+ *     <li>  'X-Kinetica-Group'
+ *  </ul>
+ *
+ * @param {String} header  The header to remove.
+ */
+GPUdb.prototype.remove_http_header = function( header ) {
+    // Protected headers are not allowed to be overridden
+    if ( this._protected_headers.indexOf( header ) > -1 ) {
+        throw `Cannot remove protected header ${header}`;
+    }
+
+    // Can remove the header only if it exists!
+    if ( header in this._custom_http_headers ) {
+        delete this._custom_http_headers[ header ];
+    }
+}  // end remove_http_header
+
+
+/**
+ * Returns an object containing all the custom headers used currently
+ * by the API.  Returns a deep copy so that the user does not
+ * accidentally change the actual headers.  Note that the API may use other
+ * headers as appropriate; the ones returned here are the custom ones set
+ * up by the user.
+ *
+ * @returns {Object}  The object containing all the custom headers the
+ *                    user has set up so far.
+ */
+GPUdb.prototype.get_http_headers = function() {
+    // Return a deep copy
+    return JSON.parse( JSON.stringify( this._custom_http_headers ) );
+}  // end get_http_headers
+
+
+
+/**
+ * Sets the headers for the given request.
+ *
+ * @private
+ * @param {XMLHttpRequest}  The HTTP request object which needs it headers set.
+ * @param {String} The authorization string, if any.
+ * @param {Object} Pairs of key and value for custom HTTP headers.
+ */
+GPUdb.prototype._create_headers = function( http_request,
+                                            authorization,
+                                            custom_headers ) {
+    // JavaScript always uses JSON encoding
+    http_request.setRequestHeader("Content-type", "application/json");
+
+    // Use the class members if some arguments are missing
+    if (authorization === undefined ) {
+        authorization = this.authorization;
+    }
+    if (custom_headers === undefined ) {
+        custom_headers = this._custom_http_headers;
+    }
+
+    // Set the authorization header only if username and password are set
+    if (authorization !== "") {
+        http_request.setRequestHeader("Authorization", authorization);
+    }
+
+    // Set the custom headers
+    for (let header in custom_headers) {
+        http_request.setRequestHeader(header, custom_headers[ header ] );
+    }
+
+    return http_request;
+}  // end _create_headers
 
 
 /**
@@ -202,13 +357,15 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
 
     // The timeout interval betwee /get/job calls, in milliseconds
     var timeoutInterval = 5000; // 5 seconds
-    
+
     var initialURL = this.urls.getCurrentItem();
 
     var urls = this.urls;
     var authorization = this.authorization;
     var timeout = this.timeout;
     var failureCount = 0;
+    var custom_headers  = this._custom_http_headers;
+    var _create_headers = this._create_headers;
 
     /// Wraps the async callback with auto-retry logic
     var failureWrapperCB = function(err, data, url, http, job_id) {
@@ -243,15 +400,13 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
         };
         var get_job_request_string = JSON.stringify( get_job_request );
 
-        
+
         var http = new XMLHttpRequest();
         var url = urls.getCurrentItem();
         http.open("POST", url + "/get/job", true);
-        http.setRequestHeader("Content-type", "application/json");
 
-        if (authorization !== "") {
-            http.setRequestHeader("Authorization", authorization);
-        }
+        // Set all the headers, custom and internally necessary ones
+        _create_headers( http, authorization, custom_headers );
 
         var timedOut = false;
 
@@ -282,7 +437,7 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
         if (!timedOut)
         {
             var is_create_job_call = false;
-            
+
             if (http.status === 200 || http.status === 400) {
                 try {
                     var response = JSON.parse(http.responseText);
@@ -312,7 +467,7 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
                             // the callback with the payload of the actual
                             // endpoint's reponse
                             callback( null, JSON.parse( data.job_response_str ) );
-                            
+
                         } else if ( !data.running ) {
                             // If the job has been cancelled or there is an erro,
                             // then we return an error
@@ -342,7 +497,7 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
                     else { // should never get here
                         callback(new Error("Unexpected endpoint response: " + response.data_type), null);
                     }
-                        
+
                 } else {
                     callback(new Error(response.message), null);
                 }
@@ -366,7 +521,7 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
         }
     };  // end getJobCallback
 
-    
+
     // Makes a /create/job call
     var sendInitialRequest = function( get_job ) {
 
@@ -380,16 +535,14 @@ GPUdb.prototype.submit_job_request_async = function(endpoint, requestString, cal
         };
         var create_job_request_string = JSON.stringify( create_job_request );
 
-        
+
         var http = new XMLHttpRequest();
         var url = urls.getCurrentItem();
         http.open("POST", url + "/create/job", true);
         // http.open("POST", url + endpoint, true);
-        http.setRequestHeader("Content-type", "application/json");
 
-        if (authorization !== "") {
-            http.setRequestHeader("Authorization", authorization);
-        }
+        // Set all the headers, custom and internally necessary ones
+        _create_headers( http, authorization, custom_headers );
 
         var timedOut = false;
 
@@ -431,6 +584,8 @@ GPUdb.prototype.submit_request_async = function(endpoint, requestString, callbac
     var authorization = this.authorization;
     var timeout = this.timeout;
     var failureCount = 0;
+    var custom_headers  = this._custom_http_headers;
+    var _create_headers = this._create_headers;
 
     /// Wraps the async callback with auto-retry logic
     var failureWrapperCB = function(err, data, url) {
@@ -452,11 +607,9 @@ GPUdb.prototype.submit_request_async = function(endpoint, requestString, callbac
         var http = new XMLHttpRequest();
         var url = urls.getCurrentItem();
         http.open("POST", url + endpoint, true);
-        http.setRequestHeader("Content-type", "application/json");
 
-        if (authorization !== "") {
-            http.setRequestHeader("Authorization", authorization);
-        }
+        // Set all the headers, custom and internally necessary ones
+        _create_headers( http, authorization, custom_headers );
 
         var timedOut = false;
 
@@ -520,13 +673,9 @@ GPUdb.prototype.submit_request_sync = function(endpoint, requestString) {
     do {
         var http = new XMLHttpRequest();
         http.open("POST", this.urls.getCurrentItem() + endpoint, false);
-        http.setRequestHeader("Content-type", "application/json");
 
-        var authorization = this.authorization;
-
-        if (authorization !== "") {
-            http.setRequestHeader("Authorization", authorization);
-        }
+        // Set all the headers, custom and internally necessary ones
+        http = this._create_headers( http );
 
         try {
             http.send(requestString);
@@ -777,7 +926,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.0.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.1.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -853,7 +1002,7 @@ GPUdb.decode_regular = function(o) {
         return JSON.parse(o);
     }
 };
-    
+
 
 /**
  * Decodes a JSON string, or array of JSON strings, returned from GPUdb into
@@ -874,7 +1023,7 @@ GPUdb.decode_no_inf_nan = function(o) {
 
         return result;
     } else {
-        // Check for 
+        // Check for
         return JSON.parse( o, function(k, v) {
             if (v === "Infinity") return null;
             else if (v === "-Infinity") return null;
@@ -1112,7 +1261,7 @@ GPUdb.Type.prototype.create = function(gpudb, callback) {
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} The GeoJSON containing the requested records.
- * 
+ *
  */
 GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, callback) {
     var actual_request = {
@@ -1154,7 +1303,6 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_add_host_request = function(request, callback) {
     var actual_request = {
@@ -1233,7 +1381,6 @@ GPUdb.prototype.admin_add_host_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_add_host = function(host_address, options, callback) {
     var actual_request = {
@@ -1281,7 +1428,6 @@ GPUdb.prototype.admin_add_host = function(host_address, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
     var actual_request = {
@@ -1390,7 +1536,6 @@ GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_add_ranks = function(hosts, config_params, options, callback) {
     var actual_request = {
@@ -1418,7 +1563,6 @@ GPUdb.prototype.admin_add_ranks = function(hosts, config_params, options, callba
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_alter_host_request = function(request, callback) {
     var actual_request = {
@@ -1462,7 +1606,6 @@ GPUdb.prototype.admin_alter_host_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_alter_host = function(host, options, callback) {
     var actual_request = {
@@ -1492,7 +1635,6 @@ GPUdb.prototype.admin_alter_host = function(host, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_alter_jobs_request = function(request, callback) {
     var actual_request = {
@@ -1533,7 +1675,6 @@ GPUdb.prototype.admin_alter_jobs_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_alter_jobs = function(job_ids, action, options, callback) {
     var actual_request = {
@@ -1560,7 +1701,6 @@ GPUdb.prototype.admin_alter_jobs = function(job_ids, action, options, callback) 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_offline_request = function(request, callback) {
     var actual_request = {
@@ -1600,7 +1740,6 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_offline = function(offline, options, callback) {
     var actual_request = {
@@ -1650,7 +1789,6 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_rebalance_request = function(request, callback) {
     var actual_request = {
@@ -1793,7 +1931,6 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_rebalance = function(options, callback) {
     var actual_request = {
@@ -1823,7 +1960,6 @@ GPUdb.prototype.admin_rebalance = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_remove_host_request = function(request, callback) {
     var actual_request = {
@@ -1867,7 +2003,6 @@ GPUdb.prototype.admin_remove_host_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_remove_host = function(host, options, callback) {
     var actual_request = {
@@ -1903,7 +2038,6 @@ GPUdb.prototype.admin_remove_host = function(host, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
     var actual_request = {
@@ -1988,7 +2122,6 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_remove_ranks = function(ranks, options, callback) {
     var actual_request = {
@@ -2014,7 +2147,6 @@ GPUdb.prototype.admin_remove_ranks = function(ranks, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
     var actual_request = {
@@ -2044,7 +2176,6 @@ GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_alerts = function(num_alerts, options, callback) {
     var actual_request = {
@@ -2074,7 +2205,6 @@ GPUdb.prototype.admin_show_alerts = function(num_alerts, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_cluster_operations_request = function(request, callback) {
     var actual_request = {
@@ -2105,7 +2235,6 @@ GPUdb.prototype.admin_show_cluster_operations_request = function(request, callba
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_cluster_operations = function(history_index, options, callback) {
     var actual_request = {
@@ -2130,7 +2259,6 @@ GPUdb.prototype.admin_show_cluster_operations = function(history_index, options,
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_jobs_request = function(request, callback) {
     var actual_request = {
@@ -2166,7 +2294,6 @@ GPUdb.prototype.admin_show_jobs_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_jobs = function(options, callback) {
     var actual_request = {
@@ -2192,7 +2319,6 @@ GPUdb.prototype.admin_show_jobs = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_shards_request = function(request, callback) {
     var actual_request = {
@@ -2217,7 +2343,6 @@ GPUdb.prototype.admin_show_shards_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_show_shards = function(options, callback) {
     var actual_request = {
@@ -2241,7 +2366,6 @@ GPUdb.prototype.admin_show_shards = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_shutdown_request = function(request, callback) {
     var actual_request = {
@@ -2270,7 +2394,6 @@ GPUdb.prototype.admin_shutdown_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_shutdown = function(exit_type, authorization, options, callback) {
     var actual_request = {
@@ -2297,7 +2420,6 @@ GPUdb.prototype.admin_shutdown = function(exit_type, authorization, options, cal
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_switchover_request = function(request, callback) {
     var actual_request = {
@@ -2358,7 +2480,6 @@ GPUdb.prototype.admin_switchover_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_switchover = function(processes, destinations, options, callback) {
     var actual_request = {
@@ -2386,7 +2507,6 @@ GPUdb.prototype.admin_switchover = function(processes, destinations, options, ca
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_verify_db_request = function(request, callback) {
     var actual_request = {
@@ -2453,7 +2573,6 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.admin_verify_db = function(options, callback) {
     var actual_request = {
@@ -2478,7 +2597,6 @@ GPUdb.prototype.admin_verify_db = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
     var actual_request = {
@@ -2517,7 +2635,6 @@ GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_column_name, options, callback) {
     var actual_request = {
@@ -2606,7 +2723,6 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
     var actual_request = {
@@ -2869,7 +2985,6 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, limit, options, callback) {
     var actual_request = {
@@ -2924,7 +3039,6 @@ GPUdb.prototype.aggregate_group_by = function(table_name, column_names, offset, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
     var actual_request = {
@@ -2986,7 +3100,6 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_histogram = function(table_name, column_name, start, end, interval, options, callback) {
     var actual_request = {
@@ -3032,7 +3145,6 @@ GPUdb.prototype.aggregate_histogram = function(table_name, column_name, start, e
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
     var actual_request = {
@@ -3104,7 +3216,6 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_k_means = function(table_name, column_names, k, tolerance, options, callback) {
     var actual_request = {
@@ -3133,7 +3244,6 @@ GPUdb.prototype.aggregate_k_means = function(table_name, column_names, k, tolera
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_min_max_request = function(request, callback) {
     var actual_request = {
@@ -3168,7 +3278,6 @@ GPUdb.prototype.aggregate_min_max_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, callback) {
     var actual_request = {
@@ -3195,7 +3304,6 @@ GPUdb.prototype.aggregate_min_max = function(table_name, column_name, options, c
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_min_max_geometry_request = function(request, callback) {
     var actual_request = {
@@ -3229,7 +3337,6 @@ GPUdb.prototype.aggregate_min_max_geometry_request = function(request, callback)
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_min_max_geometry = function(table_name, column_name, options, callback) {
     var actual_request = {
@@ -3311,7 +3418,6 @@ GPUdb.prototype.aggregate_min_max_geometry = function(table_name, column_name, o
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
     var actual_request = {
@@ -3454,7 +3560,6 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, options, callback) {
     var actual_request = {
@@ -3513,7 +3618,6 @@ GPUdb.prototype.aggregate_statistics = function(table_name, column_name, stats, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callback) {
     var actual_request = {
@@ -3612,7 +3716,6 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expression, column_name, value_column_name, stats, start, end, interval, options, callback) {
     var actual_request = {
@@ -3687,7 +3790,6 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_unique_request = function(request, callback) {
     var actual_request = {
@@ -3868,7 +3970,6 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, limit, options, callback) {
     var actual_request = {
@@ -3928,7 +4029,6 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
     var actual_request = {
@@ -4089,7 +4189,6 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_column_name, value_column_name, pivoted_columns, options, callback) {
     var actual_request = {
@@ -4131,7 +4230,6 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_datasource_request = function(request, callback) {
     var actual_request = {
@@ -4206,20 +4304,30 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 <li> 'false'
  *                                         </ul>
  *                                         The default value is 'false'.
+ *                                                 <li>
+ *                                         'azure_storage_account_name': Name
+ *                                         of the Azure storage account to use
+ *                                         as the data source, this is valid
+ *                                         only if tenant_id is specified
  *                                                 <li> 'azure_container_name':
  *                                         Name of the Azure storage container
  *                                         to use as the data source
+ *                                                 <li> 'azure_tenant_id':
+ *                                         Active Directory tenant ID (or
+ *                                         directory ID)
  *                                                 <li> 'azure_sas_token':
  *                                         Shared access signature token for
  *                                         Azure storage account to use as the
  *                                         data source
+ *                                                 <li> 'azure_oauth_token':
+ *                                         Oauth token to access given storage
+ *                                         container
  *                                         </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_datasource = function(name, datasource_updates_map, options, callback) {
     var actual_request = {
@@ -4246,7 +4354,6 @@ GPUdb.prototype.alter_datasource = function(name, datasource_updates_map, option
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_resource_group_request = function(request, callback) {
     var actual_request = {
@@ -4334,7 +4441,6 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_resource_group = function(name, tier_attributes, ranking, adjoining_resource_group, options, callback) {
     var actual_request = {
@@ -4362,7 +4468,6 @@ GPUdb.prototype.alter_resource_group = function(name, tier_attributes, ranking, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_role_request = function(request, callback) {
     var actual_request = {
@@ -4400,7 +4505,6 @@ GPUdb.prototype.alter_role_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_role = function(name, action, value, options, callback) {
     var actual_request = {
@@ -4428,7 +4532,6 @@ GPUdb.prototype.alter_role = function(name, action, value, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_schema_request = function(request, callback) {
     var actual_request = {
@@ -4468,7 +4571,6 @@ GPUdb.prototype.alter_schema_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_schema = function(schema_name, action, value, options, callback) {
     var actual_request = {
@@ -4500,7 +4602,6 @@ GPUdb.prototype.alter_schema = function(schema_name, action, value, options, cal
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_system_properties_request = function(request, callback) {
     var actual_request = {
@@ -4677,7 +4778,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_system_properties = function(property_updates_map, options, callback) {
     var actual_request = {
@@ -4751,7 +4851,6 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_table_request = function(request, callback) {
     var actual_request = {
@@ -5104,7 +5203,6 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_table = function(table_name, action, value, options, callback) {
     var actual_request = {
@@ -5146,7 +5244,6 @@ GPUdb.prototype.alter_table = function(table_name, action, value, options, callb
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_table_columns_request = function(request, callback) {
     var actual_request = {
@@ -5203,7 +5300,6 @@ GPUdb.prototype.alter_table_columns_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_table_columns = function(table_name, column_alterations, options, callback) {
     var actual_request = {
@@ -5234,7 +5330,6 @@ GPUdb.prototype.alter_table_columns = function(table_name, column_alterations, o
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_table_metadata_request = function(request, callback) {
     var actual_request = {
@@ -5277,7 +5372,6 @@ GPUdb.prototype.alter_table_metadata_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, options, callback) {
     var actual_request = {
@@ -5312,7 +5406,6 @@ GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, optio
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_tier_request = function(request, callback) {
     var actual_request = {
@@ -5358,7 +5451,6 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_tier = function(name, options, callback) {
     var actual_request = {
@@ -5383,7 +5475,6 @@ GPUdb.prototype.alter_tier = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_user_request = function(request, callback) {
     var actual_request = {
@@ -5426,7 +5517,6 @@ GPUdb.prototype.alter_user_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.alter_user = function(name, action, value, options, callback) {
     var actual_request = {
@@ -5458,7 +5548,6 @@ GPUdb.prototype.alter_user = function(name, action, value, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.append_records_request = function(request, callback) {
     var actual_request = {
@@ -5568,7 +5657,6 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.append_records = function(table_name, source_table_name, field_map, options, callback) {
     var actual_request = {
@@ -5596,7 +5684,6 @@ GPUdb.prototype.append_records = function(table_name, source_table_name, field_m
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_statistics_request = function(request, callback) {
     var actual_request = {
@@ -5631,7 +5718,6 @@ GPUdb.prototype.clear_statistics_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_statistics = function(table_name, column_name, options, callback) {
     var actual_request = {
@@ -5661,7 +5747,6 @@ GPUdb.prototype.clear_statistics = function(table_name, column_name, options, ca
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_table_request = function(request, callback) {
     var actual_request = {
@@ -5715,7 +5800,6 @@ GPUdb.prototype.clear_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_table = function(table_name, authorization, options, callback) {
     var actual_request = {
@@ -5742,7 +5826,6 @@ GPUdb.prototype.clear_table = function(table_name, authorization, options, callb
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
     var actual_request = {
@@ -5769,7 +5852,6 @@ GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_table_monitor = function(topic_id, options, callback) {
     var actual_request = {
@@ -5796,7 +5878,6 @@ GPUdb.prototype.clear_table_monitor = function(topic_id, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_trigger_request = function(request, callback) {
     var actual_request = {
@@ -5823,7 +5904,6 @@ GPUdb.prototype.clear_trigger_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
     var actual_request = {
@@ -5848,7 +5928,6 @@ GPUdb.prototype.clear_trigger = function(trigger_id, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.collect_statistics_request = function(request, callback) {
     var actual_request = {
@@ -5881,7 +5960,6 @@ GPUdb.prototype.collect_statistics_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.collect_statistics = function(table_name, column_names, options, callback) {
     var actual_request = {
@@ -5910,7 +5988,6 @@ GPUdb.prototype.collect_statistics = function(table_name, column_names, options,
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_datasource_request = function(request, callback) {
     var actual_request = {
@@ -5975,17 +6052,24 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'azure_storage_account_name': Name of
+ *                          the Azure storage account to use as the data
+ *                          source, this is valid only if tenant_id is
+ *                          specified
  *                                  <li> 'azure_container_name': Name of the
  *                          Azure storage container to use as the data source
+ *                                  <li> 'azure_tenant_id': Active Directory
+ *                          tenant ID (or directory ID)
  *                                  <li> 'azure_sas_token': Shared access
  *                          signature token for Azure storage account to use as
  *                          the data source
+ *                                  <li> 'azure_oauth_token': Oauth token to
+ *                          access given storage container
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_datasource = function(name, location, user_name, password, options, callback) {
     var actual_request = {
@@ -6024,7 +6108,6 @@ GPUdb.prototype.create_datasource = function(name, location, user_name, password
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_graph_request = function(request, callback) {
     var actual_request = {
@@ -6318,7 +6401,6 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_graph = function(graph_name, directed_graph, nodes, edges, weights, restrictions, options, callback) {
     var actual_request = {
@@ -6351,7 +6433,6 @@ GPUdb.prototype.create_graph = function(graph_name, directed_graph, nodes, edges
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_job_request = function(request, callback) {
     var actual_request = {
@@ -6421,7 +6502,6 @@ GPUdb.prototype.create_job_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_job = function(endpoint, request_encoding, data, data_str, options, callback) {
     var actual_request = {
@@ -6454,7 +6534,6 @@ GPUdb.prototype.create_job = function(endpoint, request_encoding, data, data_str
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_join_table_request = function(request, callback) {
     var actual_request = {
@@ -6552,7 +6631,6 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_join_table = function(join_table_name, table_names, column_names, expressions, options, callback) {
     var actual_request = {
@@ -6592,7 +6670,6 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_materialized_view_request = function(request, callback) {
     var actual_request = {
@@ -6692,7 +6769,6 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_materialized_view = function(table_name, options, callback) {
     var actual_request = {
@@ -6720,7 +6796,6 @@ GPUdb.prototype.create_materialized_view = function(table_name, options, callbac
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_proc_request = function(request, callback) {
     var actual_request = {
@@ -6798,7 +6873,6 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command, args, options, callback) {
     var actual_request = {
@@ -6861,7 +6935,6 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_projection_request = function(request, callback) {
     var actual_request = {
@@ -7046,7 +7119,6 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_projection = function(table_name, projection_name, column_names, options, callback) {
     var actual_request = {
@@ -7073,7 +7145,6 @@ GPUdb.prototype.create_projection = function(table_name, projection_name, column
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_resource_group_request = function(request, callback) {
     var actual_request = {
@@ -7147,7 +7218,6 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_resource_group = function(name, tier_attributes, ranking, adjoining_resource_group, options, callback) {
     var actual_request = {
@@ -7175,7 +7245,6 @@ GPUdb.prototype.create_resource_group = function(name, tier_attributes, ranking,
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_role_request = function(request, callback) {
     var actual_request = {
@@ -7207,7 +7276,6 @@ GPUdb.prototype.create_role_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_role = function(name, options, callback) {
     var actual_request = {
@@ -7235,7 +7303,6 @@ GPUdb.prototype.create_role = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_schema_request = function(request, callback) {
     var actual_request = {
@@ -7277,7 +7344,6 @@ GPUdb.prototype.create_schema_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_schema = function(schema_name, options, callback) {
     var actual_request = {
@@ -7316,7 +7382,6 @@ GPUdb.prototype.create_schema = function(schema_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_table_request = function(request, callback) {
     var actual_request = {
@@ -7522,7 +7587,6 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_table = function(table_name, type_id, options, callback) {
     var actual_request = {
@@ -7561,7 +7625,6 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_table_external_request = function(request, callback) {
     var actual_request = {
@@ -8106,7 +8169,6 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_table_external = function(table_name, filepaths, modify_columns, create_table_options, options, callback) {
     var actual_request = {
@@ -8152,7 +8214,6 @@ GPUdb.prototype.create_table_external = function(table_name, filepaths, modify_c
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_table_monitor_request = function(request, callback) {
     var actual_request = {
@@ -8217,7 +8278,6 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
     var actual_request = {
@@ -8259,7 +8319,6 @@ GPUdb.prototype.create_table_monitor = function(table_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
     var actual_request = {
@@ -8328,7 +8387,6 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_column_name, x_vector, y_column_name, y_vector, options, callback) {
     var actual_request = {
@@ -8374,7 +8432,6 @@ GPUdb.prototype.create_trigger_by_area = function(request_id, table_names, x_col
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
     var actual_request = {
@@ -8430,7 +8487,6 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, column_name, min, max, options, callback) {
     var actual_request = {
@@ -8499,7 +8555,6 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_type_request = function(request, callback) {
     var actual_request = {
@@ -8609,6 +8664,9 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             data type. The string can only be interpreted as
  *                             an unsigned long data type with minimum value of
  *                             zero, and maximum value of 18446744073709551615.
+ *                                     <li> 'uuid': Valid only for 'string'
+ *                             columns.  It represents an uuid data type.
+ *                             Internally, it is stored as a 128-bit integer.
  *                                     <li> 'decimal': Valid only for 'string'
  *                             columns.  It represents a SQL type NUMERIC(19,
  *                             4) data type.  There can be up to 15 digits
@@ -8734,6 +8792,9 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             'time', 'datetime', or 'timestamp' column types,
  *                             replace empty strings and invalid timestamps
  *                             with 'NOW()' upon insert.
+ *                                     <li> 'init_with_uuid': For 'uuid' type,
+ *                             repalce empty strings and invalid uuid values
+ *                             with new_uuid()' upon insert.
  *                             </ul>
  *                             The default value is an empty dict ( {} ).
  * @param {Object} options  Optional parameters.
@@ -8741,7 +8802,6 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_type = function(type_definition, label, properties, options, callback) {
     var actual_request = {
@@ -8795,7 +8855,6 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_union_request = function(request, callback) {
     var actual_request = {
@@ -8968,7 +9027,6 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_union = function(table_name, table_names, input_column_names, output_column_names, options, callback) {
     var actual_request = {
@@ -8997,7 +9055,6 @@ GPUdb.prototype.create_union = function(table_name, table_names, input_column_na
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_user_external_request = function(request, callback) {
     var actual_request = {
@@ -9025,7 +9082,6 @@ GPUdb.prototype.create_user_external_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_user_external = function(name, options, callback) {
     var actual_request = {
@@ -9051,7 +9107,6 @@ GPUdb.prototype.create_user_external = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_user_internal_request = function(request, callback) {
     var actual_request = {
@@ -9089,7 +9144,6 @@ GPUdb.prototype.create_user_internal_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.create_user_internal = function(name, password, options, callback) {
     var actual_request = {
@@ -9115,7 +9169,6 @@ GPUdb.prototype.create_user_internal = function(name, password, options, callbac
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_graph_request = function(request, callback) {
     var actual_request = {
@@ -9154,7 +9207,6 @@ GPUdb.prototype.delete_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_graph = function(graph_name, options, callback) {
     var actual_request = {
@@ -9179,7 +9231,6 @@ GPUdb.prototype.delete_graph = function(graph_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_proc_request = function(request, callback) {
     var actual_request = {
@@ -9205,7 +9256,6 @@ GPUdb.prototype.delete_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_proc = function(proc_name, options, callback) {
     var actual_request = {
@@ -9237,7 +9287,6 @@ GPUdb.prototype.delete_proc = function(proc_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_records_request = function(request, callback) {
     var actual_request = {
@@ -9309,7 +9358,6 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_records = function(table_name, expressions, options, callback) {
     var actual_request = {
@@ -9335,7 +9383,6 @@ GPUdb.prototype.delete_records = function(table_name, expressions, options, call
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_resource_group_request = function(request, callback) {
     var actual_request = {
@@ -9360,7 +9407,6 @@ GPUdb.prototype.delete_resource_group_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_resource_group = function(name, options, callback) {
     var actual_request = {
@@ -9385,7 +9431,6 @@ GPUdb.prototype.delete_resource_group = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_role_request = function(request, callback) {
     var actual_request = {
@@ -9411,7 +9456,6 @@ GPUdb.prototype.delete_role_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_role = function(name, options, callback) {
     var actual_request = {
@@ -9436,7 +9480,6 @@ GPUdb.prototype.delete_role = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_user_request = function(request, callback) {
     var actual_request = {
@@ -9462,7 +9505,6 @@ GPUdb.prototype.delete_user_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.delete_user = function(name, options, callback) {
     var actual_request = {
@@ -9490,7 +9532,6 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.drop_datasource_request = function(request, callback) {
     var actual_request = {
@@ -9519,7 +9560,6 @@ GPUdb.prototype.drop_datasource_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.drop_datasource = function(name, options, callback) {
     var actual_request = {
@@ -9545,7 +9585,6 @@ GPUdb.prototype.drop_datasource = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.drop_schema_request = function(request, callback) {
     var actual_request = {
@@ -9596,7 +9635,6 @@ GPUdb.prototype.drop_schema_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.drop_schema = function(schema_name, options, callback) {
     var actual_request = {
@@ -9622,7 +9660,6 @@ GPUdb.prototype.drop_schema = function(schema_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.execute_proc_request = function(request, callback) {
     var actual_request = {
@@ -9742,7 +9779,6 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_table_names, input_column_names, output_table_names, options, callback) {
     var actual_request = {
@@ -9775,7 +9811,6 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.execute_sql_request = function(request, callback) {
     var actual_request = {
@@ -9986,7 +10021,6 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.execute_sql = function(statement, offset, limit, request_schema_str, data, options, callback) {
     var actual_request = {
@@ -10036,7 +10070,6 @@ GPUdb.prototype.execute_sql = function(statement, offset, limit, request_schema_
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_request = function(request, callback) {
     var actual_request = {
@@ -10106,7 +10139,6 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter = function(table_name, view_name, expression, options, callback) {
     var actual_request = {
@@ -10141,7 +10173,6 @@ GPUdb.prototype.filter = function(table_name, view_name, expression, options, ca
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_area_request = function(request, callback) {
     var actual_request = {
@@ -10211,7 +10242,6 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_area = function(table_name, view_name, x_column_name, x_vector, y_column_name, y_vector, options, callback) {
     var actual_request = {
@@ -10250,7 +10280,6 @@ GPUdb.prototype.filter_by_area = function(table_name, view_name, x_column_name, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
     var actual_request = {
@@ -10318,7 +10347,6 @@ GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_area_geometry = function(table_name, view_name, column_name, x_vector, y_vector, options, callback) {
     var actual_request = {
@@ -10355,7 +10383,6 @@ GPUdb.prototype.filter_by_area_geometry = function(table_name, view_name, column
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_box_request = function(request, callback) {
     var actual_request = {
@@ -10434,7 +10461,6 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, min_x, max_x, y_column_name, min_y, max_y, options, callback) {
     var actual_request = {
@@ -10475,7 +10501,6 @@ GPUdb.prototype.filter_by_box = function(table_name, view_name, x_column_name, m
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_box_geometry_request = function(request, callback) {
     var actual_request = {
@@ -10553,7 +10578,6 @@ GPUdb.prototype.filter_by_box_geometry_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_box_geometry = function(table_name, view_name, column_name, min_x, max_x, min_y, max_y, options, callback) {
     var actual_request = {
@@ -10586,7 +10610,6 @@ GPUdb.prototype.filter_by_box_geometry = function(table_name, view_name, column_
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
     var actual_request = {
@@ -10668,7 +10691,6 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name, input_wkt, operation, options, callback) {
     var actual_request = {
@@ -10714,7 +10736,6 @@ GPUdb.prototype.filter_by_geometry = function(table_name, view_name, column_name
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_list_request = function(request, callback) {
     var actual_request = {
@@ -10794,7 +10815,6 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_list = function(table_name, view_name, column_values_map, options, callback) {
     var actual_request = {
@@ -10836,7 +10856,6 @@ GPUdb.prototype.filter_by_list = function(table_name, view_name, column_values_m
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_radius_request = function(request, callback) {
     var actual_request = {
@@ -10918,7 +10937,6 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name, x_center, y_column_name, y_center, radius, options, callback) {
     var actual_request = {
@@ -10959,7 +10977,6 @@ GPUdb.prototype.filter_by_radius = function(table_name, view_name, x_column_name
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_radius_geometry_request = function(request, callback) {
     var actual_request = {
@@ -11033,7 +11050,6 @@ GPUdb.prototype.filter_by_radius_geometry_request = function(request, callback) 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_radius_geometry = function(table_name, view_name, column_name, x_center, y_center, radius, options, callback) {
     var actual_request = {
@@ -11076,7 +11092,6 @@ GPUdb.prototype.filter_by_radius_geometry = function(table_name, view_name, colu
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_range_request = function(request, callback) {
     var actual_request = {
@@ -11146,7 +11161,6 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_range = function(table_name, view_name, column_name, lower_bound, upper_bound, options, callback) {
     var actual_request = {
@@ -11193,7 +11207,6 @@ GPUdb.prototype.filter_by_range = function(table_name, view_name, column_name, l
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_series_request = function(request, callback) {
     var actual_request = {
@@ -11293,7 +11306,6 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, target_track_ids, options, callback) {
     var actual_request = {
@@ -11327,7 +11339,6 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_string_request = function(request, callback) {
     var actual_request = {
@@ -11423,7 +11434,6 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_string = function(table_name, view_name, expression, mode, column_names, options, callback) {
     var actual_request = {
@@ -11463,7 +11473,6 @@ GPUdb.prototype.filter_by_string = function(table_name, view_name, expression, m
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_table_request = function(request, callback) {
     var actual_request = {
@@ -11592,7 +11601,6 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_table = function(table_name, view_name, column_name, source_table_name, source_table_column_name, options, callback) {
     var actual_request = {
@@ -11634,7 +11642,6 @@ GPUdb.prototype.filter_by_table = function(table_name, view_name, column_name, s
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_value_request = function(request, callback) {
     var actual_request = {
@@ -11705,7 +11712,6 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, value, value_str, column_name, options, callback) {
     var actual_request = {
@@ -11738,7 +11744,6 @@ GPUdb.prototype.filter_by_value = function(table_name, view_name, is_string, val
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_job_request = function(request, callback) {
     var actual_request = {
@@ -11771,7 +11776,6 @@ GPUdb.prototype.get_job_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_job = function(job_id, options, callback) {
     var actual_request = {
@@ -11809,7 +11813,6 @@ GPUdb.prototype.get_job = function(job_id, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_request = function(request, callback) {
     var actual_request = {
@@ -11910,7 +11913,6 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records = function(table_name, offset, limit, options, callback) {
     var actual_request = {
@@ -11984,7 +11986,6 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_by_column_request = function(request, callback) {
     var actual_request = {
@@ -12119,7 +12120,6 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_by_column = function(table_name, column_names, offset, limit, options, callback) {
     var actual_request = {
@@ -12174,7 +12174,6 @@ GPUdb.prototype.get_records_by_column = function(table_name, column_names, offse
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_by_series_request = function(request, callback) {
     var actual_request = {
@@ -12254,7 +12253,6 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, offset, limit, options, callback) {
     var actual_request = {
@@ -12305,7 +12303,6 @@ GPUdb.prototype.get_records_by_series = function(table_name, world_table_name, o
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_from_collection_request = function(request, callback) {
     var actual_request = {
@@ -12385,7 +12382,6 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit, options, callback) {
     var actual_request = {
@@ -12423,7 +12419,6 @@ GPUdb.prototype.get_records_from_collection = function(table_name, offset, limit
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.get_vectortile_request = function(request, callback) {
@@ -12458,7 +12453,6 @@ GPUdb.prototype.get_vectortile_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.get_vectortile = function(table_names, column_names, layers, tile_x, tile_y, zoom, options, callback) {
@@ -12490,7 +12484,6 @@ GPUdb.prototype.get_vectortile = function(table_names, column_names, layers, til
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_datasource_request = function(request, callback) {
     var actual_request = {
@@ -12529,7 +12522,6 @@ GPUdb.prototype.grant_permission_datasource_request = function(request, callback
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_datasource = function(name, permission, datasource_name, options, callback) {
     var actual_request = {
@@ -12556,7 +12548,6 @@ GPUdb.prototype.grant_permission_datasource = function(name, permission, datasou
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_proc_request = function(request, callback) {
     var actual_request = {
@@ -12593,7 +12584,6 @@ GPUdb.prototype.grant_permission_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_proc = function(name, permission, proc_name, options, callback) {
     var actual_request = {
@@ -12620,7 +12610,6 @@ GPUdb.prototype.grant_permission_proc = function(name, permission, proc_name, op
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_system_request = function(request, callback) {
     var actual_request = {
@@ -12660,7 +12649,6 @@ GPUdb.prototype.grant_permission_system_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_system = function(name, permission, options, callback) {
     var actual_request = {
@@ -12686,7 +12674,6 @@ GPUdb.prototype.grant_permission_system = function(name, permission, options, ca
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_table_request = function(request, callback) {
     var actual_request = {
@@ -12744,7 +12731,6 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_permission_table = function(name, permission, table_name, filter_expression, options, callback) {
     var actual_request = {
@@ -12772,7 +12758,6 @@ GPUdb.prototype.grant_permission_table = function(name, permission, table_name, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_role_request = function(request, callback) {
     var actual_request = {
@@ -12802,7 +12787,6 @@ GPUdb.prototype.grant_role_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.grant_role = function(role, member, options, callback) {
     var actual_request = {
@@ -12828,7 +12812,6 @@ GPUdb.prototype.grant_role = function(role, member, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_proc_request = function(request, callback) {
     var actual_request = {
@@ -12853,7 +12836,6 @@ GPUdb.prototype.has_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_proc = function(proc_name, options, callback) {
     var actual_request = {
@@ -12878,7 +12860,6 @@ GPUdb.prototype.has_proc = function(proc_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_schema_request = function(request, callback) {
     var actual_request = {
@@ -12906,7 +12887,6 @@ GPUdb.prototype.has_schema_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_schema = function(schema_name, options, callback) {
     var actual_request = {
@@ -12931,7 +12911,6 @@ GPUdb.prototype.has_schema = function(schema_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_table_request = function(request, callback) {
     var actual_request = {
@@ -12960,7 +12939,6 @@ GPUdb.prototype.has_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_table = function(table_name, options, callback) {
     var actual_request = {
@@ -12985,7 +12963,6 @@ GPUdb.prototype.has_table = function(table_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_type_request = function(request, callback) {
     var actual_request = {
@@ -13011,7 +12988,6 @@ GPUdb.prototype.has_type_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.has_type = function(type_id, options, callback) {
     var actual_request = {
@@ -13054,7 +13030,6 @@ GPUdb.prototype.has_type = function(type_id, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_request = function(request, callback) {
     var actual_request = {
@@ -13184,7 +13159,6 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
     var actual_request = {
@@ -13231,7 +13205,6 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_from_files_request = function(request, callback) {
     var actual_request = {
@@ -13580,8 +13553,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          file(s) are in delimited text format; e.g., CSV,
  *                          TSV, PSV, etc.
  *                                  <li> 'parquet': Indicates the file(s) are
- *                          in Parquet format. Parquet files are not supported
- *                          yet.
+ *                          in Parquet format.
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': Whether to do a full
@@ -13746,7 +13718,6 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_from_files = function(table_name, filepaths, modify_columns, create_table_options, options, callback) {
     var actual_request = {
@@ -13778,7 +13749,6 @@ GPUdb.prototype.insert_records_from_files = function(table_name, filepaths, modi
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_from_payload_request = function(request, callback) {
     var actual_request = {
@@ -14103,8 +14073,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          file(s) are in delimited text format; e.g., CSV,
  *                          TSV, PSV, etc.
  *                                  <li> 'parquet': Indicates the file(s) are
- *                          in Parquet format. Parquet files are not supported
- *                          yet.
+ *                          in Parquet format.
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': Whether to do a full
@@ -14215,7 +14184,6 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_from_payload = function(table_name, data_text, data_bytes, modify_columns, create_table_options, options, callback) {
     var actual_request = {
@@ -14254,7 +14222,6 @@ GPUdb.prototype.insert_records_from_payload = function(table_name, data_text, da
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_random_request = function(request, callback) {
     var actual_request = {
@@ -14481,7 +14448,6 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_records_random = function(table_name, count, options, callback) {
     var actual_request = {
@@ -14515,7 +14481,6 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_symbol_request = function(request, callback) {
     var actual_request = {
@@ -14575,7 +14540,6 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, options, callback) {
     var actual_request = {
@@ -14602,7 +14566,6 @@ GPUdb.prototype.insert_symbol = function(symbol_id, symbol_format, symbol_data, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.kill_proc_request = function(request, callback) {
     var actual_request = {
@@ -14641,7 +14604,6 @@ GPUdb.prototype.kill_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.kill_proc = function(run_id, options, callback) {
     var actual_request = {
@@ -14665,7 +14627,6 @@ GPUdb.prototype.kill_proc = function(run_id, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.list_graph_request = function(request, callback) {
@@ -14690,7 +14651,6 @@ GPUdb.prototype.list_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.list_graph = function(graph_name, options, callback) {
@@ -14723,7 +14683,6 @@ GPUdb.prototype.list_graph = function(graph_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.lock_table_request = function(request, callback) {
     var actual_request = {
@@ -14778,7 +14737,6 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) {
     var actual_request = {
@@ -14818,7 +14776,6 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.match_graph_request = function(request, callback) {
     var actual_request = {
@@ -15072,7 +15029,6 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.match_graph = function(graph_name, sample_points, solve_method, solution_table, options, callback) {
     var actual_request = {
@@ -15118,7 +15074,6 @@ GPUdb.prototype.match_graph = function(graph_name, sample_points, solve_method, 
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.merge_records_request = function(request, callback) {
     var actual_request = {
@@ -15240,7 +15195,6 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.merge_records = function(table_name, source_table_names, field_maps, options, callback) {
     var actual_request = {
@@ -15279,7 +15233,6 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.modify_graph_request = function(request, callback) {
     var actual_request = {
@@ -15517,7 +15470,6 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restrictions, options, callback) {
     var actual_request = {
@@ -15582,7 +15534,6 @@ GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restr
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.query_graph_request = function(request, callback) {
     var actual_request = {
@@ -15796,7 +15747,6 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjacency_table, rings, options, callback) {
     var actual_request = {
@@ -15826,7 +15776,6 @@ GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjace
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_datasource_request = function(request, callback) {
     var actual_request = {
@@ -15865,7 +15814,6 @@ GPUdb.prototype.revoke_permission_datasource_request = function(request, callbac
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_datasource = function(name, permission, datasource_name, options, callback) {
     var actual_request = {
@@ -15892,7 +15840,6 @@ GPUdb.prototype.revoke_permission_datasource = function(name, permission, dataso
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_proc_request = function(request, callback) {
     var actual_request = {
@@ -15930,7 +15877,6 @@ GPUdb.prototype.revoke_permission_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_proc = function(name, permission, proc_name, options, callback) {
     var actual_request = {
@@ -15957,7 +15903,6 @@ GPUdb.prototype.revoke_permission_proc = function(name, permission, proc_name, o
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
     var actual_request = {
@@ -15997,7 +15942,6 @@ GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_system = function(name, permission, options, callback) {
     var actual_request = {
@@ -16023,7 +15967,6 @@ GPUdb.prototype.revoke_permission_system = function(name, permission, options, c
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
     var actual_request = {
@@ -16075,7 +16018,6 @@ GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_permission_table = function(name, permission, table_name, options, callback) {
     var actual_request = {
@@ -16102,7 +16044,6 @@ GPUdb.prototype.revoke_permission_table = function(name, permission, table_name,
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_role_request = function(request, callback) {
     var actual_request = {
@@ -16132,7 +16073,6 @@ GPUdb.prototype.revoke_role_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.revoke_role = function(role, member, options, callback) {
     var actual_request = {
@@ -16160,7 +16100,6 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_datasource_request = function(request, callback) {
     var actual_request = {
@@ -16190,7 +16129,6 @@ GPUdb.prototype.show_datasource_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_datasource = function(name, options, callback) {
     var actual_request = {
@@ -16214,7 +16152,6 @@ GPUdb.prototype.show_datasource = function(name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.show_functions_request = function(request, callback) {
@@ -16240,7 +16177,6 @@ GPUdb.prototype.show_functions_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.show_functions = function(options, callback) {
@@ -16266,7 +16202,6 @@ GPUdb.prototype.show_functions = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_graph_request = function(request, callback) {
     var actual_request = {
@@ -16305,7 +16240,6 @@ GPUdb.prototype.show_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_graph = function(graph_name, options, callback) {
     var actual_request = {
@@ -16329,7 +16263,6 @@ GPUdb.prototype.show_graph = function(graph_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.show_graph_grammar_request = function(request, callback) {
@@ -16352,7 +16285,6 @@ GPUdb.prototype.show_graph_grammar_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.show_graph_grammar = function(options, callback) {
@@ -16377,7 +16309,6 @@ GPUdb.prototype.show_graph_grammar = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_proc_request = function(request, callback) {
     var actual_request = {
@@ -16417,7 +16348,6 @@ GPUdb.prototype.show_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_proc = function(proc_name, options, callback) {
     var actual_request = {
@@ -16445,7 +16375,6 @@ GPUdb.prototype.show_proc = function(proc_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_proc_status_request = function(request, callback) {
     var actual_request = {
@@ -16500,7 +16429,6 @@ GPUdb.prototype.show_proc_status_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_proc_status = function(run_id, options, callback) {
     var actual_request = {
@@ -16526,7 +16454,6 @@ GPUdb.prototype.show_proc_status = function(run_id, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_resource_statistics_request = function(request, callback) {
     var actual_request = {
@@ -16550,7 +16477,6 @@ GPUdb.prototype.show_resource_statistics_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_resource_statistics = function(options, callback) {
     var actual_request = {
@@ -16575,7 +16501,6 @@ GPUdb.prototype.show_resource_statistics = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_resource_groups_request = function(request, callback) {
     var actual_request = {
@@ -16622,7 +16547,6 @@ GPUdb.prototype.show_resource_groups_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_resource_groups = function(names, options, callback) {
     var actual_request = {
@@ -16649,7 +16573,6 @@ GPUdb.prototype.show_resource_groups = function(names, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_schema_request = function(request, callback) {
     var actual_request = {
@@ -16692,7 +16615,6 @@ GPUdb.prototype.show_schema_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_schema = function(schema_name, options, callback) {
     var actual_request = {
@@ -16719,7 +16641,6 @@ GPUdb.prototype.show_schema = function(schema_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_security_request = function(request, callback) {
     var actual_request = {
@@ -16749,7 +16670,6 @@ GPUdb.prototype.show_security_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_security = function(names, options, callback) {
     var actual_request = {
@@ -16775,7 +16695,6 @@ GPUdb.prototype.show_security = function(names, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_sql_proc_request = function(request, callback) {
     var actual_request = {
@@ -16816,7 +16735,6 @@ GPUdb.prototype.show_sql_proc_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_sql_proc = function(procedure_name, options, callback) {
     var actual_request = {
@@ -16841,7 +16759,6 @@ GPUdb.prototype.show_sql_proc = function(procedure_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_statistics_request = function(request, callback) {
     var actual_request = {
@@ -16872,7 +16789,6 @@ GPUdb.prototype.show_statistics_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_statistics = function(table_names, options, callback) {
     var actual_request = {
@@ -16898,7 +16814,6 @@ GPUdb.prototype.show_statistics = function(table_names, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_system_properties_request = function(request, callback) {
     var actual_request = {
@@ -16927,7 +16842,6 @@ GPUdb.prototype.show_system_properties_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_system_properties = function(options, callback) {
     var actual_request = {
@@ -16952,7 +16866,6 @@ GPUdb.prototype.show_system_properties = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_system_status_request = function(request, callback) {
     var actual_request = {
@@ -16976,7 +16889,6 @@ GPUdb.prototype.show_system_status_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_system_status = function(options, callback) {
     var actual_request = {
@@ -17002,7 +16914,6 @@ GPUdb.prototype.show_system_status = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_system_timing_request = function(request, callback) {
     var actual_request = {
@@ -17027,7 +16938,6 @@ GPUdb.prototype.show_system_timing_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_system_timing = function(options, callback) {
     var actual_request = {
@@ -17077,7 +16987,6 @@ GPUdb.prototype.show_system_timing = function(options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_table_request = function(request, callback) {
     var actual_request = {
@@ -17191,7 +17100,6 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_table = function(table_name, options, callback) {
     var actual_request = {
@@ -17216,7 +17124,6 @@ GPUdb.prototype.show_table = function(table_name, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_table_metadata_request = function(request, callback) {
     var actual_request = {
@@ -17247,7 +17154,6 @@ GPUdb.prototype.show_table_metadata_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
     var actual_request = {
@@ -17276,7 +17182,6 @@ GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
     var actual_request = {
@@ -17310,7 +17215,6 @@ GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_tables_by_type = function(type_id, label, options, callback) {
     var actual_request = {
@@ -17337,7 +17241,6 @@ GPUdb.prototype.show_tables_by_type = function(type_id, label, options, callback
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_triggers_request = function(request, callback) {
     var actual_request = {
@@ -17366,7 +17269,6 @@ GPUdb.prototype.show_triggers_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_triggers = function(trigger_ids, options, callback) {
     var actual_request = {
@@ -17393,7 +17295,6 @@ GPUdb.prototype.show_triggers = function(trigger_ids, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_types_request = function(request, callback) {
     var actual_request = {
@@ -17434,7 +17335,6 @@ GPUdb.prototype.show_types_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.show_types = function(type_id, label, options, callback) {
     var actual_request = {
@@ -17474,7 +17374,6 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.solve_graph_request = function(request, callback) {
     var actual_request = {
@@ -17775,7 +17674,6 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restrictions, solver_type, source_nodes, destination_nodes, solution_table, options, callback) {
     var actual_request = {
@@ -17837,7 +17735,6 @@ GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restriction
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.update_records_request = function(request, callback) {
     var actual_request = {
@@ -17909,9 +17806,9 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                    values.  The number of elements in the
  *                                    list should match the length of
  *                                    <code>expressions</code>.
- * @param {Object[]} data  An optional list of new json-avro encoded objects to
- *                         insert, one for each update, to be added to the set
- *                         if the particular update did not affect any objects.
+ * @param {Object[]} data  An optional list of JSON encoded objects to insert,
+ *                         one for each update, to be added if the particular
+ *                         update did not match any objects.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'global_expression': An optional
@@ -18002,7 +17899,6 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.update_records = function(table_name, expressions, new_values_maps, data, options, callback) {
     var actual_request = {
@@ -18035,7 +17931,6 @@ GPUdb.prototype.update_records = function(table_name, expressions, new_values_ma
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.update_records_by_series_request = function(request, callback) {
     var actual_request = {
@@ -18083,7 +17978,6 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.update_records_by_series = function(table_name, world_table_name, view_name, reserved, options, callback) {
     var actual_request = {
@@ -18110,7 +18004,6 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_request = function(request, callback) {
@@ -18290,7 +18183,6 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_column_name, y_column_name, symbol_column_name, geometry_column_name, track_ids, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, callback) {
@@ -18335,7 +18227,6 @@ GPUdb.prototype.visualize_image = function(table_names, world_table_names, x_col
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
     var actual_request = {
@@ -18520,7 +18411,6 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.visualize_image_chart = function(table_name, x_column_names, y_column_names, min_x, max_x, min_y, max_y, width, height, bg_color, style_options, options, callback) {
     var actual_request = {
@@ -18554,7 +18444,6 @@ GPUdb.prototype.visualize_image_chart = function(table_name, x_column_names, y_c
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_classbreak_request = function(request, callback) {
@@ -18753,7 +18642,6 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointalpha_attr, cb_pointalpha_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, callback) {
@@ -18803,7 +18691,6 @@ GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_n
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
@@ -19013,7 +18900,6 @@ GPUdb.prototype.visualize_image_contour_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_contour = function(table_names, x_column_name, y_column_name, value_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
@@ -19049,7 +18935,6 @@ GPUdb.prototype.visualize_image_contour = function(table_names, x_column_name, y
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
@@ -19200,7 +19085,6 @@ GPUdb.prototype.visualize_image_heatmap_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y_column_name, value_column_name, geometry_column_name, min_x, max_x, min_y, max_y, width, height, projection, style_options, options, callback) {
@@ -19237,7 +19121,6 @@ GPUdb.prototype.visualize_image_heatmap = function(table_names, x_column_name, y
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
@@ -19323,7 +19206,6 @@ GPUdb.prototype.visualize_image_labels_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_column_name, x_offset, y_offset, text_string, font, text_color, text_angle, text_scale, draw_box, draw_leader, line_width, line_color, fill_color, leader_x_column_name, leader_y_column_name, filter, min_x, max_x, min_y, max_y, width, height, projection, options, callback) {
@@ -19380,7 +19262,6 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
     var actual_request = {
@@ -19788,7 +19669,6 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  */
 GPUdb.prototype.visualize_isochrone = function(graph_name, source_node, max_solution_radius, weights_on_edges, restrictions, num_levels, generate_image, levels_table, style_options, solve_options, contour_options, options, callback) {
     var actual_request = {
@@ -19822,7 +19702,6 @@ GPUdb.prototype.visualize_isochrone = function(graph_name, source_node, max_solu
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_video_request = function(request, callback) {
@@ -19977,7 +19856,6 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_video = function(table_names, world_table_names, track_ids, x_column_name, y_column_name, geometry_column_name, min_x, max_x, min_y, max_y, width, height, projection, bg_color, time_intervals, video_style, session_key, style_options, options, callback) {
@@ -20019,7 +19897,6 @@ GPUdb.prototype.visualize_video = function(table_names, world_table_names, track
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
@@ -20108,7 +19985,6 @@ GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
  *                                  specified, request will be synchronous.
  * @returns {Object} Response object containing the method_codes of the
  *                   operation.
- * 
  * @private
  */
 GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, video_style, session_key, style_options, options, callback) {
