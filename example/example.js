@@ -25,17 +25,18 @@ main();
 
 function main()
 {
+    var table_name = "my_table";
+
     console.log( "Establishing a connection with GPUdb..." );
-    var gpudb = new GPUdb( "http://localhost:9191" ); // One host
-    var gpudbHA = new GPUdb( ["http://localhost:9191",
-                              "http://localhost:9192"
+    var host = "localhost";
+    var gpudb = new GPUdb( `http://${host}:9191` ); // One host
+    var gpudbHA = new GPUdb( [`http://${host}:9191`,
+                              `http://${host}:9192`
                              ] ); // Multiple hosts as a single list
 
-    // Clear all tables from the database
-    gpudb.clear_table( "" );
-
-    var show_table_rsp = gpudb.show_table( "", {} );
-    console.log( JSON.stringify( show_table_rsp ) );
+    // Clear the table from the database, in case it was created
+    // by a previous run of the example program
+    gpudb.clear_table( table_name, null, {"no_error_if_not_exists": "true"} );
 
     // Declare the data type for the table
     var my_type = {
@@ -57,10 +58,9 @@ function main()
     var type_id = create_type_rsp.type_id;
 
     // Create a table
-    var table_name = "my_table";
     var create_table_rsp = gpudb.create_table( table_name, type_id );
 
-    // Generate records to be inserted 
+    // Generate records to be inserted
     var records = [];
     for (var i = 0; i < 10; i++)
     {
@@ -241,35 +241,33 @@ Expected Output:
 
 Establishing a connection with GPUdb...
 
-example.js:17 {"table_name":"","table_names":[],"is_collection":[],"is_view":[],"type_ids":[],"type_schemas":[],"type_labels":[],"properties":[],"ttls":[],"sizes":[],"full_sizes":[],"total_size":-1,"total_full_size":-1}
-
 example.js:59 Record IDs for newly inserted records: 0020000002700000_0000000000000000,0020000002700000_0000000000000001,0020000002700000_0000000000000002,0020000002700000_0000000000000003,0020000002700000_0000000000000004,0020000002700000_0000000000000005,0020000002700000_0000000000000006,0020000002700000_0000000000000007,0020000002700000_0000000000000008,0020000002700000_0000000000000009
 
-example.js:64 Retrieved records: 
+example.js:64 Retrieved records:
 
 example.js:65 [{"col1":0.1,"col2":"string 0","group_id":"Group 1"},{"col1":1.1,"col2":"string 1","group_id":"Group 1"},{"col1":2.1,"col2":"string 2","group_id":"Group 1"},{"col1":3.1,"col2":"string 3","group_id":"Group 1"},{"col1":4.1,"col2":"string 4","group_id":"Group 1"},{"col1":5.1,"col2":"string 5","group_id":"Group 1"},{"col1":6.1,"col2":"string 6","group_id":"Group 1"},{"col1":7.1,"col2":"string 7","group_id":"Group 1"},{"col1":8.1,"col2":"string 8","group_id":"Group 1"},{"col1":9.1,"col2":"string 9","group_id":"Group 1"}]
 
 example.js:71 Number of filtered records: 1
 
-example.js:75 Filtered records: 
+example.js:75 Filtered records:
 
 example.js:76 [{"col1":1.1,"col2":"string 1","group_id":"Group 1"}]
 
 example.js:84 Number of records filtered by the second expression: 9
 
-example.js:89 Second set of filtered records: 
+example.js:89 Second set of filtered records:
 
 example.js:90 [{"col1":0.1,"col2":"string 0","group_id":"Group 1"},{"col1":1.1,"col2":"string 1","group_id":"Group 1"},{"col1":2.1,"col2":"string 2","group_id":"Group 1"},{"col1":3.1,"col2":"string 3","group_id":"Group 1"},{"col1":4.1,"col2":"string 4","group_id":"Group 1"},{"col1":5.1,"col2":"string 5","group_id":"Group 1"},{"col1":6.1,"col2":"string 6","group_id":"Group 1"},{"col1":7.1,"col2":"string 7","group_id":"Group 1"},{"col1":8.1,"col2":"string 8","group_id":"Group 1"}]
 
 example.js:99 Number of records filtered by list: 3
 
-example.js:104 Records filtered by a list: 
+example.js:104 Records filtered by a list:
 
 example.js:105 [{"col1":1.1,"col2":"string 1","group_id":"Group 1"},{"col1":2.1,"col2":"string 2","group_id":"Group 1"},{"col1":5.1,"col2":"string 5","group_id":"Group 1"}]
 
 example.js:116 Number of records filtered by range: 4
 
-example.js:121 Records filtered by a range: 
+example.js:121 Records filtered by a range:
 
 example.js:122 [{"col1":1.1,"col2":"string 1","group_id":"Group 1"},{"col1":2.1,"col2":"string 2","group_id":"Group 1"},{"col1":3.1,"col2":"string 3","group_id":"Group 1"},{"col1":4.1,"col2":"string 4","group_id":"Group 1"}]
 
@@ -277,25 +275,25 @@ example.js:128 Statistics of values in 'col1': [object Object]
 
 example.js:133 Inserting more records into the table...
 
-example.js:149 Unique of values in 'group_id': 
+example.js:149 Unique of values in 'group_id':
 
 example.js:150 {"column_1":["Group 1","Group 2"],"column_headers":["group_id"]}
 
-example.js:155 Group by results: 
+example.js:155 Group by results:
 
 example.js:156 {"column_1":["string 0","string 1","string 2","string 3","string 4","string 5","string 6","string 7","string 8","string 9"],"column_2":[1,2,2,2,2,2,2,2,1,1],"column_headers":["col2","count(*)"]}
 
-example.js:161 Second group by results: 
+example.js:161 Second group by results:
 
 example.js:162 {"column_1":["Group 1","Group 2"],"column_2":[10,7],"column_3":[46,98.69999999999999],"column_4":[4.6,14.1],"column_headers":["group_id","count(*)","sum(col1)","avg(col1)"]}
 
-example.js:167 Third group by results: 
+example.js:167 Third group by results:
 
 example.js:168 {"column_1":["Group 1","Group 2"],"column_2":[460,987],"column_headers":["group_id","sum(col1*10)"]}
 
 example.js:172 Inserting more records into the table...
 
-example.js:193 Histogram results: 
+example.js:193 Histogram results:
 
 example.js:194 {"counts":[1],"start":1.1,"end":2}
 

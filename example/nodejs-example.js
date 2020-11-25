@@ -1,9 +1,10 @@
 var GPUdb = require("../nodejs/GPUdb.js");
 
 console.log("Establishing a connection with GPUdb...");
-var gpudb = new GPUdb("http://localhost:9191"); // Single host
-var gpudbHA = new GPUdb( ["http://localhost:9191",
-                          "http://localhost:9192"
+var host = "localhost";
+var gpudb = new GPUdb(`http://${host}:9191`); // Single host
+var gpudbHA = new GPUdb( [`http://${host}:9191`,
+                          `http://${host}:9192`
                          ] ); // Multiple hosts as a single list
 
 var operation_number = 0;
@@ -43,15 +44,11 @@ var type_id;
 var table_name = "my_table";
 
 var operations = [
-    // Clear all tables from the database
+    // Clear the table from the database, in case it was created
+    // by a previous run of the example program
     function() {
-        gpudb.clear_table("", null, {}, build_callback());
-    },
-
-    function() {
-        gpudb.show_table("", {}, build_callback(function(response) {
-            console.log(response);
-        }));
+        gpudb.clear_table( table_name, null, {"no_error_if_not_exists": "true"},
+                           build_callback() );
     },
 
     // Register the data type for the table with GPUdb and get the type's ID
@@ -277,21 +274,8 @@ Expected Output:
 ================
 
 Establishing a connection with GPUdb...
-{ table_name: '',
-  table_names: [],
-  is_collection: [],
-  is_view: [],
-  type_ids: [],
-  type_schemas: [],
-  type_labels: [],
-  properties: [],
-  ttls: [],
-  sizes: [],
-  full_sizes: [],
-  total_size: -1,
-  total_full_size: -1 }
 Record IDs for newly inserted records: 0010300000000000_0000000000000000,0010300000000000_0000000000000001,0010300000000000_0000000000000002,0010300000000000_0000000000000003,0010300000000000_0000000000000004,0010300000000000_0000000000000005,0010300000000000_0000000000000006,0010300000000000_0000000000000007,0010300000000000_0000000000000008,0010300000000000_0000000000000009
-Retrieved records: 
+Retrieved records:
 [ { col1: 0.1, col2: 'string 0', group_id: 'Group 1' },
   { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
@@ -303,10 +287,10 @@ Retrieved records:
   { col1: 8.1, col2: 'string 8', group_id: 'Group 1' },
   { col1: 9.1, col2: 'string 9', group_id: 'Group 1' } ]
 Number of filtered records: 1
-Filtered records: 
+Filtered records:
 [ { col1: 1.1, col2: 'string 1', group_id: 'Group 1' } ]
 Number of records filtered by the second expression: 9
-Second set of filtered records: 
+Second set of filtered records:
 [ { col1: 0.1, col2: 'string 0', group_id: 'Group 1' },
   { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
@@ -317,23 +301,23 @@ Second set of filtered records:
   { col1: 7.1, col2: 'string 7', group_id: 'Group 1' },
   { col1: 8.1, col2: 'string 8', group_id: 'Group 1' } ]
 Number of records filtered by list: 3
-Records filtered by a list: 
+Records filtered by a list:
 [ { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
   { col1: 5.1, col2: 'string 5', group_id: 'Group 1' } ]
 Number of records filtered by range: 4
-Records filtered by range: 
+Records filtered by range:
 [ { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
   { col1: 3.1, col2: 'string 3', group_id: 'Group 1' },
   { col1: 4.1, col2: 'string 4', group_id: 'Group 1' } ]
 Statistics of values in 'col1': {"count":10,"mean":4.6,"sum":46}
 Inserting more records into the table...
-Unique values in 'group_id': 
+Unique values in 'group_id':
 { column_1: [ 'Group 1', 'Group 2' ],
   column_headers: [ 'group_id' ] }
-Group by results: 
-{ column_1: 
+Group by results:
+{ column_1:
    [ 'string 0',
      'string 1',
      'string 2',
@@ -346,20 +330,19 @@ Group by results:
      'string 9' ],
   column_2: [ 1, 2, 2, 2, 2, 2, 2, 2, 1, 1 ],
   column_headers: [ 'col2', 'count(*)' ] }
-Second group by results: 
+Second group by results:
 { column_1: [ 'Group 1', 'Group 2' ],
   column_2: [ 10, 7 ],
   column_3: [ 46, 98.69999999999999 ],
   column_4: [ 4.6, 14.1 ],
   column_headers: [ 'group_id', 'count(*)', 'sum(col1)', 'avg(col1)' ] }
-Third group by results: 
+Third group by results:
 { column_1: [ 'Group 1', 'Group 2' ],
   column_2: [ 460, 987 ],
   column_headers: [ 'group_id', 'sum(col1*10)' ] }
 Inserting more records into the table...
-Histogram results: 
+Histogram results:
 { counts: [ 1 ], start: 1.1, end: 2 }
 View 'view_3' not available as expected.
 
 */
-

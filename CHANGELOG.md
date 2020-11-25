@@ -2,6 +2,40 @@
 
 ## Version 7.0
 
+### Version 7.0.20.0 - 2020-11-25
+
+#### JavaScript API
+
+##### Added
+-   GPUdb methods for adding custom headers per endpoint call:
+    -   ``add_http_header()``
+    -   ``remove_http_header()``
+    -   ``get_http_headers()``
+
+##### Fixed
+-   Updated the examples to not clear *all* tables, but just the table
+    being used in the example.
+
+
+#### NodeJS API
+
+##### Added
+-   GPUdb methods for adding custom headers per endpoint call:
+    -   ``add_http_header()``
+    -   ``remove_http_header()``
+    -   ``get_http_headers()``
+
+##### Fixed
+-   Updated the examples to not clear *all* tables, but just the table
+    being used in the example.
+-   Buffer deprecation warning (using Buffer.from instead of new Buffer()).
+
+
+#### Note
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+
+
+
 ### Version 7.0.19.0 - 2020-08-24
 
 #### Note
