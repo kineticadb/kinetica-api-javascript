@@ -330,7 +330,7 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
     var async = callback !== undefined && callback !== null;
 
     if (async) {
-         if (endpoint === "/alter/table") {
+         if (endpoint === "/alter/table" || endpoint === "/alter/table/columns") {
             this.submit_job_request_async(endpoint, requestString, callback);
         }
         else {
@@ -926,7 +926,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.1.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.2.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1402,6 +1402,9 @@ GPUdb.prototype.admin_add_host = function(host_address, options, callback) {
  * be assigned any shards. To rebalance data and shards across the cluster, use
  * {@linkcode GPUdb#admin_rebalance}.
  * <p>
+ * The database must be offline for this operation, see
+ * {@linkcode GPUdb#admin_offline}
+ * <p>
  * For example, if attempting to add three new ranks (two ranks on host
  * 172.123.45.67 and one rank on host 172.123.45.68) to a Kinetica cluster with
  * additional configuration parameters:
@@ -1449,6 +1452,9 @@ GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
  * not contain any data initially (other than replicated tables) and will not
  * be assigned any shards. To rebalance data and shards across the cluster, use
  * {@linkcode GPUdb#admin_rebalance}.
+ * <p>
+ * The database must be offline for this operation, see
+ * {@linkcode GPUdb#admin_offline}
  * <p>
  * For example, if attempting to add three new ranks (two ranks on host
  * 172.123.45.67 and one rank on host 172.123.45.68) to a Kinetica cluster with
@@ -1760,6 +1766,9 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * of records approximately and/or rebalance the shards to be equally
  * distributed (as much as possible) across all the ranks.
  * <p>
+ * The database must be offline for this operation, see
+ * {@linkcode GPUdb#admin_offline}
+ * <p>
  * * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made
  * to the
  *   cluster, e.g., a host was added or removed,
@@ -1807,6 +1816,9 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  * Rebalance the data in the cluster so that all nodes contain an equal number
  * of records approximately and/or rebalance the shards to be equally
  * distributed (as much as possible) across all the ranks.
+ * <p>
+ * The database must be offline for this operation, see
+ * {@linkcode GPUdb#admin_offline}
  * <p>
  * * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made
  * to the
@@ -1883,7 +1895,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                          allow for better interleaving between the rebalance
  *                          and other queries. Valid values are constants from
  *                          1 (lowest) to 10 (highest).  The default value is
- *                          '1'.
+ *                          '10'.
  *                                  <li> 'compact_after_rebalance': Perform
  *                          compaction of deleted records once the rebalance
  *                          completes to reclaim memory and disk space. Default
@@ -2028,6 +2040,9 @@ GPUdb.prototype.admin_remove_host = function(host, options, callback) {
  * href="../../concepts/tables.html#random-sharding"
  * target="_top">randomly-sharded</a>) will be deleted.
  * <p>
+ * The database must be offline for this operation, see
+ * {@linkcode GPUdb#admin_offline}
+ * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
  * this endpoint asynchronously via {@linkcode GPUdb#create_job}.
@@ -2062,6 +2077,9 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  * target="_top">sharded data</a> and/or unsharded data (a.k.a. <a
  * href="../../concepts/tables.html#random-sharding"
  * target="_top">randomly-sharded</a>) will be deleted.
+ * <p>
+ * The database must be offline for this operation, see
+ * {@linkcode GPUdb#admin_offline}
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
@@ -2116,7 +2134,7 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  *                          allow for better interleaving between the rebalance
  *                          and other queries. Valid values are constants from
  *                          1 (lowest) to 10 (highest).  The default value is
- *                          '1'.
+ *                          '10'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -5076,6 +5094,11 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         target="_top">materialized view</a> to the value
  *                         specified in <code>value</code>.  Also, sets the
  *                         refresh method to periodic if not already set.
+ *                                 <li> 'set_refresh_execute_as': Sets the user
+ *                         name to refresh this <a
+ *                         href="../../concepts/materialized_views.html"
+ *                         target="_top">materialized view</a> to the value
+ *                         specified in <code>value</code>.
  *                                 <li> 'remove_text_search_attributes':
  *                         Removes <a
  *                         href="../../concepts/full_text_search.html"
@@ -6396,6 +6419,25 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          intersections; the smaller the value, the larger
  *                          the threshold for right and left turns; 0 <
  *                          turn_angle < 90.  The default value is '60'.
+ *                                  <li> 'is_partitioned':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to the server with the most available memory.
+ *                                  <li> 'use_rtree': Use an range tree
+ *                          structure to accelerate and improve the accuracy of
+ *                          snapping, especially to edges.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6764,6 +6806,8 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                          <code>periodic</code>, specifies the first time at
  *                          which a refresh is to be done.  Value is a datetime
  *                          string with format 'YYYY-MM-DD HH:MM:SS'.
+ *                                  <li> 'execute_as': User name to use to run
+ *                          the refresh job
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6785,10 +6829,10 @@ GPUdb.prototype.create_materialized_view = function(table_name, options, callbac
 };
 
 /**
- * Creates an instance (proc) of the user-defined function (UDF) specified by
- * the given command, options, and files, and makes it available for execution.
- * For details on UDFs, see: <a href="../../concepts/udf.html"
- * target="_top">User-Defined Functions</a>
+ * Creates an instance (proc) of the
+ * <a href="../../concepts/udf.html" target="_top">user-defined functions</a>
+ * (UDF) specified by the
+ * given command, options, and files, and makes it available for execution.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6816,10 +6860,10 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
 };
 
 /**
- * Creates an instance (proc) of the user-defined function (UDF) specified by
- * the given command, options, and files, and makes it available for execution.
- * For details on UDFs, see: <a href="../../concepts/udf.html"
- * target="_top">User-Defined Functions</a>
+ * Creates an instance (proc) of the
+ * <a href="../../concepts/udf.html" target="_top">user-defined functions</a>
+ * (UDF) specified by the
+ * given command, options, and files, and makes it available for execution.
  *
  * @param {String} proc_name  Name of the proc to be created. Must not be the
  *                            name of a currently existing proc.
@@ -6827,37 +6871,47 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                                 Supported values:
  *                                 <ul>
  *                                         <li> 'distributed': Input table data
- *                                 will be divided into data segments that are
- *                                 distributed across all nodes in the cluster,
- *                                 and the proc command will be invoked once
- *                                 per data segment in parallel. Output table
- *                                 data from each invocation will be saved to
- *                                 the same node as the corresponding input
+ *                                 will be divided into data
+ *                                 segments that are distributed across all
+ *                                 nodes in the cluster, and the proc
+ *                                 command will be invoked once per data
+ *                                 segment in parallel. Output table data
+ *                                 from each invocation will be saved to the
+ *                                 same node as the corresponding input
  *                                 data.
  *                                         <li> 'nondistributed': The proc
  *                                 command will be invoked only once per
- *                                 execution, and will not have access to any
- *                                 input or output table data.
+ *                                 execution, and will not have direct access
+ *                                 to any tables named as input or
+ *                                 output table parameters in the call to
+ *                                 {@linkcode GPUdb#execute_proc}.  It will,
+ *                                 however, be able to access the database
+ *                                 using native API calls.
  *                                 </ul>
  *                                 The default value is 'distributed'.
  * @param {Object} files  A map of the files that make up the proc. The keys of
- *                        the map are file names, and the values are the binary
- *                        contents of the files. The file names may include
- *                        subdirectory names (e.g. 'subdir/file') but must not
+ *                        the
+ *                        map are file names, and the values are the binary
+ *                        contents of the files. The
+ *                        file names may include subdirectory names (e.g.
+ *                        'subdir/file') but must not
  *                        resolve to a directory above the root for the proc.
  * @param {String} command  The command (excluding arguments) that will be
- *                          invoked when the proc is executed. It will be
- *                          invoked from the directory containing the proc
+ *                          invoked when
+ *                          the proc is executed. It will be invoked from the
+ *                          directory containing the proc
  *                          <code>files</code> and may be any command that can
- *                          be resolved from that directory. It need not refer
- *                          to a file actually in that directory; for example,
- *                          it could be 'java' if the proc is a Java
- *                          application; however, any necessary external
+ *                          be resolved from that directory.
+ *                          It need not refer to a file actually in that
+ *                          directory; for example, it could be
+ *                          'java' if the proc is a Java application; however,
+ *                          any necessary external
  *                          programs must be preinstalled on every database
- *                          node. If the command refers to a file in that
- *                          directory, it must be preceded with './' as per
- *                          Linux convention. If not specified, and exactly one
- *                          file is provided in <code>files</code>, that file
+ *                          node. If the command refers to a
+ *                          file in that directory, it must be preceded with
+ *                          './' as per Linux convention.
+ *                          If not specified, and exactly one file is provided
+ *                          in <code>files</code>, that file
  *                          will be invoked.
  * @param {String[]} args  An array of command-line arguments that will be
  *                         passed to <code>command</code> when the proc is
@@ -7519,6 +7573,9 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'HASH': Use <a
  *                          href="../../concepts/tables.html#partitioning-by-hash"
  *                          target="_top">hash partitioning</a>.
+ *                                  <li> 'SERIES': Use <a
+ *                          href="../../concepts/tables.html#partitioning-by-series"
+ *                          target="_top">series partitioning</a>.
  *                          </ul>
  *                                  <li> 'partition_keys': Comma-separated list
  *                          of partition keys, which are the columns or column
@@ -7734,7 +7791,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       href="../../concepts/tables.html#random-sharding"
  *                                       target="_top">randomly sharded</a>, if
  *                                       no shard key is specified.
- *                                        Note that a type containing a shard
+ *                                       Note that a type containing a shard
  *                                       key cannot be used to create a
  *                                       replicated table.
  *                                       Supported values:
@@ -8164,6 +8221,17 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading file per rank. Default will be
  *                          external_file_reader_num_tasks
+ *                                  <li> 'type_inference_mode': optimize type
+ *                          inference for:
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'accuracy': scans all data to get
+ *                          exactly-typed & sized columns for all data present
+ *                                  <li> 'speed': picks the widest possible
+ *                          column types so that 'all' values will fit with
+ *                          minimum data scanned
+ *                          </ul>
+ *                          The default value is 'accuracy'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -9202,6 +9270,9 @@ GPUdb.prototype.delete_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to get information about all the servers.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -9651,8 +9722,19 @@ GPUdb.prototype.drop_schema = function(schema_name, options, callback) {
 };
 
 /**
- * Executes a proc. This endpoint is asynchronous and does not wait for the
- * proc to complete before returning.
+ * Executes a proc. This endpoint is asynchronous and does not wait for
+ * the proc to complete before returning.
+ * <p>
+ * If the proc being executed is distributed, <code>input_table_names</code> &
+ * <code>input_column_names</code> may be passed to the proc to use for reading
+ * data,
+ * and <code>output_table_names</code> may be passed to the proc to use for
+ * writing
+ * data.
+ * <p>
+ * If the proc being executed is non-distributed, these table parameters will
+ * be
+ * ignored.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9681,8 +9763,19 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
 };
 
 /**
- * Executes a proc. This endpoint is asynchronous and does not wait for the
- * proc to complete before returning.
+ * Executes a proc. This endpoint is asynchronous and does not wait for
+ * the proc to complete before returning.
+ * <p>
+ * If the proc being executed is distributed, <code>input_table_names</code> &
+ * <code>input_column_names</code> may be passed to the proc to use for reading
+ * data,
+ * and <code>output_table_names</code> may be passed to the proc to use for
+ * writing
+ * data.
+ * <p>
+ * If the proc being executed is non-distributed, these table parameters will
+ * be
+ * ignored.
  *
  * @param {String} proc_name  Name of the proc to execute. Must be the name of
  *                            a currently existing proc.
@@ -9693,16 +9786,19 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                             to the proc. Each key/value pair specifies the
  *                             name of a parameter and its value.
  * @param {String[]} input_table_names  Names of the tables containing data to
- *                                      be passed to the proc. Each name
- *                                      specified must be the name of a
- *                                      currently existing table, in
+ *                                      be passed to the
+ *                                      proc. Each name specified must be the
+ *                                      name of a currently existing table, in
  *                                      [schema_name.]table_name format, using
- *                                      standard <a
+ *                                      standard
+ *                                      <a
  *                                      href="../../concepts/tables.html#table-name-resolution"
  *                                      target="_top">name resolution
- *                                      rules</a>.  If no table names are
- *                                      specified, no data will be passed to
- *                                      the proc.
+ *                                      rules</a>.
+ *                                      If no table names are specified, no
+ *                                      data will be passed to the proc.  This
+ *                                      parameter is ignored if the proc has a
+ *                                      non-distributed execution mode.
  * @param {Object} input_column_names  Map of table names from
  *                                     <code>input_table_names</code> to lists
  *                                     of names of columns from those tables
@@ -9711,28 +9807,40 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                     of an existing column in the
  *                                     corresponding table. If a table name
  *                                     from <code>input_table_names</code> is
- *                                     not included, all columns from that
- *                                     table will be passed to the proc.
+ *                                     not
+ *                                     included, all columns from that table
+ *                                     will be passed to the proc.  This
+ *                                     parameter is ignored if the proc has a
+ *                                     non-distributed execution mode.
  * @param {String[]} output_table_names  Names of the tables to which output
- *                                       data from the proc will be written,
- *                                       each in [schema_name.]table_name
- *                                       format, using standard <a
+ *                                       data from the proc will
+ *                                       be written, each in
+ *                                       [schema_name.]table_name format, using
+ *                                       standard
+ *                                       <a
  *                                       href="../../concepts/tables.html#table-name-resolution"
  *                                       target="_top">name resolution
- *                                       rules</a> and meeting <a
+ *                                       rules</a>
+ *                                       and meeting <a
  *                                       href="../../concepts/tables.html#table-naming-criteria"
  *                                       target="_top">table naming
- *                                       criteria</a>. If a specified table
- *                                       does not exist, it will automatically
- *                                       be created with the same schema as the
- *                                       corresponding table (by order) from
+ *                                       criteria</a>.
+ *                                       If a specified table does not exist,
+ *                                       it will automatically be created with
+ *                                       the
+ *                                       same schema as the corresponding table
+ *                                       (by order) from
  *                                       <code>input_table_names</code>,
  *                                       excluding any primary and shard keys.
- *                                       If a specified table is a
- *                                       non-persistent result table, it must
- *                                       not have primary or shard keys. If no
- *                                       table names are specified, no output
- *                                       data can be returned from the proc.
+ *                                       If a specified
+ *                                       table is a non-persistent result
+ *                                       table, it must not have primary or
+ *                                       shard keys.
+ *                                       If no table names are specified, no
+ *                                       output data can be returned from the
+ *                                       proc.
+ *                                       This parameter is ignored if the proc
+ *                                       has a non-distributed execution mode.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'cache_input': A comma-delimited list
@@ -13713,6 +13821,17 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading file per rank. Default will be
  *                          external_file_reader_num_tasks
+ *                                  <li> 'type_inference_mode': optimize type
+ *                          inference for:
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'accuracy': scans all data to get
+ *                          exactly-typed & sized columns for all data present
+ *                                  <li> 'speed': picks the widest possible
+ *                          column types so that 'all' values will fit with
+ *                          minimum data scanned
+ *                          </ul>
+ *                          The default value is 'accuracy'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -14179,6 +14298,17 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading file per rank. Default will be
  *                          external_file_reader_num_tasks
+ *                                  <li> 'type_inference_mode': optimize type
+ *                          inference for:
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'accuracy': scans all data to get
+ *                          exactly-typed & sized columns for all data present
+ *                                  <li> 'speed': picks the widest possible
+ *                          column types so that 'all' values will fit with
+ *                          minimum data scanned
+ *                          </ul>
+ *                          The default value is 'accuracy'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -14968,6 +15098,13 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          (LINESTRING) towards a particular demand location
  *                          (store id) with its corresponding cost.  The
  *                          default value is 'true'.
+ *                                  <li> 'output_tracks': For the
+ *                          <code>match_supply_demand</code> solver only. When
+ *                          it is true (non-default), the output will be in
+ *                          tracks format for all the round trips of each truck
+ *                          in which the timestamps are populated directly from
+ *                          the edge weights starting from their originating
+ *                          depots.  The default value is 'false'.
  *                                  <li> 'max_trip_cost': For the
  *                          <code>match_supply_demand</code> solver only. If
  *                          this constraint is greater than zero (default) then
@@ -15008,7 +15145,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          '0'.
  *                                  <li> 'truck_service_limit': For the
  *                          <code>match_supply_demand</code> solver only. If
- *                          specified (greather than zero), any truck's total
+ *                          specified (greater than zero), any truck's total
  *                          service cost (distance or time) will be limited by
  *                          the specified value including multiple rounds (if
  *                          set).  The default value is '0.0'.
@@ -15024,6 +15161,11 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          once from their depots.
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to the server, amongst those containing the
+ *                          corresponding graph, that has the most
+ *                          computational bandwidth.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -15742,6 +15884,21 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'export_solve_results': Returns
+ *                          solution results inside the
+ *                          <code>adjacency_list_int_array</code> array in the
+ *                          response if set to <code>true</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to the server, amongst those containing the
+ *                          corresponding graph, that has the most
+ *                          computational bandwidth.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -16235,6 +16392,9 @@ GPUdb.prototype.show_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to get information about all the servers.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -17364,8 +17524,8 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
  * <a href="../../graph_solver/examples/graph_rest_guide.html"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#solve-graph"
- * target="_top">/solve/graph examples</a>
+ * <a href="../../graph_solver/examples.html#match-graph"
+ * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -17408,8 +17568,8 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  * <a href="../../graph_solver/examples/graph_rest_guide.html"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#solve-graph"
- * target="_top">/solve/graph examples</a>
+ * <a href="../../graph_solver/examples.html#match-graph"
+ * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to solve.
@@ -17669,6 +17829,13 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to the server, amongst those containing the
+ *                          corresponding graph, that has the most
+ *                          computational bandwidth. For SHORTEST_PATH solver
+ *                          type, the input is split amongst the server
+ *                          containing the corresponding graph.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -18112,7 +18279,7 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'square'.
  *                                        <li> 'symbolrotations': The default
@@ -18157,7 +18324,7 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'hollowdiamond'
  *                                        <li> 'oriented_arrow'
  *                                        <li> 'oriented_triangle'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'circle'.
  *                                        <li> 'trackheadcolors': The default
@@ -18174,7 +18341,7 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'hollowdiamond'.
  *                                </ul>
@@ -18452,6 +18619,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
         world_table_names: request.world_table_names,
         x_column_name: request.x_column_name,
         y_column_name: request.y_column_name,
+        symbol_column_name: request.symbol_column_name,
         geometry_column_name: request.geometry_column_name,
         track_ids: request.track_ids,
         cb_attr: request.cb_attr,
@@ -18491,6 +18659,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  * @param {String[]} world_table_names
  * @param {String} x_column_name
  * @param {String} y_column_name
+ * @param {String} symbol_column_name
  * @param {String} geometry_column_name
  * @param {String[][]} track_ids
  * @param {String} cb_attr
@@ -18574,9 +18743,11 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'none'.
+ *                                        <li> 'symbolrotations': The default
+ *                                value is '0'.
  *                                        <li> 'shapelinewidths': The default
  *                                value is '3'.
  *                                        <li> 'shapelinecolors': The default
@@ -18615,7 +18786,9 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'oriented_arrow'
+ *                                        <li> 'oriented_triangle'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'none'.
  *                                        <li> 'trackheadcolors': The default
@@ -18632,7 +18805,7 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'circle'.
  *                                </ul>
@@ -18644,12 +18817,13 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                   operation.
  * @private
  */
-GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointalpha_attr, cb_pointalpha_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, callback) {
+GPUdb.prototype.visualize_image_classbreak = function(table_names, world_table_names, x_column_name, y_column_name, symbol_column_name, geometry_column_name, track_ids, cb_attr, cb_vals, cb_pointcolor_attr, cb_pointcolor_vals, cb_pointalpha_attr, cb_pointalpha_vals, cb_pointsize_attr, cb_pointsize_vals, cb_pointshape_attr, cb_pointshape_vals, min_x, max_x, min_y, max_y, width, height, projection, bg_color, style_options, options, cb_transparency_vec, callback) {
     var actual_request = {
         table_names: table_names,
         world_table_names: world_table_names,
         x_column_name: x_column_name,
         y_column_name: y_column_name,
+        symbol_column_name: symbol_column_name,
         geometry_column_name: geometry_column_name,
         track_ids: track_ids,
         cb_attr: cb_attr,
@@ -19804,7 +19978,7 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                        <li> 'shapelinewidths': The default
  *                                value is '3'.
@@ -19830,7 +20004,7 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'none'.
  *                                        <li> 'trackheadcolors': The default
@@ -19847,7 +20021,7 @@ GPUdb.prototype.visualize_video_request = function(request, callback) {
  *                                        <li> 'hollowcircle'
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
- *                                        <li> 'SYMBOLCODE'
+ *                                        <li> 'symbolcode'
  *                                </ul>
  *                                The default value is 'circle'.
  *                                </ul>
