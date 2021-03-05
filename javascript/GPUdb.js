@@ -926,7 +926,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.2.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.3.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1340,9 +1340,8 @@ GPUdb.prototype.admin_add_host_request = function(request, callback) {
  *                          <code>true</code>, the host will accept processes
  *                          (ranks, graph server, etc.) in the event of a
  *                          failover on another node in the cluster. See <a
- *                          href="../../n_plus_1/index.html"
- *                          target="_top">Cluster Resilience</a> for more
- *                          information.
+ *                          href="../../../n_plus_1/" target="_top">Cluster
+ *                          Resilience</a> for more information.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -1360,7 +1359,7 @@ GPUdb.prototype.admin_add_host_request = function(request, callback) {
  *                          manager on the host being added, e.g.,
  *                          'http://172.123.45.67:9300'. The default host
  *                          manager port can be found in the <a
- *                          href="../../install/shared/ports.html"
+ *                          href="../../../install/shared/ports/"
  *                          target="_top">list of ports</a> used by Kinetica.
  *                                  <li> 'ram_limit': The desired RAM limit for
  *                          the host being added, i.e. the sum of RAM usage for
@@ -1499,13 +1498,13 @@ GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
  *                                  "tier.ram.rank.limit":"10000000000"}'.
  *                                  Currently, the available parameters are
  *                                  rank-specific parameters in the <a
- *                                  href="../../config/index.html#network"
+ *                                  href="../../../config/#network"
  *                                  target="_top">Network</a>, <a
- *                                  href="../../config/index.html#hardware"
+ *                                  href="../../../config/#hardware"
  *                                  target="_top">Hardware</a>, <a
- *                                  href="../../config/index.html#text-search"
+ *                                  href="../../../config/#text-search"
  *                                  target="_top">Text Search</a>, and <a
- *                                  href="../../config/index.html#ram-tier"
+ *                                  href="../../../config/#ram-tier"
  *                                  target="_top">RAM Tiered Storage</a>
  *                                  sections in the gpudb.conf file, with the
  *                                  key exception of the 'rankN.host' settings
@@ -1598,9 +1597,8 @@ GPUdb.prototype.admin_alter_host_request = function(request, callback) {
  *                          <code>true</code>, the host will accept processes
  *                          (ranks, graph server, etc.) in the event of a
  *                          failover on another node in the cluster. See <a
- *                          href="../../n_plus_1/index.html"
- *                          target="_top">Cluster Resilience</a> for more
- *                          information.
+ *                          href="../../../n_plus_1/" target="_top">Cluster
+ *                          Resilience</a> for more information.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -1632,7 +1630,7 @@ GPUdb.prototype.admin_alter_host = function(host, options, callback) {
  * type of job and the current state of execution, the action may not be
  * successfully executed. The final result of the attempted actions for each
  * specified job is returned in the status array of the response. See <a
- * href="../../admin/job_manager.html" target="_top">Job Manager</a> for more
+ * href="../../../admin/job_manager/" target="_top">Job Manager</a> for more
  * information.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -1662,7 +1660,7 @@ GPUdb.prototype.admin_alter_jobs_request = function(request, callback) {
  * type of job and the current state of execution, the action may not be
  * successfully executed. The final result of the attempted actions for each
  * specified job is returned in the status array of the response. See <a
- * href="../../admin/job_manager.html" target="_top">Job Manager</a> for more
+ * href="../../../admin/job_manager/" target="_top">Job Manager</a> for more
  * information.
  *
  * @param {Number[]} job_ids  Jobs to be modified.
@@ -1772,7 +1770,7 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made
  * to the
  *   cluster, e.g., a host was added or removed,
- *   <a href="../../concepts/tables.html#sharding" target="_top">sharded
+ *   <a href="../../../concepts/tables/#sharding" target="_top">sharded
  * data</a> will be
  *   evenly redistributed across the cluster by number of shards per rank
  *   while unsharded data will be redistributed across the cluster by data
@@ -1780,7 +1778,7 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * * If {@linkcode GPUdb#admin_rebalance} is invoked at some point when
  * unsharded
  *   data (a.k.a.
- *   <a href="../../concepts/tables.html#random-sharding"
+ *   <a href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>)
  *   in the cluster is unevenly distributed over time, sharded data will
  *   not move while unsharded data will be redistributed across the
@@ -1823,7 +1821,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  * * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made
  * to the
  *   cluster, e.g., a host was added or removed,
- *   <a href="../../concepts/tables.html#sharding" target="_top">sharded
+ *   <a href="../../../concepts/tables/#sharding" target="_top">sharded
  * data</a> will be
  *   evenly redistributed across the cluster by number of shards per rank
  *   while unsharded data will be redistributed across the cluster by data
@@ -1831,7 +1829,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  * * If {@linkcode GPUdb#admin_rebalance} is invoked at some point when
  * unsharded
  *   data (a.k.a.
- *   <a href="../../concepts/tables.html#random-sharding"
+ *   <a href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>)
  *   in the cluster is unevenly distributed over time, sharded data will
  *   not move while unsharded data will be redistributed across the
@@ -1847,7 +1845,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'rebalance_sharded_data': If
  *                          <code>true</code>, <a
- *                          href="../../concepts/tables.html#sharding"
+ *                          href="../../../concepts/tables/#sharding"
  *                          target="_top">sharded data</a> will be rebalanced
  *                          approximately equally across the cluster. Note that
  *                          for clusters with large amounts of sharded data,
@@ -1861,7 +1859,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                          The default value is 'true'.
  *                                  <li> 'rebalance_unsharded_data': If
  *                          <code>true</code>, unsharded data (a.k.a. <a
- *                          href="../../concepts/tables.html#random-sharding"
+ *                          href="../../../concepts/tables/#random-sharding"
  *                          target="_top">randomly-sharded</a>) will be
  *                          rebalanced approximately equally across the
  *                          cluster. Note that for clusters with large amounts
@@ -2035,9 +2033,9 @@ GPUdb.prototype.admin_remove_host = function(host, options, callback) {
  * rebalanced to other ranks before the rank(s) is removed unless the
  * <code>rebalance_sharded_data</code> or <code>rebalance_unsharded_data</code>
  * parameters are set to <code>false</code> in the <code>options</code>, in
- * which case the corresponding <a href="../../concepts/tables.html#sharding"
+ * which case the corresponding <a href="../../../concepts/tables/#sharding"
  * target="_top">sharded data</a> and/or unsharded data (a.k.a. <a
- * href="../../concepts/tables.html#random-sharding"
+ * href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>) will be deleted.
  * <p>
  * The database must be offline for this operation, see
@@ -2073,9 +2071,9 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  * rebalanced to other ranks before the rank(s) is removed unless the
  * <code>rebalance_sharded_data</code> or <code>rebalance_unsharded_data</code>
  * parameters are set to <code>false</code> in the <code>options</code>, in
- * which case the corresponding <a href="../../concepts/tables.html#sharding"
+ * which case the corresponding <a href="../../../concepts/tables/#sharding"
  * target="_top">sharded data</a> and/or unsharded data (a.k.a. <a
- * href="../../concepts/tables.html#random-sharding"
+ * href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>) will be deleted.
  * <p>
  * The database must be offline for this operation, see
@@ -2100,7 +2098,7 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'rebalance_sharded_data': If
  *                          <code>true</code>, <a
- *                          href="../../concepts/tables.html#sharding"
+ *                          href="../../../concepts/tables/#sharding"
  *                          target="_top">sharded data</a> will be rebalanced
  *                          approximately equally across the cluster. Note that
  *                          for clusters with large amounts of sharded data,
@@ -2114,7 +2112,7 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  *                          The default value is 'true'.
  *                                  <li> 'rebalance_unsharded_data': If
  *                          <code>true</code>, unsharded data (a.k.a. <a
- *                          href="../../concepts/tables.html#random-sharding"
+ *                          href="../../../concepts/tables/#random-sharding"
  *                          target="_top">randomly-sharded</a>) will be
  *                          rebalanced approximately equally across the
  *                          cluster. Note that for clusters with large amounts
@@ -2462,7 +2460,7 @@ GPUdb.prototype.admin_switchover_request = function(request, callback) {
  *                              to another host. Options are 'hostN' and
  *                              'rankN' where 'N' corresponds to the number
  *                              associated with a host or rank in the <a
- *                              href="../../config/index.html#network"
+ *                              href="../../../config/#network"
  *                              target="_top">Network</a> section of the
  *                              gpudb.conf file, e.g., 'host[N].address' or
  *                              'rank[N].host'. If 'hostN' is provided, all
@@ -2475,8 +2473,7 @@ GPUdb.prototype.admin_switchover_request = function(request, callback) {
  *                                 <code>processes</code>. Each index must be
  *                                 specified as 'hostN' where 'N' corresponds
  *                                 to the number associated with a host or rank
- *                                 in the <a
- *                                 href="../../config/index.html#network"
+ *                                 in the <a href="../../../config/#network"
  *                                 target="_top">Network</a> section of the
  *                                 gpudb.conf file, e.g., 'host[N].address'.
  *                                 Each entry in this array will receive the
@@ -2640,7 +2637,7 @@ GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
  *                             performed. Must be an existing table, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} x_column_name  Name of the column containing the x
  *                                coordinates of the points for the operation
@@ -2676,13 +2673,13 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
  * For aggregation details and examples, see <a
- * href="../../concepts/aggregation.html" target="_top">Aggregation</a>.  For
- * limitations, see <a href="../../concepts/aggregation.html#limitations"
+ * href="../../../concepts/aggregation/" target="_top">Aggregation</a>.  For
+ * limitations, see <a href="../../../concepts/aggregation/#limitations"
  * target="_top">Aggregation Limitations</a>.
  * <p>
  * Any column(s) can be grouped on, and all column types except
  * unrestricted-length strings may be used for computing applicable aggregates;
- * columns marked as <a href="../../concepts/types.html#data-handling"
+ * columns marked as <a href="../../../concepts/types/#data-handling"
  * target="_top">store-only</a> are unable to be used in grouping or
  * aggregation.
  * <p>
@@ -2699,34 +2696,34 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * To also compute the sum of 'z' over each group, use:
  * column_names=['x','y','count(*)','sum(z)'].
  * <p>
- * Available <a href="../../concepts/expressions.html#aggregate-expressions"
+ * Available <a href="../../../concepts/expressions/#aggregate-expressions"
  * target="_top">aggregation functions</a> are: count(*), sum, min, max, avg,
  * mean, stddev, stddev_pop, stddev_samp, var, var_pop, var_samp, arg_min,
  * arg_max and count_distinct.
  * <p>
- * Available grouping functions are <a href="../../concepts/rollup.html"
- * target="_top">Rollup</a>, <a href="../../concepts/cube.html"
- * target="_top">Cube</a>, and <a href="../../concepts/grouping_sets.html"
+ * Available grouping functions are <a href="../../../concepts/rollup/"
+ * target="_top">Rollup</a>, <a href="../../../concepts/cube/"
+ * target="_top">Cube</a>, and <a href="../../../concepts/grouping_sets/"
  * target="_top">Grouping Sets</a>
  * <p>
- * This service also provides support for <a href="../../concepts/pivot.html"
+ * This service also provides support for <a href="../../../concepts/pivot/"
  * target="_top">Pivot</a> operations.
  * <p>
  * Filtering on aggregates is supported via expressions using <a
- * href="../../concepts/expressions.html#aggregate-expressions"
+ * href="../../../concepts/expressions/#aggregate-expressions"
  * target="_top">aggregation functions</a> supplied to <code>having</code>.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
  * <code>options</code>, the results are stored in a new table with that
  * name--no results are returned in the response.  Both the table name and
  * resulting column names must adhere to <a
- * href="../../concepts/tables.html#table" target="_top">standard naming
+ * href="../../../concepts/tables/#table" target="_top">standard naming
  * conventions</a>; column/aggregation expressions will need to be aliased.  If
- * the source table's <a href="../../concepts/tables.html#shard-keys"
+ * the source table's <a href="../../../concepts/tables/#shard-keys"
  * target="_top">shard key</a> is used as the grouping column(s) and all result
  * records are selected (<code>offset</code> is 0 and <code>limit</code> is
  * -9999), the result table will be sharded, in all other cases it will be
@@ -2777,13 +2774,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * is somewhat analogous to an SQL-style SELECT...GROUP BY.
  * <p>
  * For aggregation details and examples, see <a
- * href="../../concepts/aggregation.html" target="_top">Aggregation</a>.  For
- * limitations, see <a href="../../concepts/aggregation.html#limitations"
+ * href="../../../concepts/aggregation/" target="_top">Aggregation</a>.  For
+ * limitations, see <a href="../../../concepts/aggregation/#limitations"
  * target="_top">Aggregation Limitations</a>.
  * <p>
  * Any column(s) can be grouped on, and all column types except
  * unrestricted-length strings may be used for computing applicable aggregates;
- * columns marked as <a href="../../concepts/types.html#data-handling"
+ * columns marked as <a href="../../../concepts/types/#data-handling"
  * target="_top">store-only</a> are unable to be used in grouping or
  * aggregation.
  * <p>
@@ -2800,34 +2797,34 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * To also compute the sum of 'z' over each group, use:
  * column_names=['x','y','count(*)','sum(z)'].
  * <p>
- * Available <a href="../../concepts/expressions.html#aggregate-expressions"
+ * Available <a href="../../../concepts/expressions/#aggregate-expressions"
  * target="_top">aggregation functions</a> are: count(*), sum, min, max, avg,
  * mean, stddev, stddev_pop, stddev_samp, var, var_pop, var_samp, arg_min,
  * arg_max and count_distinct.
  * <p>
- * Available grouping functions are <a href="../../concepts/rollup.html"
- * target="_top">Rollup</a>, <a href="../../concepts/cube.html"
- * target="_top">Cube</a>, and <a href="../../concepts/grouping_sets.html"
+ * Available grouping functions are <a href="../../../concepts/rollup/"
+ * target="_top">Rollup</a>, <a href="../../../concepts/cube/"
+ * target="_top">Cube</a>, and <a href="../../../concepts/grouping_sets/"
  * target="_top">Grouping Sets</a>
  * <p>
- * This service also provides support for <a href="../../concepts/pivot.html"
+ * This service also provides support for <a href="../../../concepts/pivot/"
  * target="_top">Pivot</a> operations.
  * <p>
  * Filtering on aggregates is supported via expressions using <a
- * href="../../concepts/expressions.html#aggregate-expressions"
+ * href="../../../concepts/expressions/#aggregate-expressions"
  * target="_top">aggregation functions</a> supplied to <code>having</code>.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
  * <code>options</code>, the results are stored in a new table with that
  * name--no results are returned in the response.  Both the table name and
  * resulting column names must adhere to <a
- * href="../../concepts/tables.html#table" target="_top">standard naming
+ * href="../../../concepts/tables/#table" target="_top">standard naming
  * conventions</a>; column/aggregation expressions will need to be aliased.  If
- * the source table's <a href="../../concepts/tables.html#shard-keys"
+ * the source table's <a href="../../../concepts/tables/#shard-keys"
  * target="_top">shard key</a> is used as the grouping column(s) and all result
  * records are selected (<code>offset</code> is 0 and <code>limit</code> is
  * -9999), the result table will be sharded, in all other cases it will be
@@ -2840,7 +2837,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String[]} column_names  List of one or more column names,
  *                                 expressions, and aggregate expressions.
@@ -2852,7 +2849,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.  The number of records returned will never
  *                        exceed the server's own limit, defined by the <a
- *                        href="../../config/index.html#general"
+ *                        href="../../../config/#general"
  *                        target="_top">max_get_records_size</a> parameter in
  *                        the server configuration.  Use
  *                        <code>has_more_records</code> to see if more records
@@ -2908,10 +2905,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> 'result_table': The name of a table
  *                          used to store the results, in
  *                          [schema_name.]table_name format, using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>.  Column
  *                          names (group-by and aggregate fields) need to be
  *                          given aliases e.g. ["FChar256 as fchar256",
@@ -2953,8 +2950,8 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the table specified in
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the table specified in
  *                          <code>result_table</code>.
  *                                  <li> 'chunk_size': Indicates the number of
  *                          records per chunk to be used for the result table.
@@ -2968,13 +2965,13 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          result table will be a member.  The default value
  *                          is ''.
  *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../rm/concepts.html"
+ *                          See <a href="../../../rm/concepts/"
  *                          target="_top">Resource Management Concepts</a> for
  *                          information about how resources are managed, <a
- *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          href="../../../rm/concepts/" target="_top">Tier
  *                          Strategy Concepts</a> for how resources are
  *                          targeted for VRAM, and <a
- *                          href="../../rm/usage.html#tier-strategies"
+ *                          href="../../../rm/usage/#tier-strategies"
  *                          target="_top">Tier Strategy Usage</a> for how to
  *                          specify a table's priority in VRAM.
  *                          Supported values:
@@ -3098,7 +3095,7 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  *                             performed. Must be an existing table, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} column_name  Name of a column or an expression of one or
  *                              more column names over which the histogram will
@@ -3205,7 +3202,7 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  *                             performed. Must be an existing table, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String[]} column_names  List of column names on which the operation
  *                                 would be performed. If n columns are
@@ -3286,7 +3283,7 @@ GPUdb.prototype.aggregate_min_max_request = function(request, callback) {
  *                             performed. Must be an existing table, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} column_name  Name of a column or an expression of one or
  *                              more column on which the min-max will be
@@ -3346,7 +3343,7 @@ GPUdb.prototype.aggregate_min_max_geometry_request = function(request, callback)
  *                             performed. Must be an existing table, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} column_name  Name of a geospatial geometry column on which
  *                              the min-max will be calculated.
@@ -3516,7 +3513,7 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} column_name  Name of the primary column for which the
  *                              statistics are to be calculated.
@@ -3697,7 +3694,7 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} select_expression  For a non-empty expression statistics are
  *                                    calculated for those records for which
@@ -3767,7 +3764,7 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * <code>offset</code>
  * and <code>limit</code> parameters.
  * <p>
- * Columns marked as <a href="../../concepts/types.html#data-handling"
+ * Columns marked as <a href="../../../concepts/types/#data-handling"
  * target="_top">store-only</a>
  * are unable to be used with this function.
  * <p>
@@ -3778,7 +3775,7 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -3787,10 +3784,10 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * results are returned in the response.  Both the table name and resulting
  * column
  * name must adhere to
- * <a href="../../concepts/tables.html#table" target="_top">standard naming
+ * <a href="../../../concepts/tables/#table" target="_top">standard naming
  * conventions</a>;
  * any column expression will need to be aliased.  If the source table's
- * <a href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
+ * <a href="../../../concepts/tables/#shard-keys" target="_top">shard key</a>
  * is used as the
  * <code>column_name</code>, the result table will be sharded, in all other
  * cases it
@@ -3849,7 +3846,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * <code>offset</code>
  * and <code>limit</code> parameters.
  * <p>
- * Columns marked as <a href="../../concepts/types.html#data-handling"
+ * Columns marked as <a href="../../../concepts/types/#data-handling"
  * target="_top">store-only</a>
  * are unable to be used with this function.
  * <p>
@@ -3860,7 +3857,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -3869,10 +3866,10 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * results are returned in the response.  Both the table name and resulting
  * column
  * name must adhere to
- * <a href="../../concepts/tables.html#table" target="_top">standard naming
+ * <a href="../../../concepts/tables/#table" target="_top">standard naming
  * conventions</a>;
  * any column expression will need to be aliased.  If the source table's
- * <a href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
+ * <a href="../../../concepts/tables/#shard-keys" target="_top">shard key</a>
  * is used as the
  * <code>column_name</code>, the result table will be sharded, in all other
  * cases it
@@ -3888,7 +3885,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} column_name  Name of the column or an expression containing
  *                              one or more column names on which the unique
@@ -3901,7 +3898,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.  The number of records returned will never
  *                        exceed the server's own limit, defined by the <a
- *                        href="../../config/index.html#general"
+ *                        href="../../../config/#general"
  *                        target="_top">max_get_records_size</a> parameter in
  *                        the server configuration.  Use
  *                        <code>has_more_records</code> to see if more records
@@ -3931,10 +3928,10 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                                  <li> 'result_table': The name of the table
  *                          used to store the results, in
  *                          [schema_name.]table_name format, using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>.  If
  *                          present, no results are returned in the response.
  *                          Not available if <code>column_name</code> is an
@@ -3973,8 +3970,8 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the table specified in
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the table specified in
  *                          <code>result_table</code>.
  *                                  <li> 'chunk_size': Indicates the number of
  *                          records per chunk to be used for the result table.
@@ -4022,9 +4019,9 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
  * Rotate the column values into rows values.
  * <p>
  * For unpivot details and examples, see
- * <a href="../../concepts/unpivot.html" target="_top">Unpivot</a>.  For
+ * <a href="../../../concepts/unpivot/" target="_top">Unpivot</a>.  For
  * limitations, see
- * <a href="../../concepts/unpivot.html#limitations" target="_top">Unpivot
+ * <a href="../../../concepts/unpivot/#limitations" target="_top">Unpivot
  * Limitations</a>.
  * <p>
  * Unpivot is used to normalize tables that are built for cross tabular
@@ -4038,7 +4035,7 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
  * and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -4082,9 +4079,9 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  * Rotate the column values into rows values.
  * <p>
  * For unpivot details and examples, see
- * <a href="../../concepts/unpivot.html" target="_top">Unpivot</a>.  For
+ * <a href="../../../concepts/unpivot/" target="_top">Unpivot</a>.  For
  * limitations, see
- * <a href="../../concepts/unpivot.html#limitations" target="_top">Unpivot
+ * <a href="../../../concepts/unpivot/#limitations" target="_top">Unpivot
  * Limitations</a>.
  * <p>
  * Unpivot is used to normalize tables that are built for cross tabular
@@ -4098,14 +4095,14 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  * and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table/view, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String[]} column_names  List of column names or expressions. A
  *                                 wildcard '*' can be used to include all the
@@ -4130,10 +4127,10 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                  <li> 'result_table': The name of a table
  *                          used to store the results, in
  *                          [schema_name.]table_name format, using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>. If
  *                          present, no results are returned in the response.
  *                                  <li> 'result_table_persist': If
@@ -4164,19 +4161,19 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                  <li> 'limit': The number of records to
  *                          keep.  The default value is ''.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the table specified in
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the table specified in
  *                          <code>result_table</code>.
  *                                  <li> 'view_id': view this result table is
  *                          part of.  The default value is ''.
  *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../rm/concepts.html"
+ *                          See <a href="../../../rm/concepts/"
  *                          target="_top">Resource Management Concepts</a> for
  *                          information about how resources are managed, <a
- *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          href="../../../rm/concepts/" target="_top">Tier
  *                          Strategy Concepts</a> for how resources are
  *                          targeted for VRAM, and <a
- *                          href="../../rm/usage.html#tier-strategies"
+ *                          href="../../../rm/usage/#tier-strategies"
  *                          target="_top">Tier Strategy Usage</a> for how to
  *                          specify a table's priority in VRAM.
  *                          Supported values:
@@ -4239,8 +4236,84 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
 };
 
 /**
+ * Alter the properties of an existing <a href="../../../concepts/credentials/"
+ * target="_top">credential</a>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.alter_credential_request = function(request, callback) {
+    var actual_request = {
+        credential_name: request.credential_name,
+        credential_updates_map: request.credential_updates_map,
+        options: request.options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Alter the properties of an existing <a href="../../../concepts/credentials/"
+ * target="_top">credential</a>.
+ *
+ * @param {String} credential_name  Name of the credential to be altered. Must
+ *                                  be an existing credential.
+ * @param {Object} credential_updates_map  Map containing the properties of the
+ *                                         credential to be updated. Error if
+ *                                         empty.
+ *                                         <ul>
+ *                                                 <li> 'type': New type for
+ *                                         the credential.
+ *                                         Supported values:
+ *                                         <ul>
+ *                                                 <li> 'aws_access_key'
+ *                                                 <li> 'aws_iam_role'
+ *                                                 <li> 'azure_ad'
+ *                                                 <li> 'azure_oauth'
+ *                                                 <li> 'azure_sas'
+ *                                                 <li> 'azure_storage_key'
+ *                                                 <li> 'docker'
+ *                                                 <li> 'hdfs'
+ *                                                 <li> 'kafka'
+ *                                         </ul>
+ *                                                 <li> 'identity': New user
+ *                                         for the credential
+ *                                                 <li> 'secret': New password
+ *                                         for the credential
+ *                                         </ul>
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.alter_credential = function(credential_name, credential_updates_map, options, callback) {
+    var actual_request = {
+        credential_name: credential_name,
+        credential_updates_map: credential_updates_map,
+        options: options
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/credential", actual_request);
+        return data;
+    }
+};
+
+/**
  * Alters the properties of an existing <a
- * href="../../concepts/data_sources.html" target="_top">data source</a>
+ * href="../../../concepts/data_sources/" target="_top">data source</a>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4266,7 +4339,7 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
 
 /**
  * Alters the properties of an existing <a
- * href="../../concepts/data_sources.html" target="_top">data source</a>
+ * href="../../../concepts/data_sources/" target="_top">data source</a>
  *
  * @param {String} name  Name of the data source to be altered. Must be an
  *                       existing data source.
@@ -4301,6 +4374,9 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 <li> 'wait_timeout': Timeout
  *                                         in seconds for reading from this
  *                                         storage provider
+ *                                                 <li> 'credential': Name of
+ *                                         the Credential object to be used in
+ *                                         data source
  *                                                 <li> 's3_bucket_name': Name
  *                                         of the Amazon S3 bucket to use as
  *                                         the data source
@@ -4358,6 +4434,66 @@ GPUdb.prototype.alter_datasource = function(name, datasource_updates_map, option
         this.submit_request("/alter/datasource", actual_request, callback);
     } else {
         var data = this.submit_request("/alter/datasource", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.alter_model_request = function(request, callback) {
+    var actual_request = {
+        model_name: request.model_name,
+        action: request.action,
+        value: request.value,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/model", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} model_name
+ * @param {String} action
+ *                         Supported values:
+ *                         <ul>
+ *                                 <li> 'container'
+ *                                 <li> 'registry'
+ *                                 <li> 'refresh'
+ *                         </ul>
+ * @param {String} value
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.alter_model = function(model_name, action, value, options, callback) {
+    var actual_request = {
+        model_name: model_name,
+        action: action,
+        value: value,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/model", actual_request);
         return data;
     }
 };
@@ -4541,7 +4677,7 @@ GPUdb.prototype.alter_role = function(name, action, value, options, callback) {
 };
 
 /**
- * Used to change the name of a SQL-style <a href="../../concepts/schemas.html"
+ * Used to change the name of a SQL-style <a href="../../../concepts/schemas/"
  * target="_top">schema</a>, specified in <code>schema_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -4568,7 +4704,7 @@ GPUdb.prototype.alter_schema_request = function(request, callback) {
 };
 
 /**
- * Used to change the name of a SQL-style <a href="../../concepts/schemas.html"
+ * Used to change the name of a SQL-style <a href="../../../concepts/schemas/"
  * target="_top">schema</a>, specified in <code>schema_name</code>.
  *
  * @param {String} schema_name  Name of the schema to be altered.
@@ -4577,7 +4713,7 @@ GPUdb.prototype.alter_schema_request = function(request, callback) {
  *                         <ul>
  *                                 <li> 'rename_schema': Renames a schema to
  *                         <code>value</code>. Has the same naming restrictions
- *                         as <a href="../../concepts/tables.html"
+ *                         as <a href="../../../concepts/tables/"
  *                         target="_top">tables</a>.
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
@@ -4816,42 +4952,42 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * available modifications include the following:
  * <p>
  * Manage a table's columns--a column can be added, removed, or have its
- * <a href="../../concepts/types.html" target="_top">type and properties</a>
+ * <a href="../../../concepts/types/" target="_top">type and properties</a>
  * modified, including
- * whether it is <a href="../../concepts/compression.html"
+ * whether it is <a href="../../../concepts/compression/"
  * target="_top">compressed</a> or not.
  * <p>
  * External tables cannot be modified except for their refresh method.
  * <p>
- * Create or delete an <a href="../../concepts/indexes.html#column-index"
+ * Create or delete an <a href="../../../concepts/indexes/#column-index"
  * target="_top">index</a> on a
  * particular column. This can speed up certain operations when using
  * expressions
  * containing equality or relational operators on indexed columns. This only
  * applies to tables.
  * <p>
- * Create or delete a <a href="../../concepts/tables.html#foreign-key"
+ * Create or delete a <a href="../../../concepts/tables/#foreign-key"
  * target="_top">foreign key</a>
  * on a particular column.
  * <p>
  * Manage a
- * <a href="../../concepts/tables.html#partitioning-by-range"
+ * <a href="../../../concepts/tables/#partitioning-by-range"
  * target="_top">range-partitioned</a> or a
- * <a href="../../concepts/tables.html#partitioning-by-list-manual"
+ * <a href="../../../concepts/tables/#partitioning-by-list-manual"
  * target="_top">manual list-partitioned</a>
  * table's partitions.
  * <p>
- * Set (or reset) the <a href="../../rm/concepts.html#tier-strategies"
+ * Set (or reset) the <a href="../../../rm/concepts/#tier-strategies"
  * target="_top">tier strategy</a>
  * of a table or view.
  * <p>
  * Refresh and manage the refresh mode of a
- * <a href="../../concepts/materialized_views.html" target="_top">materialized
+ * <a href="../../../concepts/materialized_views/" target="_top">materialized
  * view</a> or an
- * <a href="../../concepts/external_tables.html" target="_top">external
+ * <a href="../../../concepts/external_tables/" target="_top">external
  * table</a>.
  * <p>
- * Set the <a href="../../concepts/ttl.html" target="_top">time-to-live
+ * Set the <a href="../../../concepts/ttl/" target="_top">time-to-live
  * (TTL)</a>. This can be applied
  * to tables or views.
  * <p>
@@ -4891,42 +5027,42 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * available modifications include the following:
  * <p>
  * Manage a table's columns--a column can be added, removed, or have its
- * <a href="../../concepts/types.html" target="_top">type and properties</a>
+ * <a href="../../../concepts/types/" target="_top">type and properties</a>
  * modified, including
- * whether it is <a href="../../concepts/compression.html"
+ * whether it is <a href="../../../concepts/compression/"
  * target="_top">compressed</a> or not.
  * <p>
  * External tables cannot be modified except for their refresh method.
  * <p>
- * Create or delete an <a href="../../concepts/indexes.html#column-index"
+ * Create or delete an <a href="../../../concepts/indexes/#column-index"
  * target="_top">index</a> on a
  * particular column. This can speed up certain operations when using
  * expressions
  * containing equality or relational operators on indexed columns. This only
  * applies to tables.
  * <p>
- * Create or delete a <a href="../../concepts/tables.html#foreign-key"
+ * Create or delete a <a href="../../../concepts/tables/#foreign-key"
  * target="_top">foreign key</a>
  * on a particular column.
  * <p>
  * Manage a
- * <a href="../../concepts/tables.html#partitioning-by-range"
+ * <a href="../../../concepts/tables/#partitioning-by-range"
  * target="_top">range-partitioned</a> or a
- * <a href="../../concepts/tables.html#partitioning-by-list-manual"
+ * <a href="../../../concepts/tables/#partitioning-by-list-manual"
  * target="_top">manual list-partitioned</a>
  * table's partitions.
  * <p>
- * Set (or reset) the <a href="../../rm/concepts.html#tier-strategies"
+ * Set (or reset) the <a href="../../../rm/concepts/#tier-strategies"
  * target="_top">tier strategy</a>
  * of a table or view.
  * <p>
  * Refresh and manage the refresh mode of a
- * <a href="../../concepts/materialized_views.html" target="_top">materialized
+ * <a href="../../../concepts/materialized_views/" target="_top">materialized
  * view</a> or an
- * <a href="../../concepts/external_tables.html" target="_top">external
+ * <a href="../../../concepts/external_tables/" target="_top">external
  * table</a>.
  * <p>
- * Set the <a href="../../concepts/ttl.html" target="_top">time-to-live
+ * Set the <a href="../../../concepts/ttl/" target="_top">time-to-live
  * (TTL)</a>. This can be applied
  * to tables or views.
  * <p>
@@ -4941,7 +5077,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * @param {String} table_name  Table on which the operation will be performed,
  *                             in [schema_name.]table_name format, using
  *                             standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table or view.
  * @param {String} action  Modification operation to be applied
@@ -4950,18 +5086,18 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 <li> 'allow_homogeneous_tables': No longer
  *                         supported; action will be ignored.
  *                                 <li> 'create_index': Creates either a <a
- *                         href="../../concepts/indexes.html#column-index"
+ *                         href="../../../concepts/indexes/#column-index"
  *                         target="_top">column (attribute) index</a> or <a
- *                         href="../../concepts/indexes.html#chunk-skip-index"
+ *                         href="../../../concepts/indexes/#chunk-skip-index"
  *                         target="_top">chunk skip index</a>, depending on the
  *                         specified <code>index_type</code>, on the column
  *                         name specified in <code>value</code>. If this column
  *                         already has the specified index, an error will be
  *                         returned.
  *                                 <li> 'delete_index': Deletes either a <a
- *                         href="../../concepts/indexes.html#column-index"
+ *                         href="../../../concepts/indexes/#column-index"
  *                         target="_top">column (attribute) index</a> or <a
- *                         href="../../concepts/indexes.html#chunk-skip-index"
+ *                         href="../../../concepts/indexes/#chunk-skip-index"
  *                         target="_top">chunk skip index</a>, depending on the
  *                         specified <code>index_type</code>, on the column
  *                         name specified in <code>value</code>. If this column
@@ -4988,10 +5124,10 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 <li> 'rename_table': Renames a table or view
  *                         within its current schema to <code>value</code>. Has
  *                         the same naming restrictions as <a
- *                         href="../../concepts/tables.html"
+ *                         href="../../../concepts/tables/"
  *                         target="_top">tables</a>.
  *                                 <li> 'ttl': Sets the <a
- *                         href="../../concepts/ttl.html"
+ *                         href="../../../concepts/ttl/"
  *                         target="_top">time-to-live</a> in minutes of the
  *                         table or view specified in <code>table_name</code>.
  *                                 <li> 'add_column': Adds the column specified
@@ -5014,7 +5150,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         and 'dict' must be specified in the
  *                         <code>options</code> map.
  *                                 <li> 'set_column_compression': Modifies the
- *                         <a href="../../concepts/compression.html"
+ *                         <a href="../../../concepts/compression/"
  *                         target="_top">compression</a> setting on the column
  *                         specified in <code>value</code> to the compression
  *                         type specified in <code>compression_type</code>.
@@ -5022,38 +5158,38 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         specified in <code>value</code> from the table
  *                         specified in <code>table_name</code>.
  *                                 <li> 'create_foreign_key': Creates a <a
- *                         href="../../concepts/tables.html#foreign-key"
+ *                         href="../../../concepts/tables/#foreign-key"
  *                         target="_top">foreign key</a> specified in
  *                         <code>value</code> using the format
  *                         '(source_column_name [, ...]) references
  *                         target_table_name(primary_key_column_name [, ...])
  *                         [as foreign_key_name]'.
  *                                 <li> 'delete_foreign_key': Deletes a <a
- *                         href="../../concepts/tables.html#foreign-key"
+ *                         href="../../../concepts/tables/#foreign-key"
  *                         target="_top">foreign key</a>.  The
  *                         <code>value</code> should be the foreign_key_name
  *                         specified when creating the key or the complete
  *                         string used to define it.
  *                                 <li> 'add_partition': Adds the partition
  *                         specified in <code>value</code>, to either a <a
- *                         href="../../concepts/tables.html#partitioning-by-range"
+ *                         href="../../../concepts/tables/#partitioning-by-range"
  *                         target="_top">range-partitioned</a> or <a
- *                         href="../../concepts/tables.html#partitioning-by-list-manual"
+ *                         href="../../../concepts/tables/#partitioning-by-list-manual"
  *                         target="_top">manual list-partitioned</a> table.
  *                                 <li> 'remove_partition': Removes the
  *                         partition specified in <code>value</code> (and
  *                         relocates all of its data to the default partition)
  *                         from either a <a
- *                         href="../../concepts/tables.html#partitioning-by-range"
+ *                         href="../../../concepts/tables/#partitioning-by-range"
  *                         target="_top">range-partitioned</a> or <a
- *                         href="../../concepts/tables.html#partitioning-by-list-manual"
+ *                         href="../../../concepts/tables/#partitioning-by-list-manual"
  *                         target="_top">manual list-partitioned</a> table.
  *                                 <li> 'delete_partition': Deletes the
  *                         partition specified in <code>value</code> (and all
  *                         of its data) from either a <a
- *                         href="../../concepts/tables.html#partitioning-by-range"
+ *                         href="../../../concepts/tables/#partitioning-by-range"
  *                         target="_top">range-partitioned</a> or <a
- *                         href="../../concepts/tables.html#partitioning-by-list-manual"
+ *                         href="../../../concepts/tables/#partitioning-by-list-manual"
  *                         target="_top">manual list-partitioned</a> table.
  *                                 <li> 'set_global_access_mode': Sets the
  *                         global access mode (i.e. locking) for the table
@@ -5062,57 +5198,57 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         'no_access', 'read_only', 'write_only' and
  *                         'read_write'.
  *                                 <li> 'refresh': For a <a
- *                         href="../../concepts/materialized_views.html"
+ *                         href="../../../concepts/materialized_views/"
  *                         target="_top">materialized view</a>, replays all the
  *                         table creation commands required to create the view.
- *                         For an <a href="../../concepts/external_tables.html"
+ *                         For an <a href="../../../concepts/external_tables/"
  *                         target="_top">external table</a>, reloads all data
  *                         in the table from its associated source files or <a
- *                         href="../../concepts/data_sources.html"
+ *                         href="../../../concepts/data_sources/"
  *                         target="_top">data source</a>.
  *                                 <li> 'set_refresh_method': For a <a
- *                         href="../../concepts/materialized_views.html"
+ *                         href="../../../concepts/materialized_views/"
  *                         target="_top">materialized view</a>, sets the method
  *                         by which the view is refreshed to the method
  *                         specified in <code>value</code> - one of 'manual',
  *                         'periodic', or 'on_change'.  For an <a
- *                         href="../../concepts/external_tables.html"
+ *                         href="../../../concepts/external_tables/"
  *                         target="_top">external table</a>, sets the method by
  *                         which the table is refreshed to the method specified
  *                         in <code>value</code> - either 'manual' or
  *                         'on_start'.
  *                                 <li> 'set_refresh_start_time': Sets the time
  *                         to start periodic refreshes of this <a
- *                         href="../../concepts/materialized_views.html"
+ *                         href="../../../concepts/materialized_views/"
  *                         target="_top">materialized view</a> to the datetime
  *                         string specified in <code>value</code> with format
  *                         'YYYY-MM-DD HH:MM:SS'.  Subsequent refreshes occur
  *                         at the specified time + N * the refresh period.
  *                                 <li> 'set_refresh_period': Sets the time
  *                         interval in seconds at which to refresh this <a
- *                         href="../../concepts/materialized_views.html"
+ *                         href="../../../concepts/materialized_views/"
  *                         target="_top">materialized view</a> to the value
  *                         specified in <code>value</code>.  Also, sets the
  *                         refresh method to periodic if not already set.
  *                                 <li> 'set_refresh_execute_as': Sets the user
  *                         name to refresh this <a
- *                         href="../../concepts/materialized_views.html"
+ *                         href="../../../concepts/materialized_views/"
  *                         target="_top">materialized view</a> to the value
  *                         specified in <code>value</code>.
  *                                 <li> 'remove_text_search_attributes':
  *                         Removes <a
- *                         href="../../concepts/full_text_search.html"
+ *                         href="../../../concepts/full_text_search/"
  *                         target="_top">text search</a> attribute from all
  *                         columns.
  *                                 <li> 'set_strategy_definition': Sets the <a
- *                         href="../../rm/concepts.html#tier-strategies"
+ *                         href="../../../rm/concepts/#tier-strategies"
  *                         target="_top">tier strategy</a> for the table and
  *                         its columns to the one specified in
  *                         <code>value</code>, replacing the existing tier
  *                         strategy in its entirety. See <a
- *                         href="../../rm/concepts.html#tier-strategies"
+ *                         href="../../../rm/concepts/#tier-strategies"
  *                         target="_top">tier strategy usage</a> for format and
- *                         <a href="../../rm/usage.html#tier-strategies"
+ *                         <a href="../../../rm/usage/#tier-strategies"
  *                         target="_top">tier strategy examples</a> for
  *                         examples.
  *                         </ul>
@@ -5177,7 +5313,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'true'.
  *                                  <li> 'update_last_access_time': Indicates
- *                          whether the <a href="../../concepts/ttl.html"
+ *                          whether the <a href="../../../concepts/ttl/"
  *                          target="_top">time-to-live</a> (TTL) expiration
  *                          countdown timer should be reset to the table's TTL.
  *                          Supported values:
@@ -5196,14 +5332,14 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          columns in the same table.
  *                                  <li> 'strategy_definition': Optional
  *                          parameter for specifying the <a
- *                          href="../../rm/concepts.html#tier-strategies"
+ *                          href="../../../rm/concepts/#tier-strategies"
  *                          target="_top">tier strategy</a> for the table and
  *                          its columns when <code>action</code> is
  *                          <code>set_strategy_definition</code>, replacing the
  *                          existing tier strategy in its entirety. See <a
- *                          href="../../rm/concepts.html#tier-strategies"
+ *                          href="../../../rm/concepts/#tier-strategies"
  *                          target="_top">tier strategy usage</a> for format
- *                          and <a href="../../rm/usage.html#tier-strategies"
+ *                          and <a href="../../../rm/usage/#tier-strategies"
  *                          target="_top">tier strategy examples</a> for
  *                          examples.  This option will be ignored if
  *                          <code>value</code> is also specified.
@@ -5214,10 +5350,10 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'column': Create or delete a <a
- *                          href="../../concepts/indexes.html#column-index"
+ *                          href="../../../concepts/indexes/#column-index"
  *                          target="_top">column (attribute) index</a>.
  *                                  <li> 'chunk_skip': Create or delete a <a
- *                          href="../../concepts/indexes.html#chunk-skip-index"
+ *                          href="../../../concepts/indexes/#chunk-skip-index"
  *                          target="_top">chunk skip index</a>.
  *                          </ul>
  *                          The default value is 'column'.
@@ -5247,7 +5383,7 @@ GPUdb.prototype.alter_table = function(table_name, action, value, options, callb
  * Apply various modifications to columns in a table, view.  The available
  * modifications include the following:
  * <p>
- * Create or delete an <a href="../../concepts/indexes.html#column-index"
+ * Create or delete an <a href="../../../concepts/indexes/#column-index"
  * target="_top">index</a> on a
  * particular column. This can speed up certain operations when using
  * expressions
@@ -5255,10 +5391,10 @@ GPUdb.prototype.alter_table = function(table_name, action, value, options, callb
  * applies to tables.
  * <p>
  * Manage a table's columns--a column can be added, removed, or have its
- * <a href="../../concepts/types.html" target="_top">type and properties</a>
+ * <a href="../../../concepts/types/" target="_top">type and properties</a>
  * modified.
  * <p>
- * Set or unset <a href="../../concepts/compression.html"
+ * Set or unset <a href="../../../concepts/compression/"
  * target="_top">compression</a> for a column.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -5287,7 +5423,7 @@ GPUdb.prototype.alter_table_columns_request = function(request, callback) {
  * Apply various modifications to columns in a table, view.  The available
  * modifications include the following:
  * <p>
- * Create or delete an <a href="../../concepts/indexes.html#column-index"
+ * Create or delete an <a href="../../../concepts/indexes/#column-index"
  * target="_top">index</a> on a
  * particular column. This can speed up certain operations when using
  * expressions
@@ -5295,17 +5431,17 @@ GPUdb.prototype.alter_table_columns_request = function(request, callback) {
  * applies to tables.
  * <p>
  * Manage a table's columns--a column can be added, removed, or have its
- * <a href="../../concepts/types.html" target="_top">type and properties</a>
+ * <a href="../../../concepts/types/" target="_top">type and properties</a>
  * modified.
  * <p>
- * Set or unset <a href="../../concepts/compression.html"
+ * Set or unset <a href="../../../concepts/compression/"
  * target="_top">compression</a> for a column.
  *
  * @param {String} table_name  Table on which the operation will be performed.
  *                             Must be an existing table or view, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {Object[]} column_alterations  List of alter table add/delete/change
  *                                       column requests - all for the same
@@ -5380,7 +5516,7 @@ GPUdb.prototype.alter_table_metadata_request = function(request, callback) {
  * @param {String[]} table_names  Names of the tables whose metadata will be
  *                                updated, in [schema_name.]table_name format,
  *                                using standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.  All
  *                                specified tables must exist, or an error will
  *                                be returned.
@@ -5413,12 +5549,12 @@ GPUdb.prototype.alter_table_metadata = function(table_names, metadata_map, optio
 
 /**
  * Alters properties of an exisiting
- * <a href="../../rm/concepts.html#storage-tiers" target="_top">tier</a> to
+ * <a href="../../../rm/concepts/#storage-tiers" target="_top">tier</a> to
  * facilitate
- * <a href="../../rm/concepts.html" target="_top">resource management</a>.
+ * <a href="../../../rm/concepts/" target="_top">resource management</a>.
  * <p>
  * To disable
- * <a href="../../rm/concepts.html#watermark-based-eviction"
+ * <a href="../../../rm/concepts/#watermark-based-eviction"
  * target="_top">watermark-based eviction</a>,
  * set both <code>high_watermark</code> and
  * <code>low_watermark</code> to 100.
@@ -5446,12 +5582,12 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
 
 /**
  * Alters properties of an exisiting
- * <a href="../../rm/concepts.html#storage-tiers" target="_top">tier</a> to
+ * <a href="../../../rm/concepts/#storage-tiers" target="_top">tier</a> to
  * facilitate
- * <a href="../../rm/concepts.html" target="_top">resource management</a>.
+ * <a href="../../../rm/concepts/" target="_top">resource management</a>.
  * <p>
  * To disable
- * <a href="../../rm/concepts.html#watermark-based-eviction"
+ * <a href="../../../rm/concepts/#watermark-based-eviction"
  * target="_top">watermark-based eviction</a>,
  * set both <code>high_watermark</code> and
  * <code>low_watermark</code> to 100.
@@ -5599,13 +5735,13 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  * @param {String} table_name  The table name for the records to be appended,
  *                             in [schema_name.]table_name format, using
  *                             standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String} source_table_name  The source table name to get records
  *                                    from, in [schema_name.]table_name format,
  *                                    using standard <a
- *                                    href="../../concepts/tables.html#table-name-resolution"
+ *                                    href="../../../concepts/tables/#table-name-resolution"
  *                                    target="_top">name resolution rules</a>.
  *                                    Must be an existing table name.
  * @param {Object} field_map  Contains the mapping of column names from the
@@ -5617,7 +5753,7 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                            column names in source table and target table,
  *                            and their types must be matched. For details on
  *                            using expressions, see <a
- *                            href="../../concepts/expressions.html"
+ *                            href="../../../concepts/expressions/"
  *                            target="_top">Expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -5648,7 +5784,7 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          <code>source_table_name</code>) into the target
  *                          table (specified by <code>table_name</code>) table
  *                          with a <a
- *                          href="../../concepts/tables.html#primary-keys"
+ *                          href="../../../concepts/tables/#primary-keys"
  *                          target="_top">primary key</a>.  If set to
  *                          <code>true</code>, any existing target table record
  *                          with primary key values that match those of a
@@ -5729,7 +5865,7 @@ GPUdb.prototype.clear_statistics_request = function(request, callback) {
  *
  * @param {String} table_name  Name of a table, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>. Must be
  *                             an existing table.
  * @param {String} column_name  Name of the column in <code>table_name</code>
@@ -5796,7 +5932,7 @@ GPUdb.prototype.clear_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table to be cleared, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>. Must be
  *                             an existing table. Empty string clears all
  *                             available tables, though this behavior is be
@@ -5972,7 +6108,7 @@ GPUdb.prototype.collect_statistics_request = function(request, callback) {
  *
  * @param {String} table_name  Name of a table, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String[]} column_names  List of one or more column names in
@@ -6000,7 +6136,140 @@ GPUdb.prototype.collect_statistics = function(table_name, column_names, options,
 };
 
 /**
- * Creates a <a href="../../concepts/data_sources.html" target="_top">data
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.create_container_registry_request = function(request, callback) {
+    var actual_request = {
+        registry_name: request.registry_name,
+        uri: request.uri,
+        credential: request.credential,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/container/registry", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/container/registry", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} registry_name
+ * @param {String} uri
+ * @param {String} credential
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> 'user_name': The default value is ''.
+ *                                  <li> 'password': The default value is ''.
+ *                                  <li> 'email': The default value is ''.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.create_container_registry = function(registry_name, uri, credential, options, callback) {
+    var actual_request = {
+        registry_name: registry_name,
+        uri: uri,
+        credential: credential,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/container/registry", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/container/registry", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Create a new <a href="../../../concepts/credentials/"
+ * target="_top">credential</a>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_credential_request = function(request, callback) {
+    var actual_request = {
+        credential_name: request.credential_name,
+        type: request.type,
+        identity: request.identity,
+        secret: request.secret,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Create a new <a href="../../../concepts/credentials/"
+ * target="_top">credential</a>.
+ *
+ * @param {String} credential_name  Name of the credential to be created. Must
+ *                                  contain only letters, digits, and
+ *                                  underscores, and cannot begin with a digit.
+ *                                  Must not match an existing credential name.
+ * @param {String} type  Type of the credential to be created.
+ *                       Supported values:
+ *                       <ul>
+ *                               <li> 'aws_access_key'
+ *                               <li> 'aws_iam_role'
+ *                               <li> 'azure_ad'
+ *                               <li> 'azure_oauth'
+ *                               <li> 'azure_sas'
+ *                               <li> 'azure_storage_key'
+ *                               <li> 'docker'
+ *                               <li> 'hdfs'
+ *                               <li> 'kafka'
+ *                       </ul>
+ * @param {String} identity  User of the credential to be created.
+ * @param {String} secret  Password of the credential to be created.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_credential = function(credential_name, type, identity, secret, options, callback) {
+    var actual_request = {
+        credential_name: credential_name,
+        type: type,
+        identity: identity,
+        secret: secret,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a>, which contains the
  * location and connection information for a data store that is external to the
  * database.
@@ -6030,7 +6299,7 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
 };
 
 /**
- * Creates a <a href="../../concepts/data_sources.html" target="_top">data
+ * Creates a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a>, which contains the
  * location and connection information for a data store that is external to the
  * database.
@@ -6059,6 +6328,8 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                          seconds for connecting to this storage provider
  *                                  <li> 'wait_timeout': Timeout in seconds for
  *                          reading from this storage provider
+ *                                  <li> 'credential': Name of the Credential
+ *                          object to be used in data source
  *                                  <li> 's3_bucket_name': Name of the Amazon
  *                          S3 bucket to use as the data source
  *                                  <li> 's3_region': Name of the Amazon S3
@@ -6116,12 +6387,12 @@ GPUdb.prototype.create_datasource = function(name, location, user_name, password
  * restrictions.
 
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
- * and/or some <a href="../../graph_solver/examples.html" target="_top">graph
+ * and/or some <a href="../../../graph_solver/examples/" target="_top">graph
  * examples</a> before
  * using this endpoint.
  *
@@ -6156,12 +6427,12 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  * restrictions.
 
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
- * and/or some <a href="../../graph_solver/examples.html" target="_top">graph
+ * and/or some <a href="../../../graph_solver/examples/" target="_top">graph
  * examples</a> before
  * using this endpoint.
  *
@@ -6169,7 +6440,7 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  * @param {Boolean} directed_graph  If set to <code>true</code>, the graph will
  *                                  be directed. If set to <code>false</code>,
  *                                  the graph will not be directed. Consult <a
- *                                  href="../../graph_solver/network_graph_solver.html#directed-graphs"
+ *                                  href="../../../graph_solver/network_graph_solver/#directed-graphs"
  *                                  target="_top">Directed Graphs</a> for more
  *                                  details.
  *                                  Supported values:
@@ -6182,11 +6453,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          graph.
  *                          Nodes must be specified using
  *                          <a
- *                          href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                          href="../../../graph_solver/network_graph_solver/#identifiers"
  *                          target="_top">identifiers</a>;
  *                          identifiers are grouped as
  *                          <a
- *                          href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                          href="../../../graph_solver/network_graph_solver/#id-combos"
  *                          target="_top">combinations</a>.
  *                          Identifiers can be used with existing column names,
  *                          e.g.,
@@ -6202,11 +6473,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          a graph that typically connect nodes. Edges must be
  *                          specified using
  *                          <a
- *                          href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                          href="../../../graph_solver/network_graph_solver/#identifiers"
  *                          target="_top">identifiers</a>;
  *                          identifiers are grouped as
  *                          <a
- *                          href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                          href="../../../graph_solver/network_graph_solver/#id-combos"
  *                          target="_top">combinations</a>.
  *                          Identifiers can be used with existing column names,
  *                          e.g.,
@@ -6223,11 +6494,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                            Weights must be specified
  *                            using
  *                            <a
- *                            href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                            href="../../../graph_solver/network_graph_solver/#identifiers"
  *                            target="_top">identifiers</a>;
  *                            identifiers are grouped as
  *                            <a
- *                            href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                            href="../../../graph_solver/network_graph_solver/#id-combos"
  *                            target="_top">combinations</a>.
  *                            Identifiers can be used with existing column
  *                            names, e.g.,
@@ -6245,11 +6516,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                 ignored for the solution. Restrictions
  *                                 must be specified using
  *                                 <a
- *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                 target="_top">identifiers</a>;
  *                                 identifiers are grouped as
  *                                 <a
- *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                 target="_top">combinations</a>.
  *                                 Identifiers can be used with existing column
  *                                 names, e.g.,
@@ -6335,7 +6606,7 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'save_persist': If set to
  *                          <code>true</code>, the graph will be saved in the
  *                          persist directory (see the <a
- *                          href="../../config/index.html" target="_top">config
+ *                          href="../../../config/" target="_top">config
  *                          reference</a> for more information). If set to
  *                          <code>false</code>, the graph will be removed when
  *                          the graph server is shutdown.
@@ -6379,10 +6650,10 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          created graph is also created as a table with the
  *                          given name, in [schema_name.]table_name format,
  *                          using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>.  The table
  *                          will have the following identifier columns:
  *                          'EDGE_ID', 'EDGE_NODE1_ID', 'EDGE_NODE2_ID'. If
@@ -6438,6 +6709,8 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'sql_request_avro_json': The default
+ *                          value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6565,9 +6838,9 @@ GPUdb.prototype.create_job = function(endpoint, request_encoding, data, data_str
 /**
  * Creates a table that is the result of a SQL JOIN.
  * <p>
- * For join details and examples see: <a href="../../concepts/joins.html"
+ * For join details and examples see: <a href="../../../concepts/joins/"
  * target="_top">Joins</a>.  For limitations, see <a
- * href="../../concepts/joins.html#limitations-cautions" target="_top">Join
+ * href="../../../concepts/joins/#limitations-cautions" target="_top">Join
  * Limitations and Cautions</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -6597,23 +6870,23 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
 /**
  * Creates a table that is the result of a SQL JOIN.
  * <p>
- * For join details and examples see: <a href="../../concepts/joins.html"
+ * For join details and examples see: <a href="../../../concepts/joins/"
  * target="_top">Joins</a>.  For limitations, see <a
- * href="../../concepts/joins.html#limitations-cautions" target="_top">Join
+ * href="../../../concepts/joins/#limitations-cautions" target="_top">Join
  * Limitations and Cautions</a>.
  *
  * @param {String} join_table_name  Name of the join table to be created, in
  *                                  [schema_name.]table_name format, using
  *                                  standard <a
- *                                  href="../../concepts/tables.html#table-name-resolution"
+ *                                  href="../../../concepts/tables/#table-name-resolution"
  *                                  target="_top">name resolution rules</a> and
  *                                  meeting <a
- *                                  href="../../concepts/tables.html#table-naming-criteria"
+ *                                  href="../../../concepts/tables/#table-naming-criteria"
  *                                  target="_top">table naming criteria</a>.
  * @param {String[]} table_names  The list of table names composing the join,
  *                                each in [schema_name.]table_name format,
  *                                using standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.
  *                                Corresponds to a SQL statement FROM clause.
  * @param {String[]} column_names  List of member table columns or column
@@ -6633,8 +6906,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  * @param {String[]} expressions  An optional list of expressions to combine
  *                                and filter the joined tables.  Corresponds to
  *                                a SQL statement WHERE clause. For details
- *                                see: <a
- *                                href="../../concepts/expressions.html"
+ *                                see: <a href="../../../concepts/expressions/"
  *                                target="_top">expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -6656,9 +6928,9 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the join table specified
- *                          in <code>join_table_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the join table specified in
+ *                          <code>join_table_name</code>.
  *                                  <li> 'view_id': view this projection is
  *                          part of.  The default value is ''.
  *                                  <li> 'no_count': return a count of 0 for
@@ -6697,7 +6969,7 @@ GPUdb.prototype.create_join_table = function(join_table_name, table_names, colum
  * name.
  * <p>
  * For materialized view details and examples, see
- * <a href="../../concepts/materialized_views.html" target="_top">Materialized
+ * <a href="../../../concepts/materialized_views/" target="_top">Materialized
  * Views</a>.
  * <p>
  * The response contains <code>view_id</code>, which is used to tag each
@@ -6733,7 +7005,7 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  * name.
  * <p>
  * For materialized view details and examples, see
- * <a href="../../concepts/materialized_views.html" target="_top">Materialized
+ * <a href="../../../concepts/materialized_views/" target="_top">Materialized
  * Views</a>.
  * <p>
  * The response contains <code>view_id</code>, which is used to tag each
@@ -6746,10 +7018,10 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                             top-level table of the materialized view, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a> and
  *                             meeting <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -6762,9 +7034,8 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                          provided is non-existent, it will be automatically
  *                          created.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the table specified in
- *                          <code>table_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the table specified in <code>table_name</code>.
  *                                  <li> 'persist': If <code>true</code>, then
  *                          the materialized view specified in
  *                          <code>table_name</code> will be persisted and will
@@ -6787,7 +7058,8 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                          manually requested by calling
  *                          {@linkcode GPUdb#alter_table} with an 'action' of
  *                          'refresh'
- *                                  <li> 'on_query': For future use.
+ *                                  <li> 'on_query': Refresh any time the view
+ *                          is queried.
  *                                  <li> 'on_change': If possible,
  *                          incrementally refresh (refresh just those records
  *                          added) whenever an insert, update, delete or
@@ -6830,7 +7102,7 @@ GPUdb.prototype.create_materialized_view = function(table_name, options, callbac
 
 /**
  * Creates an instance (proc) of the
- * <a href="../../concepts/udf.html" target="_top">user-defined functions</a>
+ * <a href="../../../concepts/udf/" target="_top">user-defined functions</a>
  * (UDF) specified by the
  * given command, options, and files, and makes it available for execution.
  *
@@ -6861,7 +7133,7 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
 
 /**
  * Creates an instance (proc) of the
- * <a href="../../concepts/udf.html" target="_top">user-defined functions</a>
+ * <a href="../../../concepts/udf/" target="_top">user-defined functions</a>
  * (UDF) specified by the
  * given command, options, and files, and makes it available for execution.
  *
@@ -6947,26 +7219,26 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
 };
 
 /**
- * Creates a new <a href="../../concepts/projections.html"
+ * Creates a new <a href="../../../concepts/projections/"
  * target="_top">projection</a> of
  * an existing table. A projection represents a subset of the columns
  * (potentially
  * including derived columns) of a table.
  * <p>
  * For projection details and examples, see
- * <a href="../../concepts/projections.html" target="_top">Projections</a>.
- * For limitations, see
- * <a href="../../concepts/projections.html#limitations-and-cautions"
+ * <a href="../../../concepts/projections/" target="_top">Projections</a>.  For
+ * limitations, see
+ * <a href="../../../concepts/projections/#limitations-and-cautions"
  * target="_top">Projection Limitations and Cautions</a>.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * <a href="../../../concepts/window/" target="_top">Window functions</a>,
  * which can perform
  * operations like moving averages, are available through this endpoint as well
  * as
  * {@linkcode GPUdb#get_records_by_column}.
  * <p>
  * A projection can be created with a different
- * <a href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
+ * <a href="../../../concepts/tables/#shard-keys" target="_top">shard key</a>
  * than the source table.
  * By specifying <code>shard_key</code>, the projection will be sharded
  * according to the specified columns, regardless of how the source table is
@@ -6975,12 +7247,12 @@ GPUdb.prototype.create_proc = function(proc_name, execution_mode, files, command
  * If <code>table_name</code> is empty, selection is performed against a
  * single-row
  * virtual table.  This can be useful in executing temporal
- * (<a href="../../concepts/expressions.html#date-time-functions"
+ * (<a href="../../../concepts/expressions/#date-time-functions"
  * target="_top">NOW()</a>), identity
- * (<a href="../../concepts/expressions.html#user-security-functions"
+ * (<a href="../../../concepts/expressions/#user-security-functions"
  * target="_top">USER()</a>), or
  * constant-based functions
- * (<a href="../../concepts/expressions.html#scalar-functions"
+ * (<a href="../../../concepts/expressions/#scalar-functions"
  * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -7007,26 +7279,26 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
 };
 
 /**
- * Creates a new <a href="../../concepts/projections.html"
+ * Creates a new <a href="../../../concepts/projections/"
  * target="_top">projection</a> of
  * an existing table. A projection represents a subset of the columns
  * (potentially
  * including derived columns) of a table.
  * <p>
  * For projection details and examples, see
- * <a href="../../concepts/projections.html" target="_top">Projections</a>.
- * For limitations, see
- * <a href="../../concepts/projections.html#limitations-and-cautions"
+ * <a href="../../../concepts/projections/" target="_top">Projections</a>.  For
+ * limitations, see
+ * <a href="../../../concepts/projections/#limitations-and-cautions"
  * target="_top">Projection Limitations and Cautions</a>.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * <a href="../../../concepts/window/" target="_top">Window functions</a>,
  * which can perform
  * operations like moving averages, are available through this endpoint as well
  * as
  * {@linkcode GPUdb#get_records_by_column}.
  * <p>
  * A projection can be created with a different
- * <a href="../../concepts/tables.html#shard-keys" target="_top">shard key</a>
+ * <a href="../../../concepts/tables/#shard-keys" target="_top">shard key</a>
  * than the source table.
  * By specifying <code>shard_key</code>, the projection will be sharded
  * according to the specified columns, regardless of how the source table is
@@ -7035,19 +7307,19 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * If <code>table_name</code> is empty, selection is performed against a
  * single-row
  * virtual table.  This can be useful in executing temporal
- * (<a href="../../concepts/expressions.html#date-time-functions"
+ * (<a href="../../../concepts/expressions/#date-time-functions"
  * target="_top">NOW()</a>), identity
- * (<a href="../../concepts/expressions.html#user-security-functions"
+ * (<a href="../../../concepts/expressions/#user-security-functions"
  * target="_top">USER()</a>), or
  * constant-based functions
- * (<a href="../../concepts/expressions.html#scalar-functions"
+ * (<a href="../../../concepts/expressions/#scalar-functions"
  * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  *
  * @param {String} table_name  Name of the existing table on which the
  *                             projection is to be applied, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  An
  *                             empty table name creates a projection from a
  *                             single-row virtual table, where columns
@@ -7056,10 +7328,10 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  * @param {String} projection_name  Name of the projection to be created, in
  *                                  [schema_name.]table_name format, using
  *                                  standard <a
- *                                  href="../../concepts/tables.html#table-name-resolution"
+ *                                  href="../../../concepts/tables/#table-name-resolution"
  *                                  target="_top">name resolution rules</a> and
  *                                  meeting <a
- *                                  href="../../concepts/tables.html#table-naming-criteria"
+ *                                  href="../../../concepts/tables/#table-naming-criteria"
  *                                  target="_top">table naming criteria</a>.
  * @param {String[]} column_names  List of columns from <code>table_name</code>
  *                                 to be included in the projection. Can
@@ -7076,7 +7348,7 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          projection. If the schema is non-existent, it will
  *                          be automatically created.  The default value is ''.
  *                                  <li> 'expression': An optional filter <a
- *                          href="../../concepts/expressions.html"
+ *                          href="../../../concepts/expressions/"
  *                          target="_top">expression</a> to be applied to the
  *                          source table prior to the projection.  The default
  *                          value is ''.
@@ -7099,13 +7371,13 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          than the original column name.  The default value
  *                          is ''.
  *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../rm/concepts.html"
+ *                          See <a href="../../../rm/concepts/"
  *                          target="_top">Resource Management Concepts</a> for
  *                          information about how resources are managed, <a
- *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          href="../../../rm/concepts/" target="_top">Tier
  *                          Strategy Concepts</a> for how resources are
  *                          targeted for VRAM, and <a
- *                          href="../../rm/usage.html#tier-strategies"
+ *                          href="../../../rm/usage/#tier-strategies"
  *                          target="_top">Tier Strategy Usage</a> for how to
  *                          specify a table's priority in VRAM.
  *                          Supported values:
@@ -7123,9 +7395,9 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          given for any column name, the alias must be used,
  *                          rather than the original column name.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the projection specified
- *                          in <code>projection_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the projection specified in
+ *                          <code>projection_name</code>.
  *                                  <li> 'shard_key': Comma-separated list of
  *                          the columns to be sharded on; e.g. 'column1,
  *                          column2'.  The columns specified must be present in
@@ -7346,7 +7618,7 @@ GPUdb.prototype.create_role = function(name, options, callback) {
 };
 
 /**
- * Creates a SQL-style <a href="../../concepts/schemas.html"
+ * Creates a SQL-style <a href="../../../concepts/schemas/"
  * target="_top">schema</a>. Schemas are containers for tables and views.
  * Multiple tables and views can be defined with the same name in different
  * schemas.
@@ -7373,14 +7645,14 @@ GPUdb.prototype.create_schema_request = function(request, callback) {
 };
 
 /**
- * Creates a SQL-style <a href="../../concepts/schemas.html"
+ * Creates a SQL-style <a href="../../../concepts/schemas/"
  * target="_top">schema</a>. Schemas are containers for tables and views.
  * Multiple tables and views can be defined with the same name in different
  * schemas.
  *
  * @param {String} schema_name  Name of the schema to be created.  Has the same
  *                              naming restrictions as <a
- *                              href="../../concepts/tables.html"
+ *                              href="../../../concepts/tables/"
  *                              target="_top">tables</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -7421,13 +7693,13 @@ GPUdb.prototype.create_schema = function(schema_name, options, callback) {
  * {@linkcode GPUdb#create_type}).
  * <p>
  * A table may optionally be designated to use a
- * <a href="../../concepts/tables.html#replication"
- * target="_top">replicated</a> distribution scheme,
- * or be assigned: <a href="../../concepts/tables.html#foreign-keys"
+ * <a href="../../../concepts/tables/#replication" target="_top">replicated</a>
+ * distribution scheme,
+ * or be assigned: <a href="../../../concepts/tables/#foreign-keys"
  * target="_top">foreign keys</a> to
- * other tables, a <a href="../../concepts/tables.html#partitioning"
+ * other tables, a <a href="../../../concepts/tables/#partitioning"
  * target="_top">partitioning</a>
- * scheme, and/or a <a href="../../rm/concepts.html#tier-strategies"
+ * scheme, and/or a <a href="../../../rm/concepts/#tier-strategies"
  * target="_top">tier strategy</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -7460,22 +7732,22 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  * {@linkcode GPUdb#create_type}).
  * <p>
  * A table may optionally be designated to use a
- * <a href="../../concepts/tables.html#replication"
- * target="_top">replicated</a> distribution scheme,
- * or be assigned: <a href="../../concepts/tables.html#foreign-keys"
+ * <a href="../../../concepts/tables/#replication" target="_top">replicated</a>
+ * distribution scheme,
+ * or be assigned: <a href="../../../concepts/tables/#foreign-keys"
  * target="_top">foreign keys</a> to
- * other tables, a <a href="../../concepts/tables.html#partitioning"
+ * other tables, a <a href="../../../concepts/tables/#partitioning"
  * target="_top">partitioning</a>
- * scheme, and/or a <a href="../../rm/concepts.html#tier-strategies"
+ * scheme, and/or a <a href="../../../rm/concepts/#tier-strategies"
  * target="_top">tier strategy</a>.
  *
  * @param {String} table_name  Name of the table to be created, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a> and
  *                             meeting <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>. Error
  *                             for requests with existing table of the same
  *                             name and type ID may be suppressed by using the
@@ -7522,20 +7794,19 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'is_replicated': Affects the <a
- *                          href="../../concepts/tables.html#distribution"
+ *                          href="../../../concepts/tables/#distribution"
  *                          target="_top">distribution scheme</a> for the
  *                          table's data.  If <code>true</code> and the given
  *                          type has no explicit <a
- *                          href="../../concepts/tables.html#shard-key"
+ *                          href="../../../concepts/tables/#shard-key"
  *                          target="_top">shard key</a> defined, the table will
- *                          be <a href="../../concepts/tables.html#replication"
+ *                          be <a href="../../../concepts/tables/#replication"
  *                          target="_top">replicated</a>.  If
  *                          <code>false</code>, the table will be <a
- *                          href="../../concepts/tables.html#sharding"
+ *                          href="../../../concepts/tables/#sharding"
  *                          target="_top">sharded</a> according to the shard
  *                          key specified in the given <code>type_id</code>, or
- *                          <a
- *                          href="../../concepts/tables.html#random-sharding"
+ *                          <a href="../../../concepts/tables/#random-sharding"
  *                          target="_top">randomly sharded</a>, if no shard key
  *                          is specified.  Note that a type containing a shard
  *                          key cannot be used to create a replicated table.
@@ -7547,7 +7818,7 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'foreign_keys': Semicolon-separated
  *                          list of <a
- *                          href="../../concepts/tables.html#foreign-keys"
+ *                          href="../../../concepts/tables/#foreign-keys"
  *                          target="_top">foreign keys</a>, of the format
  *                          '(source_column_name [, ...]) references
  *                          target_table_name(primary_key_column_name [, ...])
@@ -7557,24 +7828,24 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          shard_by_column from
  *                          target_table(primary_key_column)'.
  *                                  <li> 'partition_type': <a
- *                          href="../../concepts/tables.html#partitioning"
+ *                          href="../../../concepts/tables/#partitioning"
  *                          target="_top">Partitioning</a> scheme to use.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'RANGE': Use <a
- *                          href="../../concepts/tables.html#partitioning-by-range"
+ *                          href="../../../concepts/tables/#partitioning-by-range"
  *                          target="_top">range partitioning</a>.
  *                                  <li> 'INTERVAL': Use <a
- *                          href="../../concepts/tables.html#partitioning-by-interval"
+ *                          href="../../../concepts/tables/#partitioning-by-interval"
  *                          target="_top">interval partitioning</a>.
  *                                  <li> 'LIST': Use <a
- *                          href="../../concepts/tables.html#partitioning-by-list"
+ *                          href="../../../concepts/tables/#partitioning-by-list"
  *                          target="_top">list partitioning</a>.
  *                                  <li> 'HASH': Use <a
- *                          href="../../concepts/tables.html#partitioning-by-hash"
+ *                          href="../../../concepts/tables/#partitioning-by-hash"
  *                          target="_top">hash partitioning</a>.
  *                                  <li> 'SERIES': Use <a
- *                          href="../../concepts/tables.html#partitioning-by-series"
+ *                          href="../../../concepts/tables/#partitioning-by-series"
  *                          target="_top">series partitioning</a>.
  *                          </ul>
  *                                  <li> 'partition_keys': Comma-separated list
@@ -7586,20 +7857,20 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          Comma-separated list of partition definitions,
  *                          whose format depends on the choice of
  *                          <code>partition_type</code>.  See <a
- *                          href="../../concepts/tables.html#partitioning-by-range"
+ *                          href="../../../concepts/tables/#partitioning-by-range"
  *                          target="_top">range partitioning</a>, <a
- *                          href="../../concepts/tables.html#partitioning-by-interval"
+ *                          href="../../../concepts/tables/#partitioning-by-interval"
  *                          target="_top">interval partitioning</a>, <a
- *                          href="../../concepts/tables.html#partitioning-by-list"
+ *                          href="../../../concepts/tables/#partitioning-by-list"
  *                          target="_top">list partitioning</a>, or <a
- *                          href="../../concepts/tables.html#partitioning-by-hash"
+ *                          href="../../../concepts/tables/#partitioning-by-hash"
  *                          target="_top">hash partitioning</a> for example
  *                          formats.
  *                                  <li> 'is_automatic_partition': If
  *                          <code>true</code>, a new partition will be created
  *                          for values which don't fall into an existing
  *                          partition.  Currently only supported for <a
- *                          href="../../concepts/tables.html#partitioning-by-list"
+ *                          href="../../../concepts/tables/#partitioning-by-list"
  *                          target="_top">list partitions</a>.
  *                          Supported values:
  *                          <ul>
@@ -7608,20 +7879,19 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the table specified in
- *                          <code>table_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the table specified in <code>table_name</code>.
  *                                  <li> 'chunk_size': Indicates the number of
  *                          records per chunk to be used for this table.
  *                                  <li> 'is_result_table': Indicates whether
  *                          the table is a <a
- *                          href="../../concepts/tables_memory_only.html"
+ *                          href="../../../concepts/tables_memory_only/"
  *                          target="_top">memory-only table</a>. A result table
  *                          cannot contain columns with store_only or
  *                          text_search <a
- *                          href="../../concepts/types.html#data-handling"
+ *                          href="../../../concepts/types/#data-handling"
  *                          target="_top">data-handling</a> or that are <a
- *                          href="../../concepts/types.html#primitive-types"
+ *                          href="../../../concepts/types/#primitive-types"
  *                          target="_top">non-charN strings</a>, and it will
  *                          not be retained if the server is restarted.
  *                          Supported values:
@@ -7631,12 +7901,12 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'strategy_definition': The <a
- *                          href="../../rm/concepts.html#tier-strategies"
+ *                          href="../../../rm/concepts/#tier-strategies"
  *                          target="_top">tier strategy</a> for the table and
  *                          its columns. See <a
- *                          href="../../rm/concepts.html#tier-strategies"
+ *                          href="../../../rm/concepts/#tier-strategies"
  *                          target="_top">tier strategy usage</a> for format
- *                          and <a href="../../rm/usage.html#tier-strategies"
+ *                          and <a href="../../../rm/usage/#tier-strategies"
  *                          target="_top">tier strategy examples</a> for
  *                          examples.
  *                          </ul>
@@ -7661,13 +7931,13 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
 };
 
 /**
- * Creates a new <a href="../../concepts/external_tables.html"
+ * Creates a new <a href="../../../concepts/external_tables/"
  * target="_top">external table</a>, which is a
  * local database object whose source data is located externally to the
  * database.  The source data can
  * be located either on the cluster, accessible to the database; or remotely,
  * accessible via a
- * pre-defined external <a href="../../concepts/data_sources.html"
+ * pre-defined external <a href="../../../concepts/data_sources/"
  * target="_top">data source</a>.
  * <p>
  * The external table can have its structure defined explicitly, via
@@ -7701,13 +7971,13 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
 };
 
 /**
- * Creates a new <a href="../../concepts/external_tables.html"
+ * Creates a new <a href="../../../concepts/external_tables/"
  * target="_top">external table</a>, which is a
  * local database object whose source data is located externally to the
  * database.  The source data can
  * be located either on the cluster, accessible to the database; or remotely,
  * accessible via a
- * pre-defined external <a href="../../concepts/data_sources.html"
+ * pre-defined external <a href="../../../concepts/data_sources/"
  * target="_top">data source</a>.
  * <p>
  * The external table can have its structure defined explicitly, via
@@ -7719,11 +7989,11 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  * @param {String} table_name  Name of the table to be created, in
  *                             [schema_name.]table_name format, using
  *                             standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a> and
  *                             meeting
  *                             <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
  * @param {String[]} filepaths  A list of file paths from which data will be
  *                              sourced; wildcards (*) can be used
@@ -7740,8 +8010,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                              accessible to the gpudb user, residing on the
  *                              path (or relative to the path) specified by the
  *                              external files directory in the Kinetica
- *                              <a
- *                              href="../../config/index.html#external-files"
+ *                              <a href="../../../config/#external-files"
  *                              target="_top">configuration file</a>.
  * @param {Object} modify_columns  Not implemented yet
  * @param {Object} create_table_options  Options from
@@ -7752,7 +8021,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       <ul>
  *                                               <li> 'type_id': ID of a
  *                                       currently registered <a
- *                                       href="../../concepts/types.html"
+ *                                       href="../../../concepts/types/"
  *                                       target="_top">type</a>.  The default
  *                                       value is ''.
  *                                               <li> 'no_error_if_exists': If
@@ -7770,25 +8039,25 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       The default value is 'false'.
  *                                               <li> 'is_replicated': Affects
  *                                       the <a
- *                                       href="../../concepts/tables.html#distribution"
+ *                                       href="../../../concepts/tables/#distribution"
  *                                       target="_top">distribution scheme</a>
  *                                       for the table's data.  If
  *                                       <code>true</code> and the
  *                                       given table has no explicit <a
- *                                       href="../../concepts/tables.html#shard-key"
+ *                                       href="../../../concepts/tables/#shard-key"
  *                                       target="_top">shard key</a> defined,
  *                                       the
  *                                       table will be <a
- *                                       href="../../concepts/tables.html#replication"
+ *                                       href="../../../concepts/tables/#replication"
  *                                       target="_top">replicated</a>.  If
  *                                       <code>false</code>, the table will be
  *                                       <a
- *                                       href="../../concepts/tables.html#sharding"
+ *                                       href="../../../concepts/tables/#sharding"
  *                                       target="_top">sharded</a> according to
  *                                       the shard key specified in the
  *                                       given <code>type_id</code>, or
  *                                       <a
- *                                       href="../../concepts/tables.html#random-sharding"
+ *                                       href="../../../concepts/tables/#random-sharding"
  *                                       target="_top">randomly sharded</a>, if
  *                                       no shard key is specified.
  *                                       Note that a type containing a shard
@@ -7803,7 +8072,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                               <li> 'foreign_keys':
  *                                       Semicolon-separated list of
  *                                       <a
- *                                       href="../../concepts/tables.html#foreign-keys"
+ *                                       href="../../../concepts/tables/#foreign-keys"
  *                                       target="_top">foreign keys</a>, of the
  *                                       format
  *                                       '(source_column_name [, ...])
@@ -7816,23 +8085,23 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       shard_by_column from
  *                                       target_table(primary_key_column)'.
  *                                               <li> 'partition_type': <a
- *                                       href="../../concepts/tables.html#partitioning"
+ *                                       href="../../../concepts/tables/#partitioning"
  *                                       target="_top">Partitioning</a> scheme
  *                                       to use.
  *                                       Supported values:
  *                                       <ul>
  *                                               <li> 'RANGE': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       href="../../../concepts/tables/#partitioning-by-range"
  *                                       target="_top">range partitioning</a>.
  *                                               <li> 'INTERVAL': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       href="../../../concepts/tables/#partitioning-by-interval"
  *                                       target="_top">interval
  *                                       partitioning</a>.
  *                                               <li> 'LIST': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>.
  *                                               <li> 'HASH': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>.
  *                                       </ul>
  *                                               <li> 'partition_keys':
@@ -7848,18 +8117,18 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       on the choice of
  *                                       <code>partition_type</code>.  See
  *                                       <a
- *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       href="../../../concepts/tables/#partitioning-by-range"
  *                                       target="_top">range partitioning</a>,
  *                                       <a
- *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       href="../../../concepts/tables/#partitioning-by-interval"
  *                                       target="_top">interval
  *                                       partitioning</a>,
  *                                       <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>,
  *                                       or
  *                                       <a
- *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>
  *                                       for example formats.
  *                                               <li> 'is_automatic_partition':
@@ -7868,7 +8137,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       values which don't fall into an
  *                                       existing partition.  Currently
  *                                       only supported for <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitions</a>.
  *                                       Supported values:
  *                                       <ul>
@@ -7877,7 +8146,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       </ul>
  *                                       The default value is 'false'.
  *                                               <li> 'ttl': Sets the <a
- *                                       href="../../concepts/ttl.html"
+ *                                       href="../../../concepts/ttl/"
  *                                       target="_top">TTL</a> of the table
  *                                       specified in <code>table_name</code>.
  *                                               <li> 'chunk_size': Indicates
@@ -7886,16 +8155,16 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                               <li> 'is_result_table':
  *                                       Indicates whether the table is a
  *                                       <a
- *                                       href="../../concepts/tables_memory_only.html"
+ *                                       href="../../../concepts/tables_memory_only/"
  *                                       target="_top">memory-only table</a>. A
  *                                       result table cannot contain
  *                                       columns with store_only or text_search
  *                                       <a
- *                                       href="../../concepts/types.html#data-handling"
+ *                                       href="../../../concepts/types/#data-handling"
  *                                       target="_top">data-handling</a> or
  *                                       that are
  *                                       <a
- *                                       href="../../concepts/types.html#primitive-types"
+ *                                       href="../../../concepts/types/#primitive-types"
  *                                       target="_top">non-charN strings</a>,
  *                                       and it will not be retained if
  *                                       the server is restarted.
@@ -7907,15 +8176,15 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       The default value is 'false'.
  *                                               <li> 'strategy_definition':
  *                                       The <a
- *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy</a>
  *                                       for the table and its columns. See
  *                                       <a
- *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy usage</a>
  *                                       for format and
  *                                       <a
- *                                       href="../../rm/usage.html#tier-strategies"
+ *                                       href="../../../rm/usage/#tier-strategies"
  *                                       target="_top">tier strategy
  *                                       examples</a> for examples.
  *                                       </ul>
@@ -8055,9 +8324,10 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          for this table.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'delimited_text': Delimited text
+ *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
- *                                  <li> 'parquet': Apache Parquet format
+ *                                  <li> 'parquet': Apache Parquet file format
+ *                                  <li> 'json': Json file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': For
@@ -8188,7 +8458,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'text_header_property_delimiter':
  *                          Specifies the delimiter for
  *                          <a
- *                          href="../../concepts/types.html#column-properties"
+ *                          href="../../../concepts/types/#column-properties"
  *                          target="_top">column properties</a> in the header
  *                          row (if
  *                          present).  Cannot be set to same value as
@@ -8273,7 +8543,7 @@ GPUdb.prototype.create_table_external = function(table_name, filepaths, modify_c
  * {@linkcode GPUdb#clear_table_monitor}.
  * <p>
  * For more information on table monitors, see
- * <a href="../../concepts/table_monitors.html" target="_top">Table
+ * <a href="../../../concepts/table_monitors/" target="_top">Table
  * Monitors</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -8315,13 +8585,13 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  * {@linkcode GPUdb#clear_table_monitor}.
  * <p>
  * For more information on table monitors, see
- * <a href="../../concepts/table_monitors.html" target="_top">Table
+ * <a href="../../../concepts/table_monitors/" target="_top">Table
  * Monitors</a>.
  *
  * @param {String} table_name  Name of the table to monitor, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -8434,7 +8704,7 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
  *                                be activated and maintained, each in
  *                                [schema_name.]table_name format, using
  *                                standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.
  * @param {String} x_column_name  Name of a numeric column on which the trigger
  *                                is activated. Usually 'x' for geospatial data
@@ -8544,7 +8814,7 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
  * @param {String[]} table_names  Tables on which the trigger will be active,
  *                                each in [schema_name.]table_name format,
  *                                using standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.
  * @param {String} column_name  Name of a numeric column_name on which the
  *                              trigger is activated.
@@ -8585,9 +8855,9 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * simultaneously.  One example of mutually exclusive properties are
  * <code>data</code> and <code>store_only</code>.
  * <p>
- * A single <a href="../../concepts/tables.html#primary-keys"
+ * A single <a href="../../../concepts/tables/#primary-keys"
  * target="_top">primary key</a> and/or single <a
- * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> can
+ * href="../../../concepts/tables/#shard-keys" target="_top">shard key</a> can
  * be set across one or more columns. If a primary key is specified, then a
  * uniqueness constraint is enforced, in that only a single object can exist
  * with a given primary key column value (or set of values for the key columns,
@@ -8651,9 +8921,9 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * simultaneously.  One example of mutually exclusive properties are
  * <code>data</code> and <code>store_only</code>.
  * <p>
- * A single <a href="../../concepts/tables.html#primary-keys"
+ * A single <a href="../../../concepts/tables/#primary-keys"
  * target="_top">primary key</a> and/or single <a
- * href="../../concepts/tables.html#shard-keys" target="_top">shard key</a> can
+ * href="../../../concepts/tables/#shard-keys" target="_top">shard key</a> can
  * be set across one or more columns. If a primary key is specified, then a
  * uniqueness constraint is enforced, in that only a single object can exist
  * with a given primary key column value (or set of values for the key columns,
@@ -8824,12 +9094,12 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     <li> 'primary_key': This property
  *                             indicates that this column will be part of (or
  *                             the entire) <a
- *                             href="../../concepts/tables.html#primary-keys"
+ *                             href="../../../concepts/tables/#primary-keys"
  *                             target="_top">primary key</a>.
  *                                     <li> 'shard_key': This property
  *                             indicates that this column will be part of (or
  *                             the entire) <a
- *                             href="../../concepts/tables.html#shard-keys"
+ *                             href="../../../concepts/tables/#shard-keys"
  *                             target="_top">shard key</a>.
  *                                     <li> 'nullable': This property indicates
  *                             that this column is nullable.  However, setting
@@ -8848,7 +9118,7 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             about the avro schema for the record.
  *                                     <li> 'dict': This property indicates
  *                             that this column should be <a
- *                             href="../../concepts/dictionary_encoding.html"
+ *                             href="../../../concepts/dictionary_encoding/"
  *                             target="_top">dictionary encoded</a>. It can
  *                             only be used in conjunction with restricted
  *                             string (charN), int, long or date columns.
@@ -8894,27 +9164,27 @@ GPUdb.prototype.create_type = function(type_definition, label, properties, optio
  * The following merges are supported:
  * <p>
  * UNION (DISTINCT/ALL) - For data set union details and examples, see <a
- * href="../../concepts/unions.html" target="_top">Union</a>.  For limitations,
- * see <a href="../../concepts/unions.html#limitations-and-cautions"
+ * href="../../../concepts/unions/" target="_top">Union</a>.  For limitations,
+ * see <a href="../../../concepts/unions/#limitations-and-cautions"
  * target="_top">Union Limitations and Cautions</a>.
  * <p>
  * INTERSECT (DISTINCT/ALL) - For data set intersection details and examples,
- * see <a href="../../concepts/intersect.html" target="_top">Intersect</a>.
- * For limitations, see <a href="../../concepts/intersect.html#limitations"
+ * see <a href="../../../concepts/intersect/" target="_top">Intersect</a>.  For
+ * limitations, see <a href="../../../concepts/intersect/#limitations"
  * target="_top">Intersect Limitations</a>.
  * <p>
  * EXCEPT (DISTINCT/ALL) - For data set subtraction details and examples, see
- * <a href="../../concepts/except.html" target="_top">Except</a>.  For
- * limitations, see <a href="../../concepts/except.html#limitations"
+ * <a href="../../../concepts/except/" target="_top">Except</a>.  For
+ * limitations, see <a href="../../../concepts/except/#limitations"
  * target="_top">Except Limitations</a>.
  * <p>
- * MERGE VIEWS - For a given set of <a
- * href="../../concepts/filtered_views.html" target="_top">filtered views</a>
- * on a single table, creates a single filtered view containing all of the
- * unique records across all of the given filtered data sets.
+ * MERGE VIEWS - For a given set of <a href="../../../concepts/filtered_views/"
+ * target="_top">filtered views</a> on a single table, creates a single
+ * filtered view containing all of the unique records across all of the given
+ * filtered data sets.
  * <p>
  * Non-charN 'string' and 'bytes' column types cannot be merged, nor can
- * columns marked as <a href="../../concepts/types.html#data-handling"
+ * columns marked as <a href="../../../concepts/types/#data-handling"
  * target="_top">store-only</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -8948,41 +9218,41 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  * The following merges are supported:
  * <p>
  * UNION (DISTINCT/ALL) - For data set union details and examples, see <a
- * href="../../concepts/unions.html" target="_top">Union</a>.  For limitations,
- * see <a href="../../concepts/unions.html#limitations-and-cautions"
+ * href="../../../concepts/unions/" target="_top">Union</a>.  For limitations,
+ * see <a href="../../../concepts/unions/#limitations-and-cautions"
  * target="_top">Union Limitations and Cautions</a>.
  * <p>
  * INTERSECT (DISTINCT/ALL) - For data set intersection details and examples,
- * see <a href="../../concepts/intersect.html" target="_top">Intersect</a>.
- * For limitations, see <a href="../../concepts/intersect.html#limitations"
+ * see <a href="../../../concepts/intersect/" target="_top">Intersect</a>.  For
+ * limitations, see <a href="../../../concepts/intersect/#limitations"
  * target="_top">Intersect Limitations</a>.
  * <p>
  * EXCEPT (DISTINCT/ALL) - For data set subtraction details and examples, see
- * <a href="../../concepts/except.html" target="_top">Except</a>.  For
- * limitations, see <a href="../../concepts/except.html#limitations"
+ * <a href="../../../concepts/except/" target="_top">Except</a>.  For
+ * limitations, see <a href="../../../concepts/except/#limitations"
  * target="_top">Except Limitations</a>.
  * <p>
- * MERGE VIEWS - For a given set of <a
- * href="../../concepts/filtered_views.html" target="_top">filtered views</a>
- * on a single table, creates a single filtered view containing all of the
- * unique records across all of the given filtered data sets.
+ * MERGE VIEWS - For a given set of <a href="../../../concepts/filtered_views/"
+ * target="_top">filtered views</a> on a single table, creates a single
+ * filtered view containing all of the unique records across all of the given
+ * filtered data sets.
  * <p>
  * Non-charN 'string' and 'bytes' column types cannot be merged, nor can
- * columns marked as <a href="../../concepts/types.html#data-handling"
+ * columns marked as <a href="../../../concepts/types/#data-handling"
  * target="_top">store-only</a>.
  *
  * @param {String} table_name  Name of the table to be created, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a> and
  *                             meeting <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
  * @param {String[]} table_names  The list of table names to merge, in
  *                                [schema_name.]table_name format, using
  *                                standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.
  *                                Must contain the names of one or more
  *                                existing tables.
@@ -9001,13 +9271,13 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          non-existent, it will be automatically created.
  *                          The default value is ''.
  *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../rm/concepts.html"
+ *                          See <a href="../../../rm/concepts/"
  *                          target="_top">Resource Management Concepts</a> for
  *                          information about how resources are managed, <a
- *                          href="../../rm/concepts.html" target="_top">Tier
+ *                          href="../../../rm/concepts/" target="_top">Tier
  *                          Strategy Concepts</a> for how resources are
  *                          targeted for VRAM, and <a
- *                          href="../../rm/usage.html#tier-strategies"
+ *                          href="../../../rm/usage/#tier-strategies"
  *                          target="_top">Tier Strategy Usage</a> for how to
  *                          specify a table's priority in VRAM.
  *                          Supported values:
@@ -9062,9 +9332,9 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          table.  The columns specified must be present in
  *                          <code>output_column_names</code>.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the output table specified
- *                          in <code>table_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the output table specified in
+ *                          <code>table_name</code>.
  *                                  <li> 'persist': If <code>true</code>, then
  *                          the output table specified in
  *                          <code>table_name</code> will be persisted and will
@@ -9387,14 +9657,14 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  * @param {String} table_name  Name of the table from which to delete records,
  *                             in [schema_name.]table_name format, using
  *                             standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>. Must
  *                             contain the name of an existing table; not
  *                             applicable to views.
  * @param {String[]} expressions  A list of the actual predicates, one for each
  *                                select; format should follow the guidelines
  *                                provided <a
- *                                href="../../concepts/expressions.html"
+ *                                href="../../../concepts/expressions/"
  *                                target="_top">here</a>. Specifying one or
  *                                more <code>expressions</code> is mutually
  *                                exclusive to specifying
@@ -9412,7 +9682,7 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                          {@linkcode GPUdb#get_records_from_collection}
  *                          with the *return_record_ids* option. This option
  *                          cannot be used to delete records from <a
- *                          href="../../concepts/tables.html#replication"
+ *                          href="../../../concepts/tables/#replication"
  *                          target="_top">replicated</a> tables.
  *                                  <li> 'delete_all_records': If set to
  *                          <code>true</code>, all records in the table will be
@@ -9592,7 +9862,106 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
 };
 
 /**
- * Drops an existing <a href="../../concepts/data_sources.html"
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.drop_container_registry_request = function(request, callback) {
+    var actual_request = {
+        registry_name: request.registry_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/container/registry", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/container/registry", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} registry_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.drop_container_registry = function(registry_name, options, callback) {
+    var actual_request = {
+        registry_name: registry_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/container/registry", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/container/registry", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Drop an existing <a href="../../../concepts/credentials/"
+ * target="_top">credential</a>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.drop_credential_request = function(request, callback) {
+    var actual_request = {
+        credential_name: request.credential_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Drop an existing <a href="../../../concepts/credentials/"
+ * target="_top">credential</a>.
+ *
+ * @param {String} credential_name  Name of the credential to be dropped. Must
+ *                                  be an existing credential.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.drop_credential = function(credential_name, options, callback) {
+    var actual_request = {
+        credential_name: credential_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Drops an existing <a href="../../../concepts/data_sources/"
  * target="_top">data source</a>.  Any external
  * tables that depend on the data source must be dropped before it can be
  * dropped.
@@ -9619,7 +9988,7 @@ GPUdb.prototype.drop_datasource_request = function(request, callback) {
 };
 
 /**
- * Drops an existing <a href="../../concepts/data_sources.html"
+ * Drops an existing <a href="../../../concepts/data_sources/"
  * target="_top">data source</a>.  Any external
  * tables that depend on the data source must be dropped before it can be
  * dropped.
@@ -9647,7 +10016,55 @@ GPUdb.prototype.drop_datasource = function(name, options, callback) {
 };
 
 /**
- * Drops an existing SQL-style <a href="../../concepts/schemas.html"
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.drop_model_request = function(request, callback) {
+    var actual_request = {
+        model_name: request.model_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/model", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} model_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.drop_model = function(model_name, options, callback) {
+    var actual_request = {
+        model_name: model_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/model", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Drops an existing SQL-style <a href="../../../concepts/schemas/"
  * target="_top">schema</a>, specified in <code>schema_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -9672,7 +10089,7 @@ GPUdb.prototype.drop_schema_request = function(request, callback) {
 };
 
 /**
- * Drops an existing SQL-style <a href="../../concepts/schemas.html"
+ * Drops an existing SQL-style <a href="../../../concepts/schemas/"
  * target="_top">schema</a>, specified in <code>schema_name</code>.
  *
  * @param {String} schema_name  Name of the schema to be dropped. Must be an
@@ -9717,6 +10134,66 @@ GPUdb.prototype.drop_schema = function(schema_name, options, callback) {
         this.submit_request("/drop/schema", actual_request, callback);
     } else {
         var data = this.submit_request("/drop/schema", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.evaluate_model_request = function(request, callback) {
+    var actual_request = {
+        model_name: request.model_name,
+        replicas: request.replicas,
+        deployment_mode: request.deployment_mode,
+        source_table: request.source_table,
+        destination_table: request.destination_table,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/evaluate/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/evaluate/model", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} model_name
+ * @param {Number} replicas
+ * @param {String} deployment_mode
+ * @param {String} source_table
+ * @param {String} destination_table
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.evaluate_model = function(model_name, replicas, deployment_mode, source_table, destination_table, options, callback) {
+    var actual_request = {
+        model_name: model_name,
+        replicas: replicas,
+        deployment_mode: deployment_mode,
+        source_table: source_table,
+        destination_table: destination_table,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/evaluate/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/evaluate/model", actual_request);
         return data;
     }
 };
@@ -9792,7 +10269,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                      [schema_name.]table_name format, using
  *                                      standard
  *                                      <a
- *                                      href="../../concepts/tables.html#table-name-resolution"
+ *                                      href="../../../concepts/tables/#table-name-resolution"
  *                                      target="_top">name resolution
  *                                      rules</a>.
  *                                      If no table names are specified, no
@@ -9818,11 +10295,11 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                       [schema_name.]table_name format, using
  *                                       standard
  *                                       <a
- *                                       href="../../concepts/tables.html#table-name-resolution"
+ *                                       href="../../../concepts/tables/#table-name-resolution"
  *                                       target="_top">name resolution
  *                                       rules</a>
  *                                       and meeting <a
- *                                       href="../../concepts/tables.html#table-naming-criteria"
+ *                                       href="../../../concepts/tables/#table-naming-criteria"
  *                                       target="_top">table naming
  *                                       criteria</a>.
  *                                       If a specified table does not exist,
@@ -9910,7 +10387,7 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
 /**
  * Execute a SQL statement (query, DML, or DDL).
  * <p>
- * See <a href="../../concepts/sql.html" target="_top">SQL Support</a> for the
+ * See <a href="../../../concepts/sql/" target="_top">SQL Support</a> for the
  * complete set of supported SQL commands.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -9953,7 +10430,7 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
 /**
  * Execute a SQL statement (query, DML, or DDL).
  * <p>
- * See <a href="../../concepts/sql.html" target="_top">SQL Support</a> for the
+ * See <a href="../../../concepts/sql/" target="_top">SQL Support</a> for the
  * complete set of supported SQL commands.
  *
  * @param {String} statement  SQL statement (query, DML, or DDL) to be executed
@@ -9966,7 +10443,7 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                        by the server should be returned.  The number of
  *                        records returned will never exceed the server's own
  *                        limit, defined by the <a
- *                        href="../../config/index.html#general"
+ *                        href="../../../config/#general"
  *                        target="_top">max_get_records_size</a> parameter in
  *                        the server configuration.  Use
  *                        <code>has_more_records</code> to see if more records
@@ -10030,8 +10507,8 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                          paging table are returned without evaluating the
  *                          query.
  *                                  <li> 'paging_table_ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the paging table.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the paging table.
  *                                  <li> 'distributed_joins': If
  *                          <code>true</code>, enables the use of distributed
  *                          joins in servicing the given query.  Any query
@@ -10078,9 +10555,9 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the intermediate result
- *                          tables used in query execution.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the intermediate result tables used in query
+ *                          execution.
  *                                  <li> 'update_on_existing_pk': Can be used
  *                          to customize behavior when the updated primary key
  *                          value already exists as described in
@@ -10162,11 +10639,11 @@ GPUdb.prototype.execute_sql = function(statement, offset, limit, request_schema_
 
 /**
  * Filters data based on the specified expression.  The results are
- * stored in a <a href="../../concepts/filtered_views.html"
- * target="_top">result set</a> with the
+ * stored in a <a href="../../../concepts/filtered_views/" target="_top">result
+ * set</a> with the
  * given <code>view_name</code>.
  * <p>
- * For details see <a href="../../concepts/expressions.html"
+ * For details see <a href="../../../concepts/expressions/"
  * target="_top">Expressions</a>.
  * <p>
  * The response message contains the number of points for which the expression
@@ -10197,11 +10674,11 @@ GPUdb.prototype.filter_request = function(request, callback) {
 
 /**
  * Filters data based on the specified expression.  The results are
- * stored in a <a href="../../concepts/filtered_views.html"
- * target="_top">result set</a> with the
+ * stored in a <a href="../../../concepts/filtered_views/" target="_top">result
+ * set</a> with the
  * given <code>view_name</code>.
  * <p>
- * For details see <a href="../../concepts/expressions.html"
+ * For details see <a href="../../../concepts/expressions/"
  * target="_top">Expressions</a>.
  * <p>
  * The response message contains the number of points for which the expression
@@ -10210,22 +10687,22 @@ GPUdb.prototype.filter_request = function(request, callback) {
  * @param {String} table_name  Name of the table to filter, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  This
  *                             may be the name of a table or a view (when
  *                             chaining queries).
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} expression  The select expression to filter the specified
  *                             table.  For details see <a
- *                             href="../../concepts/expressions.html"
+ *                             href="../../../concepts/expressions/"
  *                             target="_top">Expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -10239,9 +10716,8 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                                  <li> 'view_id': view this filtered-view is
  *                          part of.  The default value is ''.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the view specified in
- *                          <code>view_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the view specified in <code>view_name</code>.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -10315,17 +10791,17 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  * @param {String} table_name  Name of the table to filter, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  This
  *                             may be the name of a table or a view (when
  *                             chaining queries).
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} x_column_name  Name of the column containing the x values to
@@ -10422,17 +10898,17 @@ GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
  * @param {String} table_name  Name of the table to filter, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  This
  *                             may be the name of a table or a view (when
  *                             chaining queries).
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} column_name  Name of the geospatial geometry column to be
@@ -10528,16 +11004,16 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} x_column_name  Name of the column on which to perform the
@@ -10646,16 +11122,16 @@ GPUdb.prototype.filter_by_box_geometry_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>. Must be
  *                             an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} column_name  Name of the geospatial geometry column to be
@@ -10746,17 +11222,17 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  *                             geometry will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table or view containing a
  *                             geospatial geometry column.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} column_name  Name of the column to be used in the filter.
@@ -10884,17 +11360,17 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  * @param {String} table_name  Name of the table to filter, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  This
  *                             may be the name of a table or a view (when
  *                             chaining queries).
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {Object} column_values_map  List of values for the corresponding
@@ -11007,16 +11483,16 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} x_column_name  Name of the column to be used for the
@@ -11122,16 +11598,16 @@ GPUdb.prototype.filter_by_radius_geometry_request = function(request, callback) 
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} column_name  Name of the geospatial geometry column to be
@@ -11239,16 +11715,16 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} column_name  Name of a column on which the operation would
@@ -11358,18 +11834,18 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>. Must be
  *                             a currently existing table with a <a
- *                             href="../../geospatial/geo_objects.html"
+ *                             href="../../../geospatial/geo_objects/"
  *                             target="_top">track</a> present.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} track_id  The ID of the track which will act as the
@@ -11438,7 +11914,7 @@ GPUdb.prototype.filter_by_series = function(table_name, view_name, track_id, tar
  * <code>case_sensitive</code> can modify case sensitivity in matching
  * for all modes except <code>search</code>. For
  * <code>search</code> mode details and limitations, see
- * <a href="../../concepts/full_text_search.html" target="_top">Full Text
+ * <a href="../../../concepts/full_text_search/" target="_top">Full Text
  * Search</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -11472,22 +11948,22 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  * <code>case_sensitive</code> can modify case sensitivity in matching
  * for all modes except <code>search</code>. For
  * <code>search</code> mode details and limitations, see
- * <a href="../../concepts/full_text_search.html" target="_top">Full Text
+ * <a href="../../../concepts/full_text_search/" target="_top">Full Text
  * Search</a>.
  *
  * @param {String} table_name  Name of the table on which the filter operation
  *                             will be performed, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table or view.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} expression  The expression with which to filter the table.
@@ -11617,16 +12093,16 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table whose data will be filtered,
  *                             in [schema_name.]table_name format, using
  *                             standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {String} column_name  Name of the column by whose value the data will
@@ -11637,7 +12113,7 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                    <code>table_name</code>, in
  *                                    [schema_name.]table_name format, using
  *                                    standard <a
- *                                    href="../../concepts/tables.html#table-name-resolution"
+ *                                    href="../../../concepts/tables/#table-name-resolution"
  *                                    target="_top">name resolution rules</a>.
  *                                    Must be an existing table.
  * @param {String} source_table_column_name  Name of the column in the
@@ -11789,15 +12265,15 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  * @param {String} table_name  Name of an existing table on which to perform
  *                             the calculation, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} view_name  If provided, then this will be the name of the
  *                            view containing the results, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a> and
  *                            meeting <a
- *                            href="../../concepts/tables.html#table-naming-criteria"
+ *                            href="../../../concepts/tables/#table-naming-criteria"
  *                            target="_top">table naming criteria</a>.  Must
  *                            not be an already existing table or view.
  * @param {Boolean} is_string  Indicates whether the value being searched for
@@ -11969,7 +12445,7 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  * @param {String} table_name  Name of the table or view from which the records
  *                             will be fetched, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {Number} offset  A positive integer indicating the number of initial
  *                         results to skip (this can be useful for paging
@@ -11979,7 +12455,7 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                        indicate that the max number of results should be
  *                        returned.  The number of records returned will never
  *                        exceed the server's own limit, defined by the <a
- *                        href="../../config/index.html#general"
+ *                        href="../../../config/#general"
  *                        target="_top">max_get_records_size</a> parameter in
  *                        the server configuration.  Use
  *                        <code>has_more_records</code> to see if more records
@@ -12058,7 +12534,7 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * <code>offset</code>
  * and <code>limit</code> parameters.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * <a href="../../../concepts/window/" target="_top">Window functions</a>,
  * which can perform
  * operations like moving averages, are available through this endpoint as well
  * as
@@ -12076,16 +12552,16 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * If <code>table_name</code> is empty, selection is performed against a
  * single-row
  * virtual table.  This can be useful in executing temporal
- * (<a href="../../concepts/expressions.html#date-time-functions"
+ * (<a href="../../../concepts/expressions/#date-time-functions"
  * target="_top">NOW()</a>), identity
- * (<a href="../../concepts/expressions.html#user-security-functions"
+ * (<a href="../../../concepts/expressions/#user-security-functions"
  * target="_top">USER()</a>), or
  * constant-based functions
- * (<a href="../../concepts/expressions.html#scalar-functions"
+ * (<a href="../../../concepts/expressions/#scalar-functions"
  * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -12132,7 +12608,7 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * <code>offset</code>
  * and <code>limit</code> parameters.
  * <p>
- * <a href="../../concepts/window.html" target="_top">Window functions</a>,
+ * <a href="../../../concepts/window/" target="_top">Window functions</a>,
  * which can perform
  * operations like moving averages, are available through this endpoint as well
  * as
@@ -12150,23 +12626,23 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * If <code>table_name</code> is empty, selection is performed against a
  * single-row
  * virtual table.  This can be useful in executing temporal
- * (<a href="../../concepts/expressions.html#date-time-functions"
+ * (<a href="../../../concepts/expressions/#date-time-functions"
  * target="_top">NOW()</a>), identity
- * (<a href="../../concepts/expressions.html#user-security-functions"
+ * (<a href="../../../concepts/expressions/#user-security-functions"
  * target="_top">USER()</a>), or
  * constant-based functions
- * (<a href="../../concepts/expressions.html#scalar-functions"
+ * (<a href="../../../concepts/expressions/#scalar-functions"
  * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../api/index.html#dynamic-schemas" target="_top">dynamic schemas
+ * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  *
  * @param {String} table_name  Name of the table or view on which this
  *                             operation will be performed, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  An
  *                             empty table name retrieves one record from a
  *                             single-row virtual table, where columns
@@ -12182,7 +12658,7 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                        by the server should be returned.  The number of
  *                        records returned will never exceed the server's own
  *                        limit, defined by the <a
- *                        href="../../config/index.html#general"
+ *                        href="../../../config/#general"
  *                        target="_top">max_get_records_size</a> parameter in
  *                        the server configuration.  Use
  *                        <code>has_more_records</code> to see if more records
@@ -12334,7 +12810,7 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
  *                             series/tracks will be fetched, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String} world_table_name  Name of the table containing the complete
  *                                   series/track information to be returned
@@ -12342,7 +12818,7 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
  *                                   <code>table_name</code>, in
  *                                   [schema_name.]table_name format, using
  *                                   standard <a
- *                                   href="../../concepts/tables.html#table-name-resolution"
+ *                                   href="../../../concepts/tables/#table-name-resolution"
  *                                   target="_top">name resolution rules</a>.
  *                                   Typically this is used when retrieving
  *                                   series/tracks from a view (which contains
@@ -12458,7 +12934,7 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                             records are to be retrieved, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing collection or table.
  * @param {Number} offset  A positive integer indicating the number of initial
@@ -12469,7 +12945,7 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                        indicate that the max number of results should be
  *                        returned.  The number of records returned will never
  *                        exceed the server's own limit, defined by the <a
- *                        href="../../config/index.html#general"
+ *                        href="../../../config/#general"
  *                        target="_top">max_get_records_size</a> parameter in
  *                        the server configuration.  Use <code>offset</code> &
  *                        <code>limit</code> to request subsequent pages of
@@ -12583,7 +13059,76 @@ GPUdb.prototype.get_vectortile = function(table_names, column_names, layers, til
 };
 
 /**
- * Grants a <a href="../../concepts/data_sources.html" target="_top">data
+ * Grants a <a
+ * href="../../../security/sec_concepts/#security-concepts-permissions-credential"
+ * target="_top">credential-level permission</a> to a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.grant_permission_credential_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        credential_name: request.credential_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants a <a
+ * href="../../../security/sec_concepts/#security-concepts-permissions-credential"
+ * target="_top">credential-level permission</a> to a user or role.
+ *
+ * @param {String} name  Name of the user or role to which the permission will
+ *                       be granted. Must be an existing user or role.
+ * @param {String} permission  Permission to grant to the user or role.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'credential_admin': Full read/write
+ *                             and administrative access on the credential.
+ *                                     <li> 'credential_read': Ability to read
+ *                             and use the credential.
+ *                             </ul>
+ * @param {String} credential_name  Name of the credential on which the
+ *                                  permission will be granted. Must be an
+ *                                  existing credential, or an empty string to
+ *                                  grant access on all credentials.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.grant_permission_credential = function(name, permission, credential_name, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        credential_name: credential_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a> permission to a user or role.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -12610,7 +13155,7 @@ GPUdb.prototype.grant_permission_datasource_request = function(request, callback
 };
 
 /**
- * Grants a <a href="../../concepts/data_sources.html" target="_top">data
+ * Grants a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a> permission to a user or role.
  *
  * @param {String} name  Name of the user or role to which the permission will
@@ -12822,7 +13367,7 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table to which the permission grants
  *                             access, in [schema_name.]table_name format,
  *                             using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table, view, or schema. If a
  *                             schema, the permission also applies to tables
@@ -12988,7 +13533,7 @@ GPUdb.prototype.has_schema_request = function(request, callback) {
  *
  * @param {String} schema_name  Name of the schema to check for existence, in
  *                              root, using standard <a
- *                              href="../../concepts/tables.html#table-name-resolution"
+ *                              href="../../../concepts/tables/#table-name-resolution"
  *                              target="_top">name resolution rules</a>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
@@ -13040,7 +13585,7 @@ GPUdb.prototype.has_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table to check for existence, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
@@ -13112,6 +13657,70 @@ GPUdb.prototype.has_type = function(type_id, options, callback) {
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.import_model_request = function(request, callback) {
+    var actual_request = {
+        model_name: request.model_name,
+        registry_name: request.registry_name,
+        container: request.container,
+        run_function: request.run_function,
+        model_type: request.model_type,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/import/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/import/model", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} model_name
+ * @param {String} registry_name
+ * @param {String} container
+ * @param {String} run_function
+ * @param {String} model_type
+ * @param {Object} options
+ *                          <ul>
+ *                                  <li> 'memory_limit': The default value is
+ *                          ''.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.import_model = function(model_name, registry_name, container, run_function, model_type, options, callback) {
+    var actual_request = {
+        model_name: model_name,
+        registry_name: registry_name,
+        container: container,
+        run_function: run_function,
+        model_type: model_type,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/import/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/import/model", actual_request);
+        return data;
+    }
+};
+
+/**
  * Adds multiple records to the specified table. The operation is
  * synchronous, meaning that a response will not be returned until all the
  * records
@@ -13125,7 +13734,7 @@ GPUdb.prototype.has_type = function(type_id, options, callback) {
  * <p>
  * The <code>update_on_existing_pk</code> option specifies the record
  * collision policy for inserting into a table with a
- * <a href="../../concepts/tables.html#primary-keys" target="_top">primary
+ * <a href="../../../concepts/tables/#primary-keys" target="_top">primary
  * key</a>, but is ignored if
  * no primary key exists.
  * <p>
@@ -13170,7 +13779,7 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  * <p>
  * The <code>update_on_existing_pk</code> option specifies the record
  * collision policy for inserting into a table with a
- * <a href="../../concepts/tables.html#primary-keys" target="_top">primary
+ * <a href="../../../concepts/tables/#primary-keys" target="_top">primary
  * key</a>, but is ignored if
  * no primary key exists.
  * <p>
@@ -13180,7 +13789,7 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  * @param {String} table_name  Name of table to which the records are to be
  *                             added, in [schema_name.]table_name format, using
  *                             standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table.
  * @param {Object[]} data  An array of JSON encoded data for the records to be
@@ -13192,7 +13801,7 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                  <li> 'update_on_existing_pk': Specifies the
  *                          record collision policy for inserting into a table
  *                          with a <a
- *                          href="../../concepts/tables.html#primary-keys"
+ *                          href="../../../concepts/tables/#primary-keys"
  *                          target="_top">primary key</a>.  If set to
  *                          <code>true</code>, any existing table record with
  *                          primary key values that match those of a record
@@ -13357,7 +13966,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                             inserted, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  *                             If the table does not exist, the table will be
  *                             created using either an existing
@@ -13366,12 +13975,12 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                             file, and the new table name will have to meet
  *                             standard
  *                             <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
  * @param {String[]} filepaths  Absolute or relative filepath(s) from where
  *                              files will be loaded. Relative filepaths are
  *                              relative to the defined <a
- *                              href="../../config/index.html#external-files"
+ *                              href="../../../config/#external-files"
  *                              target="_top">external_files_directory</a>
  *                              parameter in the server configuration. The
  *                              filepaths may include wildcards (*). If the
@@ -13385,7 +13994,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       <ul>
  *                                               <li> 'type_id': ID of a
  *                                       currently registered <a
- *                                       href="../../concepts/types.html"
+ *                                       href="../../../concepts/types/"
  *                                       target="_top">type</a>.  The default
  *                                       value is ''.
  *                                               <li> 'no_error_if_exists': If
@@ -13402,23 +14011,23 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       The default value is 'false'.
  *                                               <li> 'is_replicated': Affects
  *                                       the <a
- *                                       href="../../concepts/tables.html#distribution"
+ *                                       href="../../../concepts/tables/#distribution"
  *                                       target="_top">distribution scheme</a>
  *                                       for the table's data.  If
  *                                       <code>true</code> and the given type
  *                                       has no explicit <a
- *                                       href="../../concepts/tables.html#shard-key"
+ *                                       href="../../../concepts/tables/#shard-key"
  *                                       target="_top">shard key</a> defined,
  *                                       the table will be <a
- *                                       href="../../concepts/tables.html#replication"
+ *                                       href="../../../concepts/tables/#replication"
  *                                       target="_top">replicated</a>.  If
  *                                       <code>false</code>, the table will be
  *                                       <a
- *                                       href="../../concepts/tables.html#sharding"
+ *                                       href="../../../concepts/tables/#sharding"
  *                                       target="_top">sharded</a> according to
  *                                       the shard key specified in the given
  *                                       <code>type_id</code>, or <a
- *                                       href="../../concepts/tables.html#random-sharding"
+ *                                       href="../../../concepts/tables/#random-sharding"
  *                                       target="_top">randomly sharded</a>, if
  *                                       no shard key is specified.  Note that
  *                                       a type containing a shard key cannot
@@ -13431,7 +14040,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       The default value is 'false'.
  *                                               <li> 'foreign_keys':
  *                                       Semicolon-separated list of <a
- *                                       href="../../concepts/tables.html#foreign-keys"
+ *                                       href="../../../concepts/tables/#foreign-keys"
  *                                       target="_top">foreign keys</a>, of the
  *                                       format '(source_column_name [, ...])
  *                                       references
@@ -13443,23 +14052,23 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       shard_by_column from
  *                                       target_table(primary_key_column)'.
  *                                               <li> 'partition_type': <a
- *                                       href="../../concepts/tables.html#partitioning"
+ *                                       href="../../../concepts/tables/#partitioning"
  *                                       target="_top">Partitioning</a> scheme
  *                                       to use.
  *                                       Supported values:
  *                                       <ul>
  *                                               <li> 'RANGE': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       href="../../../concepts/tables/#partitioning-by-range"
  *                                       target="_top">range partitioning</a>.
  *                                               <li> 'INTERVAL': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       href="../../../concepts/tables/#partitioning-by-interval"
  *                                       target="_top">interval
  *                                       partitioning</a>.
  *                                               <li> 'LIST': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>.
  *                                               <li> 'HASH': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>.
  *                                       </ul>
  *                                               <li> 'partition_keys':
@@ -13473,16 +14082,16 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       definitions, whose format depends on
  *                                       the choice of
  *                                       <code>partition_type</code>.  See <a
- *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       href="../../../concepts/tables/#partitioning-by-range"
  *                                       target="_top">range partitioning</a>,
  *                                       <a
- *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       href="../../../concepts/tables/#partitioning-by-interval"
  *                                       target="_top">interval
  *                                       partitioning</a>, <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>,
  *                                       or <a
- *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>
  *                                       for example formats.
  *                                               <li> 'is_automatic_partition':
@@ -13490,7 +14099,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       will be created for values which don't
  *                                       fall into an existing partition.
  *                                       Currently only supported for <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitions</a>.
  *                                       Supported values:
  *                                       <ul>
@@ -13499,7 +14108,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       </ul>
  *                                       The default value is 'false'.
  *                                               <li> 'ttl': Sets the <a
- *                                       href="../../concepts/ttl.html"
+ *                                       href="../../../concepts/ttl/"
  *                                       target="_top">TTL</a> of the table
  *                                       specified in <code>table_name</code>.
  *                                               <li> 'chunk_size': Indicates
@@ -13507,14 +14116,14 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       used for this table.
  *                                               <li> 'is_result_table':
  *                                       Indicates whether the table is a <a
- *                                       href="../../concepts/tables_memory_only.html"
+ *                                       href="../../../concepts/tables_memory_only/"
  *                                       target="_top">memory-only table</a>. A
  *                                       result table cannot contain columns
  *                                       with store_only or text_search <a
- *                                       href="../../concepts/types.html#data-handling"
+ *                                       href="../../../concepts/types/#data-handling"
  *                                       target="_top">data-handling</a> or
  *                                       that are <a
- *                                       href="../../concepts/types.html#primitive-types"
+ *                                       href="../../../concepts/types/#primitive-types"
  *                                       target="_top">non-charN strings</a>,
  *                                       and it will not be retained if the
  *                                       server is restarted.
@@ -13526,13 +14135,13 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       The default value is 'false'.
  *                                               <li> 'strategy_definition':
  *                                       The <a
- *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy</a> for
  *                                       the table and its columns. See <a
- *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy usage</a>
  *                                       for format and <a
- *                                       href="../../rm/usage.html#tier-strategies"
+ *                                       href="../../../rm/usage/#tier-strategies"
  *                                       target="_top">tier strategy
  *                                       examples</a> for examples.
  *                                       </ul>
@@ -13657,11 +14266,10 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          file(s) whose records will be inserted.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'delimited_text': Indicates the
- *                          file(s) are in delimited text format; e.g., CSV,
- *                          TSV, PSV, etc.
- *                                  <li> 'parquet': Indicates the file(s) are
- *                          in Parquet format.
+ *                                  <li> 'delimited_text': Delimited text file
+ *                          format; e.g., CSV, TSV, PSV, etc.
+ *                                  <li> 'parquet': Apache Parquet file format
+ *                                  <li> 'json': Json file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': Whether to do a full
@@ -13778,7 +14386,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'text_header_property_delimiter':
  *                          Specifies the delimiter for
  *                          <a
- *                          href="../../concepts/types.html#column-properties"
+ *                          href="../../../concepts/types/#column-properties"
  *                          target="_top">column properties</a> in the header
  *                          row (if
  *                          present).  Cannot be set to same value as
@@ -13898,7 +14506,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                             inserted, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  *                             If the table does not exist, the table will be
  *                             created using either an existing
@@ -13907,7 +14515,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                             payload, and the new table name will have to
  *                             meet standard
  *                             <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
  * @param {String} data_text  Records formatted as delimited text
  * @param {String} data_bytes  Records formatted as binary data
@@ -13919,7 +14527,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       <ul>
  *                                               <li> 'type_id': ID of a
  *                                       currently registered <a
- *                                       href="../../concepts/types.html"
+ *                                       href="../../../concepts/types/"
  *                                       target="_top">type</a>.  The default
  *                                       value is ''.
  *                                               <li> 'no_error_if_exists': If
@@ -13936,23 +14544,23 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       The default value is 'false'.
  *                                               <li> 'is_replicated': Affects
  *                                       the <a
- *                                       href="../../concepts/tables.html#distribution"
+ *                                       href="../../../concepts/tables/#distribution"
  *                                       target="_top">distribution scheme</a>
  *                                       for the table's data.  If
  *                                       <code>true</code> and the given type
  *                                       has no explicit <a
- *                                       href="../../concepts/tables.html#shard-key"
+ *                                       href="../../../concepts/tables/#shard-key"
  *                                       target="_top">shard key</a> defined,
  *                                       the table will be <a
- *                                       href="../../concepts/tables.html#replication"
+ *                                       href="../../../concepts/tables/#replication"
  *                                       target="_top">replicated</a>.  If
  *                                       <code>false</code>, the table will be
  *                                       <a
- *                                       href="../../concepts/tables.html#sharding"
+ *                                       href="../../../concepts/tables/#sharding"
  *                                       target="_top">sharded</a> according to
  *                                       the shard key specified in the given
  *                                       <code>type_id</code>, or <a
- *                                       href="../../concepts/tables.html#random-sharding"
+ *                                       href="../../../concepts/tables/#random-sharding"
  *                                       target="_top">randomly sharded</a>, if
  *                                       no shard key is specified.  Note that
  *                                       a type containing a shard key cannot
@@ -13965,7 +14573,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       The default value is 'false'.
  *                                               <li> 'foreign_keys':
  *                                       Semicolon-separated list of <a
- *                                       href="../../concepts/tables.html#foreign-keys"
+ *                                       href="../../../concepts/tables/#foreign-keys"
  *                                       target="_top">foreign keys</a>, of the
  *                                       format '(source_column_name [, ...])
  *                                       references
@@ -13977,23 +14585,23 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       shard_by_column from
  *                                       target_table(primary_key_column)'.
  *                                               <li> 'partition_type': <a
- *                                       href="../../concepts/tables.html#partitioning"
+ *                                       href="../../../concepts/tables/#partitioning"
  *                                       target="_top">Partitioning</a> scheme
  *                                       to use.
  *                                       Supported values:
  *                                       <ul>
  *                                               <li> 'RANGE': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       href="../../../concepts/tables/#partitioning-by-range"
  *                                       target="_top">range partitioning</a>.
  *                                               <li> 'INTERVAL': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       href="../../../concepts/tables/#partitioning-by-interval"
  *                                       target="_top">interval
  *                                       partitioning</a>.
  *                                               <li> 'LIST': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>.
  *                                               <li> 'HASH': Use <a
- *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>.
  *                                       </ul>
  *                                               <li> 'partition_keys':
@@ -14007,16 +14615,16 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       definitions, whose format depends on
  *                                       the choice of
  *                                       <code>partition_type</code>.  See <a
- *                                       href="../../concepts/tables.html#partitioning-by-range"
+ *                                       href="../../../concepts/tables/#partitioning-by-range"
  *                                       target="_top">range partitioning</a>,
  *                                       <a
- *                                       href="../../concepts/tables.html#partitioning-by-interval"
+ *                                       href="../../../concepts/tables/#partitioning-by-interval"
  *                                       target="_top">interval
  *                                       partitioning</a>, <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>,
  *                                       or <a
- *                                       href="../../concepts/tables.html#partitioning-by-hash"
+ *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>
  *                                       for example formats.
  *                                               <li> 'is_automatic_partition':
@@ -14024,7 +14632,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       will be created for values which don't
  *                                       fall into an existing partition.
  *                                       Currently only supported for <a
- *                                       href="../../concepts/tables.html#partitioning-by-list"
+ *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitions</a>.
  *                                       Supported values:
  *                                       <ul>
@@ -14033,7 +14641,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       </ul>
  *                                       The default value is 'false'.
  *                                               <li> 'ttl': Sets the <a
- *                                       href="../../concepts/ttl.html"
+ *                                       href="../../../concepts/ttl/"
  *                                       target="_top">TTL</a> of the table
  *                                       specified in <code>table_name</code>.
  *                                               <li> 'chunk_size': Indicates
@@ -14041,14 +14649,14 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       used for this table.
  *                                               <li> 'is_result_table':
  *                                       Indicates whether the table is a <a
- *                                       href="../../concepts/tables_memory_only.html"
+ *                                       href="../../../concepts/tables_memory_only/"
  *                                       target="_top">memory-only table</a>. A
  *                                       result table cannot contain columns
  *                                       with store_only or text_search <a
- *                                       href="../../concepts/types.html#data-handling"
+ *                                       href="../../../concepts/types/#data-handling"
  *                                       target="_top">data-handling</a> or
  *                                       that are <a
- *                                       href="../../concepts/types.html#primitive-types"
+ *                                       href="../../../concepts/types/#primitive-types"
  *                                       target="_top">non-charN strings</a>,
  *                                       and it will not be retained if the
  *                                       server is restarted.
@@ -14060,13 +14668,13 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       The default value is 'false'.
  *                                               <li> 'strategy_definition':
  *                                       The <a
- *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy</a> for
  *                                       the table and its columns. See <a
- *                                       href="../../rm/concepts.html#tier-strategies"
+ *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy usage</a>
  *                                       for format and <a
- *                                       href="../../rm/usage.html#tier-strategies"
+ *                                       href="../../../rm/usage/#tier-strategies"
  *                                       target="_top">tier strategy
  *                                       examples</a> for examples.
  *                                       </ul>
@@ -14188,11 +14796,10 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          file(s) whose records will be inserted.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'delimited_text': Indicates the
- *                          file(s) are in delimited text format; e.g., CSV,
- *                          TSV, PSV, etc.
- *                                  <li> 'parquet': Indicates the file(s) are
- *                          in Parquet format.
+ *                                  <li> 'delimited_text': Delimited text file
+ *                          format; e.g., CSV, TSV, PSV, etc.
+ *                                  <li> 'parquet': Apache Parquet file format
+ *                                  <li> 'json': Json file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': Whether to do a full
@@ -14265,7 +14872,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  <li> 'text_header_property_delimiter':
  *                          Specifies the delimiter for
  *                          <a
- *                          href="../../concepts/types.html#column-properties"
+ *                          href="../../../concepts/types/#column-properties"
  *                          target="_top">column properties</a> in the header
  *                          row (if
  *                          present).  Cannot be set to same value as
@@ -14384,7 +14991,7 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  * @param {String} table_name  Table to which random records will be added, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table, not a view.
  * @param {Number} count  Number of records to generate.
@@ -14601,7 +15208,7 @@ GPUdb.prototype.insert_records_random = function(table_name, count, options, cal
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
+ * href="../../../api/rest/wms_rest/" target="_top">WMS</a>) if the
  * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
  * is used to pick the symbol displayed for each point.
  *
@@ -14635,7 +15242,7 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  * and any additional optional parameter (e.g. color). To have a symbol used
  * for rendering create a table with a string column named 'SYMBOLCODE' (along
  * with 'x' or 'y' for example). Then when the table is rendered (via <a
- * href="../../api/rest/wms_rest.html" target="_top">WMS</a>) if the
+ * href="../../../api/rest/wms_rest/" target="_top">WMS</a>) if the
  * 'dosymbology' parameter is 'true' then the value of the 'SYMBOLCODE' column
  * is used to pick the symbol displayed for each point.
  *
@@ -14842,7 +15449,7 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table to be locked, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  It
  *                             must be a currently existing table or view.
  * @param {String} lock_type  The type of lock being applied to the table.
@@ -14890,13 +15497,13 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  * given solution type.
 
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -14931,13 +15538,13 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  * given solution type.
 
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -14948,11 +15555,11 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  graph. Sample points must be specified
  *                                  using
  *                                  <a
- *                                  href="../../graph_solver/network_graph_solver.html#match-identifiers"
+ *                                  href="../../../graph_solver/network_graph_solver/#match-identifiers"
  *                                  target="_top">identifiers</a>;
  *                                  identifiers are grouped as
  *                                  <a
- *                                  href="../../graph_solver/network_graph_solver.html#match-combinations"
+ *                                  href="../../../graph_solver/network_graph_solver/#match-combinations"
  *                                  target="_top">combinations</a>.
  *                                  Identifiers can be used with: existing
  *                                  column names, e.g.,
@@ -15000,13 +15607,13 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  * @param {String} solution_table  The name of the table used to store the
  *                                 results, in [schema_name.]table_name format,
  *                                 using standard <a
- *                                 href="../../concepts/tables.html#table-name-resolution"
+ *                                 href="../../../concepts/tables/#table-name-resolution"
  *                                 target="_top">name resolution rules</a> and
  *                                 meeting <a
- *                                 href="../../concepts/tables.html#table-naming-criteria"
+ *                                 href="../../../concepts/tables/#table-naming-criteria"
  *                                 target="_top">table naming criteria</a>.
  *                                 This table contains a <a
- *                                 href="../../geospatial/geo_objects.html#geospatial-tracks"
+ *                                 href="../../../geospatial/geo_objects/#geospatial-tracks"
  *                                 target="_top">track</a> of geospatial points
  *                                 for the matched portion of the graph, a
  *                                 track ID, and a score value. Also outputs a
@@ -15196,9 +15803,9 @@ GPUdb.prototype.match_graph = function(graph_name, sample_points, solve_method, 
  * information (specified by <code>field_maps</code>).
  * <p>
  * For merge records details and examples, see
- * <a href="../../concepts/merge_records.html" target="_top">Merge Records</a>.
+ * <a href="../../../concepts/merge_records/" target="_top">Merge Records</a>.
  * For limitations, see
- * <a href="../../concepts/merge_records.html#limitations-and-cautions"
+ * <a href="../../../concepts/merge_records/#limitations-and-cautions"
  * target="_top">Merge Records Limitations and Cautions</a>.
 
  * The field map (specified by <code>field_maps</code>) holds the
@@ -15240,9 +15847,9 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  * information (specified by <code>field_maps</code>).
  * <p>
  * For merge records details and examples, see
- * <a href="../../concepts/merge_records.html" target="_top">Merge Records</a>.
+ * <a href="../../../concepts/merge_records/" target="_top">Merge Records</a>.
  * For limitations, see
- * <a href="../../concepts/merge_records.html#limitations-and-cautions"
+ * <a href="../../../concepts/merge_records/#limitations-and-cautions"
  * target="_top">Merge Records Limitations and Cautions</a>.
 
  * The field map (specified by <code>field_maps</code>) holds the
@@ -15257,17 +15864,17 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  * @param {String} table_name  The name of the new result table for the records
  *                             to be merged into, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a> and
  *                             meeting <a
- *                             href="../../concepts/tables.html#table-naming-criteria"
+ *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.  Must
  *                             NOT be an existing table.
  * @param {String[]} source_table_names  The list of names of source tables to
  *                                       get the records from, each in
  *                                       [schema_name.]table_name format, using
  *                                       standard <a
- *                                       href="../../concepts/tables.html#table-name-resolution"
+ *                                       href="../../../concepts/tables/#table-name-resolution"
  *                                       target="_top">name resolution
  *                                       rules</a>.  Must be existing table
  *                                       names.
@@ -15279,7 +15886,7 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                               contains the target column names (as keys)
  *                               that the data in the mapped source columns or
  *                               column <a
- *                               href="../../concepts/expressions.html"
+ *                               href="../../../concepts/expressions/"
  *                               target="_top">expressions</a> (as values) will
  *                               be merged into.  All of the source columns
  *                               being merged into a given target column must
@@ -15295,14 +15902,14 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                          newly created merged table specified by
  *                          <code>table_name</code>.
  *                                  <li> 'is_replicated': Indicates the <a
- *                          href="../../concepts/tables.html#distribution"
+ *                          href="../../../concepts/tables/#distribution"
  *                          target="_top">distribution scheme</a> for the data
  *                          of the merged table specified in
  *                          <code>table_name</code>.  If true, the table will
- *                          be <a href="../../concepts/tables.html#replication"
+ *                          be <a href="../../../concepts/tables/#replication"
  *                          target="_top">replicated</a>.  If false, the table
  *                          will be <a
- *                          href="../../concepts/tables.html#random-sharding"
+ *                          href="../../../concepts/tables/#random-sharding"
  *                          target="_top">randomly sharded</a>.
  *                          Supported values:
  *                          <ul>
@@ -15311,9 +15918,9 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ttl': Sets the <a
- *                          href="../../concepts/ttl.html"
- *                          target="_top">TTL</a> of the merged table specified
- *                          in <code>table_name</code>.
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the merged table specified in
+ *                          <code>table_name</code>.
  *                                  <li> 'persist': If <code>true</code>, then
  *                          the table specified in <code>table_name</code> will
  *                          be persisted and will not expire unless a
@@ -15359,13 +15966,13 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
  * restrictions, and options.
 
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -15399,13 +16006,13 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  * restrictions, and options.
 
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -15413,13 +16020,13 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  * @param {String[]} nodes  Nodes with which to update existing
  *                          <code>nodes</code> in graph specified by
  *                          <code>graph_name</code>. Review <a
- *                          href="../../graph_solver/network_graph_solver.html#nodes"
+ *                          href="../../../graph_solver/network_graph_solver/#nodes"
  *                          target="_top">Nodes</a> for more information. Nodes
  *                          must be specified using <a
- *                          href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                          href="../../../graph_solver/network_graph_solver/#identifiers"
  *                          target="_top">identifiers</a>; identifiers are
  *                          grouped as <a
- *                          href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                          href="../../../graph_solver/network_graph_solver/#id-combos"
  *                          target="_top">combinations</a>. Identifiers can be
  *                          used with existing column names, e.g.,
  *                          'table.column AS NODE_ID', expressions, e.g.,
@@ -15435,13 +16042,13 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  * @param {String[]} edges  Edges with which to update existing
  *                          <code>edges</code> in graph specified by
  *                          <code>graph_name</code>. Review <a
- *                          href="../../graph_solver/network_graph_solver.html#edges"
+ *                          href="../../../graph_solver/network_graph_solver/#edges"
  *                          target="_top">Edges</a> for more information. Edges
  *                          must be specified using <a
- *                          href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                          href="../../../graph_solver/network_graph_solver/#identifiers"
  *                          target="_top">identifiers</a>; identifiers are
  *                          grouped as <a
- *                          href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                          href="../../../graph_solver/network_graph_solver/#id-combos"
  *                          target="_top">combinations</a>. Identifiers can be
  *                          used with existing column names, e.g.,
  *                          'table.column AS EDGE_ID', expressions, e.g.,
@@ -15457,13 +16064,13 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  * @param {String[]} weights  Weights with which to update existing
  *                            <code>weights</code> in graph specified by
  *                            <code>graph_name</code>. Review <a
- *                            href="../../graph_solver/network_graph_solver.html#graph-weights"
+ *                            href="../../../graph_solver/network_graph_solver/#graph-weights"
  *                            target="_top">Weights</a> for more information.
  *                            Weights must be specified using <a
- *                            href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                            href="../../../graph_solver/network_graph_solver/#identifiers"
  *                            target="_top">identifiers</a>; identifiers are
  *                            grouped as <a
- *                            href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                            href="../../../graph_solver/network_graph_solver/#id-combos"
  *                            target="_top">combinations</a>. Identifiers can
  *                            be used with existing column names, e.g.,
  *                            'table.column AS WEIGHTS_EDGE_ID', expressions,
@@ -15480,14 +16087,14 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  * @param {String[]} restrictions  Restrictions with which to update existing
  *                                 <code>restrictions</code> in graph specified
  *                                 by <code>graph_name</code>. Review <a
- *                                 href="../../graph_solver/network_graph_solver.html#graph-restrictions"
+ *                                 href="../../../graph_solver/network_graph_solver/#graph-restrictions"
  *                                 target="_top">Restrictions</a> for more
  *                                 information. Restrictions must be specified
  *                                 using <a
- *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                 target="_top">identifiers</a>; identifiers
  *                                 are grouped as <a
- *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                 target="_top">combinations</a>. Identifiers
  *                                 can be used with existing column names,
  *                                 e.g., 'table.column AS
@@ -15537,7 +16144,7 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  *                                  <li> 'save_persist': If set to
  *                          <code>true</code>, the graph will be saved in the
  *                          persist directory (see the <a
- *                          href="../../config/index.html" target="_top">config
+ *                          href="../../../config/" target="_top">config
  *                          reference</a> for more information). If set to
  *                          <code>false</code>, the graph will be removed when
  *                          the graph server is shutdown.
@@ -15567,10 +16174,10 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  *                          created graph is also created as a table with the
  *                          given name, in [schema_name.]table_name format,
  *                          using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>.  This
  *                          table will have the following identifier columns:
  *                          'EDGE_ID', 'EDGE_NODE1_ID', 'EDGE_NODE2_ID'. If
@@ -15644,7 +16251,7 @@ GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restr
  * populated with
  * column values from any table as long as the type is supported by the given
  * identifier. See
- * <a href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ * <a href="../../../graph_solver/network_graph_solver/#query-identifiers"
  * target="_top">Query Identifiers</a>
  * for more information.
  * <p>
@@ -15660,13 +16267,13 @@ GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restr
  * to <code>true</code>.
  * <p>
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -15708,7 +16315,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * populated with
  * column values from any table as long as the type is supported by the given
  * identifier. See
- * <a href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ * <a href="../../../graph_solver/network_graph_solver/#query-identifiers"
  * target="_top">Query Identifiers</a>
  * for more information.
  * <p>
@@ -15724,19 +16331,19 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * to <code>true</code>.
  * <p>
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to query.
  * @param {String[]} queries  Nodes or edges to be queried specified using <a
- *                            href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ *                            href="../../../graph_solver/network_graph_solver/#query-identifiers"
  *                            target="_top">query identifiers</a>. Identifiers
  *                            can be used with existing column names, e.g.,
  *                            'table.column AS QUERY_NODE_ID', raw values,
@@ -15750,10 +16357,10 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * @param {String[]} restrictions  Additional restrictions to apply to the
  *                                 nodes/edges of an existing graph.
  *                                 Restrictions must be specified using <a
- *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                 target="_top">identifiers</a>; identifiers
  *                                 are grouped as <a
- *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                 target="_top">combinations</a>. Identifiers
  *                                 can be used with existing column names,
  *                                 e.g., 'table.column AS
@@ -15767,22 +16374,22 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * @param {String} adjacency_table  Name of the table to store the resulting
  *                                  adjacencies, in [schema_name.]table_name
  *                                  format, using standard <a
- *                                  href="../../concepts/tables.html#table-name-resolution"
+ *                                  href="../../../concepts/tables/#table-name-resolution"
  *                                  target="_top">name resolution rules</a> and
  *                                  meeting <a
- *                                  href="../../concepts/tables.html#table-naming-criteria"
+ *                                  href="../../../concepts/tables/#table-naming-criteria"
  *                                  target="_top">table naming criteria</a>.
  *                                  If left blank, the query results are
  *                                  instead returned in the response even if
  *                                  <code>export_query_results</code> is set to
  *                                  <code>false</code>. If the
  *                                  'QUERY_TARGET_NODE_LABEL' <a
- *                                  href="../../graph_solver/network_graph_solver.html#query-identifiers"
+ *                                  href="../../../graph_solver/network_graph_solver/#query-identifiers"
  *                                  target="_top">query identifier</a> is used
  *                                  in <code>queries</code>, then two
  *                                  additional columns will be available:
  *                                  'PATH_ID' and 'RING_ID'. See <a
- *                                  href="../../graph_solver/network_graph_solver.html#using-labels"
+ *                                  href="../../../graph_solver/network_graph_solver/#using-labels"
  *                                  target="_top">Using Labels</a> for more
  *                                  information.
  * @param {Number} rings  Sets the number of rings around the node to query for
@@ -15807,7 +16414,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          only applicable if the queried graph
  *                          <code>graph_name</code> is directed and when
  *                          querying nodes. Consult <a
- *                          href="../../graph_solver/network_graph_solver.html#directed-graphs"
+ *                          href="../../../graph_solver/network_graph_solver/#directed-graphs"
  *                          target="_top">Directed Graphs</a> for more details.
  *                          Supported values:
  *                          <ul>
@@ -15825,10 +16432,10 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          table to store the list of the final nodes reached
  *                          during the traversal, in [schema_name.]table_name
  *                          format, using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>.  If this
  *                          value is left as the default, the table name will
  *                          default to the <code>adjacency_table</code> value
@@ -15865,7 +16472,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          from the source graph (if available) or
  *                          auto-generated WKT values (if there are no WKT
  *                          values in the source graph). A subsequent call to
- *                          the <a href="../../api/rest/wms_rest.html"
+ *                          the <a href="../../../api/rest/wms_rest/"
  *                          target="_top">/wms</a> endpoint can then be made to
  *                          display the query results on a map.
  *                          Supported values:
@@ -15924,7 +16531,76 @@ GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjace
 };
 
 /**
- * Revokes a <a href="../../concepts/data_sources.html" target="_top">data
+ * Revokes a <a
+ * href="../../../security/sec_concepts/#security-concepts-permissions-credential"
+ * target="_top">credential-level permission</a> from a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.revoke_permission_credential_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        credential_name: request.credential_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a <a
+ * href="../../../security/sec_concepts/#security-concepts-permissions-credential"
+ * target="_top">credential-level permission</a> from a user or role.
+ *
+ * @param {String} name  Name of the user or role from which the permission
+ *                       will be revoked. Must be an existing user or role.
+ * @param {String} permission  Permission to revoke from the user or role.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'credential_admin': Full read/write
+ *                             and administrative access on the credential.
+ *                                     <li> 'credential_read': Ability to read
+ *                             and use the credential.
+ *                             </ul>
+ * @param {String} credential_name  Name of the credential on which the
+ *                                  permission will be revoked. Must be an
+ *                                  existing credential, or an empty string to
+ *                                  revoke access on all credentials.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.revoke_permission_credential = function(name, permission, credential_name, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        credential_name: credential_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a> permission from a user or role.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -15951,7 +16627,7 @@ GPUdb.prototype.revoke_permission_datasource_request = function(request, callbac
 };
 
 /**
- * Revokes a <a href="../../concepts/data_sources.html" target="_top">data
+ * Revokes a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a> permission from a user or role.
  *
  * @param {String} name  Name of the user or role from which the permission
@@ -16163,7 +16839,7 @@ GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table to which the permission grants
  *                             access, in [schema_name.]table_name format,
  *                             using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing table, view or schema.
  * @param {Object} options  Optional parameters.
@@ -16247,8 +16923,110 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.show_container_registry_request = function(request, callback) {
+    var actual_request = {
+        registry_name: request.registry_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/container/registry", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/container/registry", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} registry_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.show_container_registry = function(registry_name, options, callback) {
+    var actual_request = {
+        registry_name: registry_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/container/registry", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/container/registry", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about a specified <a href="../../../concepts/credentials/"
+ * target="_top">credential</a> or all credentials.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_credential_request = function(request, callback) {
+    var actual_request = {
+        credential_name: request.credential_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/credential", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about a specified <a href="../../../concepts/credentials/"
+ * target="_top">credential</a> or all credentials.
+ *
+ * @param {String} credential_name  Name of the credential on which to retrieve
+ *                                  information. The name must refer to a
+ *                                  currently existing credential. If '*' is
+ *                                  specified, information about all
+ *                                  credentials will be returned.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_credential = function(credential_name, options, callback) {
+    var actual_request = {
+        credential_name: credential_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/credential", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/credential", actual_request);
+        return data;
+    }
+};
+
+/**
  * Shows information about a specified <a
- * href="../../concepts/data_sources.html" target="_top">data source</a> or all
+ * href="../../../concepts/data_sources/" target="_top">data source</a> or all
  * data sources.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -16274,7 +17052,7 @@ GPUdb.prototype.show_datasource_request = function(request, callback) {
 
 /**
  * Shows information about a specified <a
- * href="../../concepts/data_sources.html" target="_top">data source</a> or all
+ * href="../../../concepts/data_sources/" target="_top">data source</a> or all
  * data sources.
  *
  * @param {String} name  Name of the data source for which to retrieve
@@ -16313,6 +17091,7 @@ GPUdb.prototype.show_datasource = function(name, options, callback) {
  */
 GPUdb.prototype.show_functions_request = function(request, callback) {
     var actual_request = {
+        names: request.names,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -16326,9 +17105,45 @@ GPUdb.prototype.show_functions_request = function(request, callback) {
 
 /**
  *
+ * @param {String[]} names
  * @param {Object} options
  *                          <ul>
  *                                  <li> 'properties':
+ *                                  <li> 'show_scalar_functions':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'show_aggregate_functions':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'show_sql_procedures':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'show_user_defined_functions':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'show_cast_functions':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -16336,8 +17151,9 @@ GPUdb.prototype.show_functions_request = function(request, callback) {
  *                   operation.
  * @private
  */
-GPUdb.prototype.show_functions = function(options, callback) {
+GPUdb.prototype.show_functions = function(names, options, callback) {
     var actual_request = {
+        names: names,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -16456,6 +17272,54 @@ GPUdb.prototype.show_graph_grammar = function(options, callback) {
         this.submit_request("/show/graph/grammar", actual_request, callback);
     } else {
         var data = this.submit_request("/show/graph/grammar", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.show_model_request = function(request, callback) {
+    var actual_request = {
+        model_names: (request.model_names !== undefined && request.model_names !== null) ? request.model_names : {},
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/model", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String[]} model_names
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.show_model = function(model_names, options, callback) {
+    var actual_request = {
+        model_names: (model_names !== undefined && model_names !== null) ? model_names : {},
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/model", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/model", actual_request);
         return data;
     }
 };
@@ -16723,7 +17587,7 @@ GPUdb.prototype.show_resource_groups = function(names, options, callback) {
 };
 
 /**
- * Retrieves information about a <a href="../../concepts/schemas.html"
+ * Retrieves information about a <a href="../../../concepts/schemas/"
  * target="_top">schema</a> (or all schemas), as specified in
  * <code>schema_name</code>.
  *
@@ -16749,7 +17613,7 @@ GPUdb.prototype.show_schema_request = function(request, callback) {
 };
 
 /**
- * Retrieves information about a <a href="../../concepts/schemas.html"
+ * Retrieves information about a <a href="../../../concepts/schemas/"
  * target="_top">schema</a> (or all schemas), as specified in
  * <code>schema_name</code>.
  *
@@ -16940,7 +17804,7 @@ GPUdb.prototype.show_statistics_request = function(request, callback) {
  * @param {String[]} table_names  Names of tables whose metadata will be
  *                                fetched, each in [schema_name.]table_name
  *                                format, using standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.  All
  *                                provided tables must exist, or an error is
  *                                returned.
@@ -17194,7 +18058,7 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  * @param {String} table_name  Name of the table for which to retrieve the
  *                             information, in [schema_name.]table_name format,
  *                             using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  If
  *                             blank, then returns information about all tables
  *                             and views.
@@ -17305,7 +18169,7 @@ GPUdb.prototype.show_table_metadata_request = function(request, callback) {
  * @param {String[]} table_names  Names of tables whose metadata will be
  *                                fetched, in [schema_name.]table_name format,
  *                                using standard <a
- *                                href="../../concepts/tables.html#table-name-resolution"
+ *                                href="../../../concepts/tables/#table-name-resolution"
  *                                target="_top">name resolution rules</a>.  All
  *                                provided tables must exist, or an error is
  *                                returned.
@@ -17518,13 +18382,13 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
  * additional, optional weights and restrictions.
  * <p>
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -17562,13 +18426,13 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  * additional, optional weights and restrictions.
  * <p>
  * IMPORTANT: It's highly recommended that you review the
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../graph_solver/examples/graph_rest_guide.html"
+ * <a href="../../../graph_solver/examples/graph_rest_guide/"
  * target="_top">Graph REST Tutorial</a>,
  * and/or some
- * <a href="../../graph_solver/examples.html#match-graph"
+ * <a href="../../../graph_solver/examples/#match-graph"
  * target="_top">/match/graph examples</a>
  * before using this endpoint.
  *
@@ -17577,11 +18441,11 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                     of an existing
  *                                     graph. Weights must be specified using
  *                                     <a
- *                                     href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                     href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                     target="_top">identifiers</a>;
  *                                     identifiers are grouped as
  *                                     <a
- *                                     href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                     href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                     target="_top">combinations</a>.
  *                                     Identifiers can be used with existing
  *                                     column names, e.g.,
@@ -17607,11 +18471,11 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                 existing graph. Restrictions must be
  *                                 specified using
  *                                 <a
- *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                 target="_top">identifiers</a>;
  *                                 identifiers are grouped as
  *                                 <a
- *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                 target="_top">combinations</a>.
  *                                 Identifiers can be used with existing column
  *                                 names, e.g.,
@@ -17691,7 +18555,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  * @param {String} solution_table  Name of the table to store the solution, in
  *                                 [schema_name.]table_name format, using
  *                                 standard <a
- *                                 href="../../concepts/tables.html#table-name-resolution"
+ *                                 href="../../../concepts/tables/#table-name-resolution"
  *                                 target="_top">name resolution rules</a>.
  * @param {Object} options  Additional parameters
  *                          <ul>
@@ -17892,8 +18756,8 @@ GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restriction
  * <p>
  * The <code>update_on_existing_pk</code> option specifies the record
  * collision policy for tables with a <a
- * href="../../concepts/tables.html#primary-keys" target="_top">primary
- * key</a>, and
+ * href="../../../concepts/tables/#primary-keys" target="_top">primary key</a>,
+ * and
  * is ignored on tables with no primary key.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -17952,14 +18816,14 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  * <p>
  * The <code>update_on_existing_pk</code> option specifies the record
  * collision policy for tables with a <a
- * href="../../concepts/tables.html#primary-keys" target="_top">primary
- * key</a>, and
+ * href="../../../concepts/tables/#primary-keys" target="_top">primary key</a>,
+ * and
  * is ignored on tables with no primary key.
  *
  * @param {String} table_name  Name of table to be updated, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be a currently existing table and not a view.
  * @param {String[]} expressions  A list of the actual predicates, one for each
@@ -18000,10 +18864,10 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'update_on_existing_pk': Specifies the
  *                          record collision policy for tables with a <a
- *                          href="../../concepts/tables.html#primary-keys"
+ *                          href="../../../concepts/tables/#primary-keys"
  *                          target="_top">primary key</a> when updating columns
  *                          of the <a
- *                          href="../../concepts/tables.html#primary-keys"
+ *                          href="../../../concepts/tables/#primary-keys"
  *                          target="_top">primary key</a> or inserting new
  *                          records.  If <code>true</code>, existing records
  *                          with primary key values that match those of a
@@ -18125,19 +18989,19 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
  * @param {String} table_name  Name of the view on which the update operation
  *                             will be performed, in [schema_name.]view_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
  *                             be an existing view.
  * @param {String} world_table_name  Name of the table containing the complete
  *                                   series (track) information, in
  *                                   [schema_name.]table_name format, using
  *                                   standard <a
- *                                   href="../../concepts/tables.html#table-name-resolution"
+ *                                   href="../../../concepts/tables/#table-name-resolution"
  *                                   target="_top">name resolution rules</a>.
  * @param {String} view_name  Name of the view containing the series (tracks)
  *                            which have to be updated, in
  *                            [schema_name.]view_name format, using standard <a
- *                            href="../../concepts/tables.html#table-name-resolution"
+ *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a>.
  * @param {String[]} reserved
  * @param {Object} options  Optional parameters.
@@ -18429,7 +19293,7 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  * @param {String} table_name  Name of the table containing the data to be
  *                             drawn as a chart, in [schema_name.]table_name
  *                             format, using standard <a
- *                             href="../../concepts/tables.html#table-name-resolution"
+ *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {String[]} x_column_names  Names of the columns containing the data
  *                                   mapped to the x axis of a chart.
@@ -19425,7 +20289,7 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * existing graph. Isolines represent curves of equal cost, with cost typically
  * referring to the time or distance assigned as the weights of the underlying
  * graph. See
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * for more information on graphs.
  * .
@@ -19466,7 +20330,7 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * existing graph. Isolines represent curves of equal cost, with cost typically
  * referring to the time or distance assigned as the weights of the underlying
  * graph. See
- * <a href="../../graph_solver/network_graph_solver.html" target="_top">Network
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * for more information on graphs.
  * .
@@ -19481,10 +20345,10 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * @param {String[]} weights_on_edges  Additional weights to apply to the edges
  *                                     of an existing graph. Weights must be
  *                                     specified using <a
- *                                     href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                     href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                     target="_top">identifiers</a>;
  *                                     identifiers are grouped as <a
- *                                     href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                     href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                     target="_top">combinations</a>.
  *                                     Identifiers can be used with existing
  *                                     column names, e.g., 'table.column AS
@@ -19499,10 +20363,10 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * @param {String[]} restrictions  Additional restrictions to apply to the
  *                                 nodes/edges of an existing graph.
  *                                 Restrictions must be specified using <a
- *                                 href="../../graph_solver/network_graph_solver.html#identifiers"
+ *                                 href="../../../graph_solver/network_graph_solver/#identifiers"
  *                                 target="_top">identifiers</a>; identifiers
  *                                 are grouped as <a
- *                                 href="../../graph_solver/network_graph_solver.html#id-combos"
+ *                                 href="../../../graph_solver/network_graph_solver/#id-combos"
  *                                 target="_top">combinations</a>. Identifiers
  *                                 can be used with existing column names,
  *                                 e.g., 'table.column AS
@@ -19532,10 +20396,10 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * @param {String} levels_table  Name of the table to output the isochrones to,
  *                               in [schema_name.]table_name format, using
  *                               standard <a
- *                               href="../../concepts/tables.html#table-name-resolution"
+ *                               href="../../../concepts/tables/#table-name-resolution"
  *                               target="_top">name resolution rules</a> and
  *                               meeting <a
- *                               href="../../concepts/tables.html#table-naming-criteria"
+ *                               href="../../../concepts/tables/#table-naming-criteria"
  *                               target="_top">table naming criteria</a>.  The
  *                               table will contain levels and their
  *                               corresponding WKT geometry. If no value is
@@ -19781,10 +20645,10 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                  <li> 'solve_table': Name of the table to
  *                          host intermediate solve results, in
  *                          [schema_name.]table_name format, using standard <a
- *                          href="../../concepts/tables.html#table-name-resolution"
+ *                          href="../../../concepts/tables/#table-name-resolution"
  *                          target="_top">name resolution rules</a> and meeting
  *                          <a
- *                          href="../../concepts/tables.html#table-naming-criteria"
+ *                          href="../../../concepts/tables/#table-naming-criteria"
  *                          target="_top">table naming criteria</a>.  This
  *                          table will contain the position and cost for each
  *                          vertex in the graph. If the default value is used,
