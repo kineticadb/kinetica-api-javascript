@@ -7,6 +7,9 @@ var gpudbHA = new GPUdb( [`http://${host}:9191`,
                           `http://${host}:9192`
                          ] ); // Multiple hosts as a single list
 
+// Used for uploading and downloading files to and from KiFS
+var fileHandler = new GPUdb.FileHandler(gpudb);
+
 var operation_number = 0;
 
 /*
@@ -42,6 +45,8 @@ var build_callback = function(success, error) {
 // Need global scoping for the type ID and table name
 var type_id;
 var table_name = "my_table";
+var kifs_dir_name = "nodejs_example_dir";
+var upload_filename = __dirname + "/_data/example_data.txt";
 
 var operations = [
     // Clear the table from the database, in case it was created
@@ -216,7 +221,10 @@ var operations = [
 
     // Third group by
     function() {
-        gpudb.aggregate_group_by( table_name, [ "group_id", "sum(col1*10)" ], 0, -9999, {}, build_callback(function(response) {
+        gpudb.aggregate_group_by( table_name,
+                                  [ "group_id", "sum(col1*10)" ],
+                                  0, -9999, {},
+                                  build_callback(function(response) {
             console.log("Third group by results: ");
             console.log(response.data);
         }));
@@ -261,7 +269,42 @@ var operations = [
         }, function(error) {
             console.log("View 'view_3' not available as expected.");
         }));
-    }
+    },
+
+    // Create a KiFS directory
+    function() {
+    	var options = {"no_error_if_exists": "true"};
+	    gpudb.create_directory( kifs_dir_name, options, build_callback(function(response) {
+            console.log("KiFS directory '" + kifs_dir_name + "' has been created!");
+        }, function(error) {
+            console.error("Error during directory creation!");
+        }));
+    },
+
+    // Upload a file to KiFS
+    function() {
+        console.log( "Attempting to upload file '" + upload_filename + "'" );
+        var kifs_home = "/";
+        var options = { file_encoding: 'base64' };
+
+        // Upload the file
+        fileHandler.upload( [ upload_filename ], "/nodejs_example_dir", options,
+                            build_callback(function(response) {
+                                console.log("File has been uploaded");
+                            }, function(error) {
+                                console.log("Error in uploading file!");
+                            } ) );
+    },
+
+    // Show the files
+    function() {
+	    gpudb.show_files( [ kifs_dir_name ], {}, build_callback(function(response) {
+            console.log("Files in KiFS directory '" + kifs_dir_name + "': "
+                        + JSON.stringify( response ) );
+        }, function(error) {
+            console.error("Error during /show/files!");
+        }));
+    },
 ];
 
 next_operation();
@@ -344,5 +387,9 @@ Inserting more records into the table...
 Histogram results:
 { counts: [ 1 ], start: 1.1, end: 2 }
 View 'view_3' not available as expected.
+KiFS directory 'nodejs_example_dir' has been created!
+Attempting to upload file '/home/mmahmud/gisfederal/gpudb-dev/gpudb-dev-v7.1/gpudb-api-javascript/example/_data/example_data.txt'
+File has been uploaded
+Files in KiFS directory 'nodejs_example_dir': {"file_names":["nodejs_example_dir/example_data.txt"],"sizes":[23],"users":["anonymous"],"creation_times":[1615928184],"info":{"multipart_uploads":"{\"uploads_in_progress\":[]}"},"request_time_secs":0.00003}
 
 */

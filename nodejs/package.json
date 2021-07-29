@@ -1,7 +1,7 @@
 {
-  "name": "GPUdb",
-  "version": "7.1.3.0",
-  "description": "GPUdb API",
+  "name": "@kinetica/gpudb",
+  "version": "7.1.4-0",
+  "description": "Kinetica NodeJS Client API",
   "main": "GPUdb.js",
-  "author": "GPUdb Inc."
+  "author": "Kinetica DB Inc."
 }

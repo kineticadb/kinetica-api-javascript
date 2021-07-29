@@ -43,12 +43,12 @@ function GPUdb(url, options) {
      * @type String[]
      * @readonly
      */
-	var urls = (url instanceof Array) ? url : [url];
+    var urls = (url instanceof Array) ? url : [url];
     var initialIndex = Math.floor(Math.random() * urls.length);
     Object.defineProperty(this, "urls", {
-		enumerable: true,
-		value: new GPUdb.RingList(urls, initialIndex)
-	});
+        enumerable: true,
+        value: new GPUdb.RingList(urls, initialIndex)
+    });
 
     /**
      * The URL of the current GPUdb server.
@@ -59,8 +59,8 @@ function GPUdb(url, options) {
      */
     Object.defineProperty(this, "url", {
         get: function() { return this.urls.getCurrentItem(); },
-		enumerable: true
-	});
+        enumerable: true
+    });
 
     if (options !== undefined && options !== null) {
         /**
@@ -807,7 +807,7 @@ GPUdb.Type = function(label, columns) {
  * @param {String} name The name of the column.
  * @param {String} type The data type of the column.
  * @param {...String} [properties] The list of properties that apply to the
-                      column; defaults to none.
+ *                                 column; defaults to none.
  */
 GPUdb.Type.Column = function(name, type, properties) {
     /**
@@ -926,7 +926,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.3.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.4.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1296,6 +1296,9 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
 
 /**
  * Adds a host to an existing cluster.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1320,6 +1323,9 @@ GPUdb.prototype.admin_add_host_request = function(request, callback) {
 
 /**
  * Adds a host to an existing cluster.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String} host_address  IP address of the host that will be added to
  *                               the cluster. This host must have installed the
@@ -1418,11 +1424,14 @@ GPUdb.prototype.admin_add_host = function(host_address, options, callback) {
  *   being added in <code>hosts</code>. The key of each map would be
  *   the configuration parameter name and the value would be the
  *   parameter's value, e.g. '{"rank.gpu":"1"}'
-
+ * <p>
  * This endpoint's processing includes copying all replicated table data to the
  * new rank(s) and therefore could take a long time. The API call may time out
  * if run directly.  It is recommended to run this endpoint asynchronously via
  * {@linkcode GPUdb#create_job}.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1469,11 +1478,14 @@ GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
  *   being added in <code>hosts</code>. The key of each map would be
  *   the configuration parameter name and the value would be the
  *   parameter's value, e.g. '{"rank.gpu":"1"}'
-
+ * <p>
  * This endpoint's processing includes copying all replicated table data to the
  * new rank(s) and therefore could take a long time. The API call may time out
  * if run directly.  It is recommended to run this endpoint asynchronously via
  * {@linkcode GPUdb#create_job}.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String[]} hosts  Array of host IP addresses (matching a
  *                          hostN.address from the gpudb.conf file), or host
@@ -1626,11 +1638,11 @@ GPUdb.prototype.admin_alter_host = function(host, options, callback) {
 };
 
 /**
- * Perform the requested action on a list of one or more job(s). Based on the
- * type of job and the current state of execution, the action may not be
+ * Perform the requested action on a list of one or more job(s). Based
+ * on the type of job and the current state of execution, the action may not be
  * successfully executed. The final result of the attempted actions for each
- * specified job is returned in the status array of the response. See <a
- * href="../../../admin/job_manager/" target="_top">Job Manager</a> for more
+ * specified job is returned in the status array of the response. See
+ * <a href="../../../admin/job_manager/" target="_top">Job Manager</a> for more
  * information.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -1656,11 +1668,11 @@ GPUdb.prototype.admin_alter_jobs_request = function(request, callback) {
 };
 
 /**
- * Perform the requested action on a list of one or more job(s). Based on the
- * type of job and the current state of execution, the action may not be
+ * Perform the requested action on a list of one or more job(s). Based
+ * on the type of job and the current state of execution, the action may not be
  * successfully executed. The final result of the attempted actions for each
- * specified job is returned in the status array of the response. See <a
- * href="../../../admin/job_manager/" target="_top">Job Manager</a> for more
+ * specified job is returned in the status array of the response. See
+ * <a href="../../../admin/job_manager/" target="_top">Job Manager</a> for more
  * information.
  *
  * @param {Number[]} job_ids  Jobs to be modified.
@@ -1691,6 +1703,106 @@ GPUdb.prototype.admin_alter_jobs = function(job_ids, action, options, callback) 
         this.submit_request("/admin/alter/jobs", actual_request, callback);
     } else {
         var data = this.submit_request("/admin/alter/jobs", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Prepares the system for a backup by closing all open file handles after
+ * allowing current active jobs to complete. When the database is in backup
+ * mode, queries that result in a disk write operation will be blocked until
+ * backup mode has been completed by using
+ * {@linkcode GPUdb#admin_backup_end}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.admin_backup_begin_request = function(request, callback) {
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/backup/begin", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/backup/begin", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Prepares the system for a backup by closing all open file handles after
+ * allowing current active jobs to complete. When the database is in backup
+ * mode, queries that result in a disk write operation will be blocked until
+ * backup mode has been completed by using
+ * {@linkcode GPUdb#admin_backup_end}.
+ *
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.admin_backup_begin = function(options, callback) {
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/backup/begin", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/backup/begin", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Restores the system to normal operating mode after a backup has completed,
+ * allowing any queries that were blocked to complete.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.admin_backup_end_request = function(request, callback) {
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/backup/end", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/backup/end", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Restores the system to normal operating mode after a backup has completed,
+ * allowing any queries that were blocked to complete.
+ *
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.admin_backup_end = function(options, callback) {
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/admin/backup/end", actual_request, callback);
+    } else {
+        var data = this.submit_request("/admin/backup/end", actual_request);
         return data;
     }
 };
@@ -1760,8 +1872,8 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
 };
 
 /**
- * Rebalance the data in the cluster so that all nodes contain an equal number
- * of records approximately and/or rebalance the shards to be equally
+ * Rebalance the data in the cluster so that all nodes contain an equal
+ * number of records approximately and/or rebalance the shards to be equally
  * distributed (as much as possible) across all the ranks.
  * <p>
  * The database must be offline for this operation, see
@@ -1788,7 +1900,8 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
- * this endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ * this
+ * endpoint asynchronously via {@linkcode GPUdb#create_job}.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1811,8 +1924,8 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
 };
 
 /**
- * Rebalance the data in the cluster so that all nodes contain an equal number
- * of records approximately and/or rebalance the shards to be equally
+ * Rebalance the data in the cluster so that all nodes contain an equal
+ * number of records approximately and/or rebalance the shards to be equally
  * distributed (as much as possible) across all the ranks.
  * <p>
  * The database must be offline for this operation, see
@@ -1839,7 +1952,8 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
- * this endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ * this
+ * endpoint asynchronously via {@linkcode GPUdb#create_job}.
  *
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -1963,6 +2077,9 @@ GPUdb.prototype.admin_rebalance = function(options, callback) {
  * the host to be removed has the graph server or SQL planner running on it,
  * these must be manually switched over to a new host using
  * {@linkcode GPUdb#admin_switchover}.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -1993,6 +2110,9 @@ GPUdb.prototype.admin_remove_host_request = function(request, callback) {
  * the host to be removed has the graph server or SQL planner running on it,
  * these must be manually switched over to a new host using
  * {@linkcode GPUdb#admin_switchover}.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String} host  Identifies the host this applies to. Can be the host
  *                       address, or formatted as 'hostN' where N is the host
@@ -2029,13 +2149,15 @@ GPUdb.prototype.admin_remove_host = function(host, options, callback) {
 };
 
 /**
- * Remove one or more ranks from an existing Kinetica cluster. All data will be
- * rebalanced to other ranks before the rank(s) is removed unless the
- * <code>rebalance_sharded_data</code> or <code>rebalance_unsharded_data</code>
- * parameters are set to <code>false</code> in the <code>options</code>, in
- * which case the corresponding <a href="../../../concepts/tables/#sharding"
- * target="_top">sharded data</a> and/or unsharded data (a.k.a. <a
- * href="../../../concepts/tables/#random-sharding"
+ * Remove one or more ranks from an existing Kinetica cluster. All data
+ * will be rebalanced to other ranks before the rank(s) is removed unless the
+ * <code>rebalance_sharded_data</code> or
+ * <code>rebalance_unsharded_data</code> parameters are set to
+ * <code>false</code> in the
+ * <code>options</code>, in which case the corresponding
+ * <a href="../../../concepts/tables/#sharding" target="_top">sharded data</a>
+ * and/or unsharded data (a.k.a.
+ * <a href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>) will be deleted.
  * <p>
  * The database must be offline for this operation, see
@@ -2043,7 +2165,11 @@ GPUdb.prototype.admin_remove_host = function(host, options, callback) {
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
- * this endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ * this
+ * endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2067,13 +2193,15 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
 };
 
 /**
- * Remove one or more ranks from an existing Kinetica cluster. All data will be
- * rebalanced to other ranks before the rank(s) is removed unless the
- * <code>rebalance_sharded_data</code> or <code>rebalance_unsharded_data</code>
- * parameters are set to <code>false</code> in the <code>options</code>, in
- * which case the corresponding <a href="../../../concepts/tables/#sharding"
- * target="_top">sharded data</a> and/or unsharded data (a.k.a. <a
- * href="../../../concepts/tables/#random-sharding"
+ * Remove one or more ranks from an existing Kinetica cluster. All data
+ * will be rebalanced to other ranks before the rank(s) is removed unless the
+ * <code>rebalance_sharded_data</code> or
+ * <code>rebalance_unsharded_data</code> parameters are set to
+ * <code>false</code> in the
+ * <code>options</code>, in which case the corresponding
+ * <a href="../../../concepts/tables/#sharding" target="_top">sharded data</a>
+ * and/or unsharded data (a.k.a.
+ * <a href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>) will be deleted.
  * <p>
  * The database must be offline for this operation, see
@@ -2081,7 +2209,11 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
- * this endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ * this
+ * endpoint asynchronously via {@linkcode GPUdb#create_job}.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String[]} ranks  Each array value designates one or more ranks to
  *                          remove from the cluster. Values can be formatted as
@@ -2429,6 +2561,9 @@ GPUdb.prototype.admin_shutdown = function(exit_type, authorization, options, cal
 /**
  * Manually switchover one or more processes to another host. Individual ranks
  * or entire hosts may be moved to another host.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -2455,6 +2590,9 @@ GPUdb.prototype.admin_switchover_request = function(request, callback) {
 /**
  * Manually switchover one or more processes to another host. Individual ranks
  * or entire hosts may be moved to another host.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String[]} processes  Indicates the process identifier to switchover
  *                              to another host. Options are 'hostN' and
@@ -2964,22 +3102,6 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  <li> 'view_id': ID of view of which the
  *                          result table will be a member.  The default value
  *                          is ''.
- *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../../rm/concepts/"
- *                          target="_top">Resource Management Concepts</a> for
- *                          information about how resources are managed, <a
- *                          href="../../../rm/concepts/" target="_top">Tier
- *                          Strategy Concepts</a> for how resources are
- *                          targeted for VRAM, and <a
- *                          href="../../../rm/usage/#tier-strategies"
- *                          target="_top">Tier Strategy Usage</a> for how to
- *                          specify a table's priority in VRAM.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
  *                                  <li> 'pivot': pivot column
  *                                  <li> 'pivot_values': The value list
  *                          provided will become the column headers in the
@@ -4166,22 +4288,6 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                          <code>result_table</code>.
  *                                  <li> 'view_id': view this result table is
  *                          part of.  The default value is ''.
- *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../../rm/concepts/"
- *                          target="_top">Resource Management Concepts</a> for
- *                          information about how resources are managed, <a
- *                          href="../../../rm/concepts/" target="_top">Tier
- *                          Strategy Concepts</a> for how resources are
- *                          targeted for VRAM, and <a
- *                          href="../../../rm/usage/#tier-strategies"
- *                          target="_top">Tier Strategy Usage</a> for how to
- *                          specify a table's priority in VRAM.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
  *                                  <li> 'create_indexes': Comma-separated list
  *                          of columns on which to create indexes on the table
  *                          specified in <code>result_table</code>. The columns
@@ -4383,6 +4489,10 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 <li> 's3_region': Name of
  *                                         the Amazon S3 region where the given
  *                                         bucket is located
+ *                                                 <li> 's3_aws_role_arn':
+ *                                         Amazon IAM Role ARN which has
+ *                                         required S3 permissions that can be
+ *                                         assumed for the given S3 IAM user
  *                                                 <li> 'hdfs_kerberos_keytab':
  *                                         Kerberos keytab file location for
  *                                         the given HDFS user
@@ -4416,6 +4526,13 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 <li> 'azure_oauth_token':
  *                                         Oauth token to access given storage
  *                                         container
+ *                                                 <li> 'kafka_url': The
+ *                                         publicly-accessible full path URL to
+ *                                         the kafka broker, e.g.,
+ *                                         'http://172.123.45.67:9300'.
+ *                                                 <li> 'kafka_topic_name':
+ *                                         Name of the Kafka topic to use as
+ *                                         the data source
  *                                         </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
@@ -4926,6 +5043,18 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       'enable_overlapped_equi_join': Enable
  *                                       overlapped-equi-join filter.  The
  *                                       default value is 'true'.
+ *                                               <li> 'kafka_batch_size':
+ *                                       Maximum number of records to be read
+ *                                       in a single kafka batched request.
+ *                                       The default value is '1000'.
+ *                                               <li> 'kafka_wait_time':
+ *                                       Maximum number of seconds to wait in a
+ *                                       single kafka batched request.  The
+ *                                       default value is '30'.
+ *                                               <li> 'kafka_timeout': Number
+ *                                       of seconds after which kakfa poll will
+ *                                       timeout if datasource has no records.
+ *                                       The default value is '5'.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
@@ -5245,12 +5374,18 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         target="_top">tier strategy</a> for the table and
  *                         its columns to the one specified in
  *                         <code>value</code>, replacing the existing tier
- *                         strategy in its entirety. See <a
- *                         href="../../../rm/concepts/#tier-strategies"
- *                         target="_top">tier strategy usage</a> for format and
- *                         <a href="../../../rm/usage/#tier-strategies"
- *                         target="_top">tier strategy examples</a> for
- *                         examples.
+ *                         strategy in its entirety.
+ *                                 <li> 'cancel_datasource_subscription':
+ *                         Permanently unsubscribe a data source that is
+ *                         loading continuously as a stream. The data source
+ *                         can be kafka / S3 / Azure.
+ *                                 <li> 'pause_datasource_subscription':
+ *                         Temporarily unsubscribe a data source that is
+ *                         loading continuously as a stream. The data source
+ *                         can be kafka / S3 / Azure.
+ *                                 <li> 'resume_datasource_subscription':
+ *                         Resubscribe to a paused data source subscription.
+ *                         The data source can be kafka / S3 / Azure.
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
  *                        <code>action</code>.  For example, if
@@ -5336,13 +5471,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          target="_top">tier strategy</a> for the table and
  *                          its columns when <code>action</code> is
  *                          <code>set_strategy_definition</code>, replacing the
- *                          existing tier strategy in its entirety. See <a
- *                          href="../../../rm/concepts/#tier-strategies"
- *                          target="_top">tier strategy usage</a> for format
- *                          and <a href="../../../rm/usage/#tier-strategies"
- *                          target="_top">tier strategy examples</a> for
- *                          examples.  This option will be ignored if
- *                          <code>value</code> is also specified.
+ *                          existing tier strategy in its entirety.
  *                                  <li> 'index_type': Type of index to create,
  *                          when <code>action</code> is
  *                          <code>create_index</code>, or to delete, when
@@ -5689,6 +5818,61 @@ GPUdb.prototype.alter_user = function(name, action, value, options, callback) {
         this.submit_request("/alter/user", actual_request, callback);
     } else {
         var data = this.submit_request("/alter/user", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Alters a video.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.alter_video_request = function(request, callback) {
+    var actual_request = {
+        path: request.path,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/video", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/video", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Alters a video.
+ *
+ * @param {String} path  Fully-qualified <a href="../../../tools/kifs/"
+ *                       target="_top">KiFS</a> path to the video to be
+ *                       altered.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the video.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.alter_video = function(path, options, callback) {
+    var actual_request = {
+        path: path,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/video", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/video", actual_request);
         return data;
     }
 };
@@ -6334,6 +6518,9 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                          S3 bucket to use as the data source
  *                                  <li> 's3_region': Name of the Amazon S3
  *                          region where the given bucket is located
+ *                                  <li> 's3_aws_role_arn': Amazon IAM Role ARN
+ *                          which has required S3 permissions that can be
+ *                          assumed for the given S3 IAM user
  *                                  <li> 'hdfs_kerberos_keytab': Kerberos
  *                          keytab file location for the given HDFS user
  *                                  <li> 'hdfs_delegation_token': Delegation
@@ -6359,6 +6546,16 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                          the data source
  *                                  <li> 'azure_oauth_token': Oauth token to
  *                          access given storage container
+ *                                  <li> 'is_stream': To load from S3/Azure as
+ *                          a stream continuously.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'kafka_topic_name': Name of the Kafka
+ *                          topic to use as the data source
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -6383,6 +6580,71 @@ GPUdb.prototype.create_datasource = function(name, location, user_name, password
 };
 
 /**
+ * Creates a new directory in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. The new
+ * directory serves as a location in which the user can upload files using
+ * {@linkcode GPUdb#upload_files}.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_directory_request = function(request, callback) {
+    var actual_request = {
+        directory_name: request.directory_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/directory", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new directory in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. The new
+ * directory serves as a location in which the user can upload files using
+ * {@linkcode GPUdb#upload_files}.
+ *
+ * @param {String} directory_name  Name of the directory in KiFS to be created.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_exists': If
+ *                          <code>true</code>, does not return an error if the
+ *                          directory already exists
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_directory = function(directory_name, options, callback) {
+    var actual_request = {
+        directory_name: directory_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/directory", actual_request);
+        return data;
+    }
+};
+
+/**
  * Creates a new graph network using given nodes, edges, weights, and
  * restrictions.
 
@@ -6390,9 +6652,9 @@ GPUdb.prototype.create_datasource = function(name, location, user_name, password
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
- * and/or some <a href="../../../graph_solver/examples/" target="_top">graph
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
+ * and/or some <a href="../../../guide-tags/graph/" target="_top">graph
  * examples</a> before
  * using this endpoint.
  *
@@ -6430,9 +6692,9 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
- * and/or some <a href="../../../graph_solver/examples/" target="_top">graph
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
+ * and/or some <a href="../../../guide-tags/graph/" target="_top">graph
  * examples</a> before
  * using this endpoint.
  *
@@ -6606,10 +6868,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'save_persist': If set to
  *                          <code>true</code>, the graph will be saved in the
  *                          persist directory (see the <a
- *                          href="../../../config/" target="_top">config
- *                          reference</a> for more information). If set to
- *                          <code>false</code>, the graph will be removed when
- *                          the graph server is shutdown.
+ *                          href="../../../config/#config-main-persistence"
+ *                          target="_top">config reference</a> for more
+ *                          information). If set to <code>false</code>, the
+ *                          graph will be removed when the graph server is
+ *                          shutdown.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -7101,6 +7364,57 @@ GPUdb.prototype.create_materialized_view = function(table_name, options, callbac
 };
 
 /**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.create_monitor_table_request = function(request, callback) {
+    var actual_request = {
+        monitor_table_name: request.monitor_table_name,
+        table_name: request.table_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/monitortable", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/monitortable", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} monitor_table_name
+ * @param {String} table_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.create_monitor_table = function(monitor_table_name, table_name, options, callback) {
+    var actual_request = {
+        monitor_table_name: monitor_table_name,
+        table_name: table_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/monitortable", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/monitortable", actual_request);
+        return data;
+    }
+};
+
+/**
  * Creates an instance (proc) of the
  * <a href="../../../concepts/udf/" target="_top">user-defined functions</a>
  * (UDF) specified by the
@@ -7168,6 +7482,10 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                        file names may include subdirectory names (e.g.
  *                        'subdir/file') but must not
  *                        resolve to a directory above the root for the proc.
+ *                        Files may be loaded from existing files in KiFS.
+ *                        Those file names should be
+ *                        prefixed with the uri kifs:// and the values in the
+ *                        map should be empty
  * @param {String} command  The command (excluding arguments) that will be
  *                          invoked when
  *                          the proc is executed. It will be invoked from the
@@ -7370,22 +7688,6 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          for any column name, the alias must be used, rather
  *                          than the original column name.  The default value
  *                          is ''.
- *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../../rm/concepts/"
- *                          target="_top">Resource Management Concepts</a> for
- *                          information about how resources are managed, <a
- *                          href="../../../rm/concepts/" target="_top">Tier
- *                          Strategy Concepts</a> for how resources are
- *                          targeted for VRAM, and <a
- *                          href="../../../rm/usage/#tier-strategies"
- *                          target="_top">Tier Strategy Usage</a> for how to
- *                          specify a table's priority in VRAM.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
  *                                  <li> 'chunk_size': Indicates the number of
  *                          records per chunk to be used for this projection.
  *                                  <li> 'create_indexes': Comma-separated list
@@ -7564,6 +7866,9 @@ GPUdb.prototype.create_resource_group = function(name, tier_attributes, ranking,
 
 /**
  * Creates a new role.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -7588,6 +7893,9 @@ GPUdb.prototype.create_role_request = function(request, callback) {
 
 /**
  * Creates a new role.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String} name  Name of the role to be created. Must contain only
  *                       lowercase letters, digits, and underscores, and cannot
@@ -7681,6 +7989,60 @@ GPUdb.prototype.create_schema = function(schema_name, options, callback) {
         this.submit_request("/create/schema", actual_request, callback);
     } else {
         var data = this.submit_request("/create/schema", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.create_state_table_request = function(request, callback) {
+    var actual_request = {
+        table_name: request.table_name,
+        input_table_name: request.input_table_name,
+        init_table_name: request.init_table_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/statetable", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/statetable", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} table_name
+ * @param {String} input_table_name
+ * @param {String} init_table_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.create_state_table = function(table_name, input_table_name, init_table_name, options, callback) {
+    var actual_request = {
+        table_name: table_name,
+        input_table_name: input_table_name,
+        init_table_name: init_table_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/statetable", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/statetable", actual_request);
         return data;
     }
 };
@@ -7862,9 +8224,11 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          href="../../../concepts/tables/#partitioning-by-interval"
  *                          target="_top">interval partitioning</a>, <a
  *                          href="../../../concepts/tables/#partitioning-by-list"
- *                          target="_top">list partitioning</a>, or <a
+ *                          target="_top">list partitioning</a>, <a
  *                          href="../../../concepts/tables/#partitioning-by-hash"
- *                          target="_top">hash partitioning</a> for example
+ *                          target="_top">hash partitioning</a>, or <a
+ *                          href="../../../concepts/tables/#partitioning-by-series"
+ *                          target="_top">series partitioning</a> for example
  *                          formats.
  *                                  <li> 'is_automatic_partition': If
  *                          <code>true</code>, a new partition will be created
@@ -7903,12 +8267,8 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'strategy_definition': The <a
  *                          href="../../../rm/concepts/#tier-strategies"
  *                          target="_top">tier strategy</a> for the table and
- *                          its columns. See <a
- *                          href="../../../rm/concepts/#tier-strategies"
- *                          target="_top">tier strategy usage</a> for format
- *                          and <a href="../../../rm/usage/#tier-strategies"
- *                          target="_top">tier strategy examples</a> for
- *                          examples.
+ *                          its columns.
+ *                                  <li> 'is_virtual_union': <DEVELOPER>
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -7998,6 +8358,9 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  * @param {String[]} filepaths  A list of file paths from which data will be
  *                              sourced; wildcards (*) can be used
  *                              to specify a group of files.
+ *                              For paths in KiFS, use the uri prefix of
+ *                              kifs:// followed by the full path to a file or
+ *                              directory.
  *                              If an external data source is specified in
  *                              <code>datasource_name</code>, these file
  *                              paths must resolve to accessible files at that
@@ -8103,6 +8466,9 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                               <li> 'HASH': Use <a
  *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>.
+ *                                               <li> 'SERIES': Use <a
+ *                                       href="../../../concepts/tables/#partitioning-by-series"
+ *                                       target="_top">series partitioning</a>.
  *                                       </ul>
  *                                               <li> 'partition_keys':
  *                                       Comma-separated list of partition
@@ -8178,15 +8544,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       The <a
  *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy</a>
- *                                       for the table and its columns. See
- *                                       <a
- *                                       href="../../../rm/concepts/#tier-strategies"
- *                                       target="_top">tier strategy usage</a>
- *                                       for format and
- *                                       <a
- *                                       href="../../../rm/usage/#tier-strategies"
- *                                       target="_top">tier strategy
- *                                       examples</a> for examples.
+ *                                       for the table and its columns.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -8328,6 +8686,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          format; e.g., CSV, TSV, PSV, etc.
  *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'json': Json file format
+ *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': For
@@ -8413,6 +8772,19 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          on this table.
  *                          </ul>
  *                          The default value is 'manual'.
+ *                                  <li> 'subscribe': Continuously poll the
+ *                          data source to check for new data and load it into
+ *                          the table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'poll_interval': If <code>true</code>,
+ *                          the number of seconds between attempts to load
+ *                          external files into the table. If zero, polling
+ *                          will be continuous.
  *                                  <li> 'text_comment_string': Specifies the
  *                          character string that should be interpreted as a
  *                          comment line
@@ -8501,7 +8873,30 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          column types so that 'all' values will fit with
  *                          minimum data scanned
  *                          </ul>
- *                          The default value is 'accuracy'.
+ *                          The default value is 'speed'.
+ *                                  <li> 'table_insert_mode': Optional:
+ *                          table_insert_mode. When inserting records from
+ *                          multiple files: if table_per_file then insert from
+ *                          each file into a new table. Currently supported
+ *                          only for shapefiles.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'single'
+ *                                  <li> 'table_per_file'
+ *                          </ul>
+ *                          The default value is 'single'.
+ *                                  <li> 'kafka_group_id': The group id to be
+ *                          used consuming data from a kakfa topic (valid only
+ *                          for kafka datasource subscriptions).
+ *                                  <li> 'text_search_columns': Add
+ *                          'text_search' property to internally inferenced
+ *                          string columns. Comma seperated list of column
+ *                          names or '*' for all columns. To add text_search
+ *                          property only to string columns of minimum size,
+ *                          set also the option 'text_search_min_column_length'
+ *                                  <li> 'text_search_min_column_length': Set
+ *                          minimum column size. Used only when
+ *                          'text_search_columns' has a value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -8971,9 +9366,13 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             numeric and string type columns; makes the
  *                             column available for GPU queries.
  *                                     <li> 'text_search': Valid only for
- *                             'string' columns. Enables full text search for
- *                             string columns. Can be set independently of
- *                             <code>data</code> and <code>store_only</code>.
+ *                             select 'string' columns. Enables full text
+ *                             search--see <a
+ *                             href="../../../concepts/full_text_search/"
+ *                             target="_top">Full Text Search</a> for details
+ *                             and applicable string column types. Can be set
+ *                             independently of <code>data</code> and
+ *                             <code>store_only</code>.
  *                                     <li> 'store_only': Persist the column
  *                             value but do not make it available to queries
  *                             (e.g. {@linkcode GPUdb#filter})-i.e. it is
@@ -9270,22 +9669,6 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                          output table. If the schema provided is
  *                          non-existent, it will be automatically created.
  *                          The default value is ''.
- *                                  <li> 'materialize_on_gpu': No longer used.
- *                          See <a href="../../../rm/concepts/"
- *                          target="_top">Resource Management Concepts</a> for
- *                          information about how resources are managed, <a
- *                          href="../../../rm/concepts/" target="_top">Tier
- *                          Strategy Concepts</a> for how resources are
- *                          targeted for VRAM, and <a
- *                          href="../../../rm/usage/#tier-strategies"
- *                          target="_top">Tier Strategy Usage</a> for how to
- *                          specify a table's priority in VRAM.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
  *                                  <li> 'mode': If <code>merge_views</code>,
  *                          then this operation will merge the provided views.
  *                          All <code>table_names</code> must be views from the
@@ -9386,6 +9769,9 @@ GPUdb.prototype.create_union = function(table_name, table_names, input_column_na
 /**
  * Creates a new external user (a user whose credentials are managed by an
  * external LDAP).
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9411,6 +9797,9 @@ GPUdb.prototype.create_user_external_request = function(request, callback) {
 /**
  * Creates a new external user (a user whose credentials are managed by an
  * external LDAP).
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String} name  Name of the user to be created. Must exactly match the
  *                       user's name in the external LDAP, prefixed with a @.
@@ -9494,6 +9883,270 @@ GPUdb.prototype.create_user_internal = function(name, password, options, callbac
         this.submit_request("/create/user/internal", actual_request, callback);
     } else {
         var data = this.submit_request("/create/user/internal", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a job to generate a sequence of raster images that visualize data
+ * over a specified time.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_video_request = function(request, callback) {
+    var actual_request = {
+        attribute: request.attribute,
+        begin: request.begin,
+        duration_seconds: request.duration_seconds,
+        end: request.end,
+        frames_per_second: request.frames_per_second,
+        style: request.style,
+        path: request.path,
+        style_parameters: request.style_parameters,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/video", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/video", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a job to generate a sequence of raster images that visualize data
+ * over a specified time.
+ *
+ * @param {String} attribute  The animated attribute to map to the video's
+ *                            frames. Must be present in the LAYERS specified
+ *                            for the visualization. This is often a
+ *                            time-related field but may be any numeric type.
+ * @param {String} begin  The start point for the video. Accepts an expression
+ *                        evaluable over the <code>attribute</code>.
+ * @param {Number} duration_seconds  Seconds of video to produce
+ * @param {String} end  The end point for the video. Accepts an expression
+ *                      evaluable over the <code>attribute</code>.
+ * @param {Number} frames_per_second  The presentation frame rate of the
+ *                                    encoded video in frames per second.
+ * @param {String} style  The name of the visualize mode; should correspond to
+ *                        the schema used for the <code>style_parameters</code>
+ *                        field.
+ *                        Supported values:
+ *                        <ul>
+ *                                <li> 'chart'
+ *                                <li> 'raster'
+ *                                <li> 'classbreak'
+ *                                <li> 'contour'
+ *                                <li> 'heatmap'
+ *                                <li> 'labels'
+ *                        </ul>
+ * @param {String} path  Fully-qualified <a href="../../../tools/kifs/"
+ *                       target="_top">KiFS</a> path.  Write access is
+ *                       required. A file must not exist at that path, unless
+ *                       <code>replace_if_exists</code> is <code>true</code>.
+ * @param {String} style_parameters  A string containing the JSON-encoded
+ *                                   visualize request.  Must correspond to the
+ *                                   visualize mode specified in the
+ *                                   <code>style</code> field.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the video.
+ *                                  <li> 'window': Specified using the
+ *                          data-type corresponding to the
+ *                          <code>attribute</code>. For a window of size W, a
+ *                          video frame rendered for time t will visualize data
+ *                          in the interval [t-W,t]. The minimum window size is
+ *                          the interval between successive frames.  The
+ *                          minimum value is the default.  If a value less than
+ *                          the minimum value is specified, it is replaced with
+ *                          the minimum window size.  Larger values will make
+ *                          changes throughout the video appear more smooth
+ *                          while smaller values will capture fast variations
+ *                          in the data.
+ *                                  <li> 'no_error_if_exists': If
+ *                          <code>true</code>, does not return an error if the
+ *                          video already exists.  Ignored if
+ *                          <code>replace_if_exists</code> is
+ *                          <code>true</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'false'
+ *                                  <li> 'true'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'replace_if_exists': If
+ *                          <code>true</code>, deletes any existing video with
+ *                          the same path before creating a new video.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'false'
+ *                                  <li> 'true'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_video = function(attribute, begin, duration_seconds, end, frames_per_second, style, path, style_parameters, options, callback) {
+    var actual_request = {
+        attribute: attribute,
+        begin: begin,
+        duration_seconds: duration_seconds,
+        end: end,
+        frames_per_second: frames_per_second,
+        style: style,
+        path: path,
+        style_parameters: style_parameters,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/video", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/video", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes a directory from <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.delete_directory_request = function(request, callback) {
+    var actual_request = {
+        directory_name: request.directory_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/directory", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes a directory from <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>.
+ *
+ * @param {String} directory_name  Name of the directory in KiFS to be deleted.
+ *                                 The directory must contain no files, unless
+ *                                 <code>recursive</code> is <code>true</code>
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'recursive': If <code>true</code>,
+ *                          will delete directory and all files residing in it.
+ *                          If false, directory must be empty for deletion.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>true</code>, no error is returned if
+ *                          specified directory does not exist
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.delete_directory = function(directory_name, options, callback) {
+    var actual_request = {
+        directory_name: directory_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/directory", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes one or more files from <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.delete_files_request = function(request, callback) {
+    var actual_request = {
+        file_names: request.file_names,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/files", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Deletes one or more files from <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>.
+ *
+ * @param {String[]} file_names  An array of names of files to be deleted.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>true</code>, no error is returned if a
+ *                          specified file does not exist
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.delete_files = function(file_names, options, callback) {
+    var actual_request = {
+        file_names: file_names,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/delete/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/delete/files", actual_request);
         return data;
     }
 };
@@ -9765,6 +10418,9 @@ GPUdb.prototype.delete_resource_group = function(name, options, callback) {
 
 /**
  * Deletes an existing role.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9789,6 +10445,9 @@ GPUdb.prototype.delete_role_request = function(request, callback) {
 
 /**
  * Deletes an existing role.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String} name  Name of the role to be deleted. Must be an existing
  *                       role.
@@ -9814,6 +10473,9 @@ GPUdb.prototype.delete_role = function(name, options, callback) {
 
 /**
  * Deletes an existing user.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9838,6 +10500,9 @@ GPUdb.prototype.delete_user_request = function(request, callback) {
 
 /**
  * Deletes an existing user.
+ * <p>
+ * <b>Note:</b> This method should be used for on-premise deployments only.
+ * <p>
  *
  * @param {String} name  Name of the user to be deleted. Must be an existing
  *                       user.
@@ -9857,6 +10522,91 @@ GPUdb.prototype.delete_user = function(name, options, callback) {
         this.submit_request("/delete/user", actual_request, callback);
     } else {
         var data = this.submit_request("/delete/user", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Downloads one or more files from <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.download_files_request = function(request, callback) {
+    var actual_request = {
+        file_names: request.file_names,
+        read_offsets: request.read_offsets,
+        read_lengths: request.read_lengths,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/download/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/download/files", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Downloads one or more files from <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>.
+ *
+ * @param {String[]} file_names  An array of the file names to download from
+ *                               KiFS. The full path must be provided.
+ * @param {Number[]} read_offsets  An array of starting byte offsets from which
+ *                                 to read each
+ *                                 respective file in <code>file_names</code>.
+ *                                 Must either be empty or the same length
+ *                                 as <code>file_names</code>. If empty, files
+ *                                 are downloaded in their entirety. If not
+ *                                 empty, <code>read_lengths</code> must also
+ *                                 not be empty.
+ * @param {Number[]} read_lengths  Array of number of bytes to read from each
+ *                                 respective file
+ *                                 in <code>file_names</code>. Must either be
+ *                                 empty or the same length as
+ *                                 <code>file_names</code>. If empty, files are
+ *                                 downloaded in their entirety. If not
+ *                                 empty, <code>read_offsets</code> must also
+ *                                 not be empty.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'file_encoding': Encoding to be
+ *                          applied to the output file data. When using JSON
+ *                          serialization it is recommended to specify this as
+ *                          <code>base64</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'base64': Apply base64 encoding to the
+ *                          output file data.
+ *                                  <li> 'none': Do not apply any encoding to
+ *                          the output file data.
+ *                          </ul>
+ *                          The default value is 'none'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.download_files = function(file_names, read_offsets, read_lengths, options, callback) {
+    var actual_request = {
+        file_names: file_names,
+        read_offsets: read_offsets,
+        read_lengths: read_lengths,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/download/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/download/files", actual_request);
         return data;
     }
 };
@@ -10346,19 +11096,16 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                          from the first run ID specified in the list that
  *                          includes that table will be used.  The default
  *                          value is ''.
- *                                  <li> 'kifs_input_dirs': A comma-delimited
- *                          list of KiFS directories whose local files will be
- *                          made directly accessible to the proc through the
- *                          API. (All KiFS files, local or not, are also
- *                          accessible through the file system below the KiFS
- *                          mount point.) Each name specified must the name of
- *                          an existing KiFS directory.  The default value is
- *                          ''.
  *                                  <li> 'run_tag': A string that, if not
  *                          empty, can be used in subsequent calls to
  *                          {@linkcode GPUdb#show_proc_status} or
  *                          {@linkcode GPUdb#kill_proc} to identify the proc
  *                          instance.  The default value is ''.
+ *                                  <li> 'max_output_lines': The maximum number
+ *                          of lines of output from stdout and stderr to return
+ *                          via {@linkcode GPUdb#show_proc_status}. If the
+ *                          number of lines output exceeds the maximum, earlier
+ *                          lines are discarded.  The default value is '100'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -13193,6 +13940,75 @@ GPUdb.prototype.grant_permission_datasource = function(name, permission, datasou
 };
 
 /**
+ * Grants a <a href="../../../tools/kifs/" target="_top">KiFS</a>
+ * directory-level permission to a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.grant_permission_directory_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        directory_name: request.directory_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/directory", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Grants a <a href="../../../tools/kifs/" target="_top">KiFS</a>
+ * directory-level permission to a user or role.
+ *
+ * @param {String} name  Name of the user or role to which the permission will
+ *                       be granted. Must be an existing user or role.
+ * @param {String} permission  Permission to grant to the user or role.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'directory_read': For files in the
+ *                             directory, access to list files, download files,
+ *                             or use files in server side functions
+ *                                     <li> 'directory_write': Access to upload
+ *                             files to, or delete files from, the directory. A
+ *                             user or role with write access automatically has
+ *                             read access
+ *                             </ul>
+ * @param {String} directory_name  Name of the KiFS directory to which the
+ *                                 permission grants access. An empty directory
+ *                                 name grants access to all KiFS directories
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.grant_permission_directory = function(name, permission, directory_name, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        directory_name: directory_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/grant/permission/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/grant/permission/directory", actual_request);
+        return data;
+    }
+};
+
+/**
  * Grants a proc-level permission to a user or role.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -13452,6 +14268,120 @@ GPUdb.prototype.grant_role = function(role, member, options, callback) {
         this.submit_request("/grant/role", actual_request, callback);
     } else {
         var data = this.submit_request("/grant/role", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Checks if the specified user has the specified permission on the specified
+ * object.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.has_permission_request = function(request, callback) {
+    var actual_request = {
+        name: (request.name !== undefined && request.name !== null) ? request.name : "",
+        target: request.target,
+        permission: request.permission,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/has/permission", actual_request, callback);
+    } else {
+        var data = this.submit_request("/has/permission", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Checks if the specified user has the specified permission on the specified
+ * object.
+ *
+ * @param {String} name  Name of the user for which the permission is being
+ *                       checked. Must be an existing user. If blank, will use
+ *                       the current user.
+ * @param {String} target  Name of object to check for the requested
+ *                         permission.  It is recommended to use a
+ *                         fully-qualified name when possible.
+ * @param {String} permission  Permission to check for.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'connect': Connect access on the
+ *                             given data source
+ *                                     <li> 'credential_admin': Full read/write
+ *                             and administrative access on the credential.
+ *                                     <li> 'credential_read': Ability to read
+ *                             and use the credential.
+ *                                     <li> 'directory_read': For files in the
+ *                             directory, access to list files, download files,
+ *                             or use files in server side functions
+ *                                     <li> 'directory_write': Access to upload
+ *                             files to, or delete files from, the directory. A
+ *                             user with write access automatically has read
+ *                             access
+ *                                     <li> 'proc_execute': Execute access to
+ *                             the UDF.
+ *                                     <li> 'role': User is a member of this
+ *                             role (including indirectly).
+ *                                     <li> 'sql_proc_execute': Execute access
+ *                             to the SQL proc.
+ *                                     <li> 'system_admin': Full access to all
+ *                             data and system functions.
+ *                                     <li> 'system_read': Read-only access to
+ *                             all tables.
+ *                                     <li> 'system_user_admin': Access to
+ *                             administer users and roles that do not have
+ *                             system_admin permission.
+ *                                     <li> 'system_write': Read and write
+ *                             access to all tables.
+ *                                     <li> 'table_admin': Full read/write and
+ *                             administrative access to the table.
+ *                                     <li> 'table_delete': Delete access to
+ *                             the table.
+ *                                     <li> 'table_insert': Insert access to
+ *                             the table.
+ *                                     <li> 'table_read': Read access to the
+ *                             table.
+ *                                     <li> 'table_update': Update access to
+ *                             the table.
+ *                             </ul>
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>false</code> will return an error if the
+ *                          provided <code>target</code> does not exist or is
+ *                          blank. If <code>true</code> then it will return
+ *                          <code>false</code> for <code>has_permission</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.has_permission = function(name, target, permission, options, callback) {
+    var actual_request = {
+        name: (name !== undefined && name !== null) ? name : "",
+        target: target,
+        permission: permission,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/has/permission", actual_request, callback);
+    } else {
+        var data = this.submit_request("/has/permission", actual_request);
         return data;
     }
 };
@@ -13913,7 +14843,7 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
  * the file header's names may be provided to <code>columns_to_load</code>
  * instead of
  * numbers, but ranges are not supported.
-
+ * <p>
  * Returns once all files are processed.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -13959,7 +14889,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  * the file header's names may be provided to <code>columns_to_load</code>
  * instead of
  * numbers, but ranges are not supported.
-
+ * <p>
  * Returns once all files are processed.
  *
  * @param {String} table_name  Name of the table into which the data will be
@@ -13988,6 +14918,10 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                              will be defaulted to a tab character. If the
  *                              first path ends in .psv, the text delimiter
  *                              will be defaulted to a pipe character (|).
+ *                              For paths in <a href="../../../tools/kifs/"
+ *                              target="_top">KiFS</a>, use the uri prefix of
+ *                              kifs:// followed by the full path to a file or
+ *                              directory
  * @param {Object} modify_columns  Not implemented yet
  * @param {Object} create_table_options  Options used when creating the target
  *                                       table.
@@ -14070,6 +15004,9 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                               <li> 'HASH': Use <a
  *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>.
+ *                                               <li> 'SERIES': Use <a
+ *                                       href="../../../concepts/tables/#partitioning-by-series"
+ *                                       target="_top">series partitioning</a>.
  *                                       </ul>
  *                                               <li> 'partition_keys':
  *                                       Comma-separated list of partition
@@ -14090,9 +15027,12 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       partitioning</a>, <a
  *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>,
- *                                       or <a
+ *                                       <a
  *                                       href="../../../concepts/tables/#partitioning-by-hash"
- *                                       target="_top">hash partitioning</a>
+ *                                       target="_top">hash partitioning</a>,
+ *                                       or <a
+ *                                       href="../../../concepts/tables/#partitioning-by-series"
+ *                                       target="_top">series partitioning</a>
  *                                       for example formats.
  *                                               <li> 'is_automatic_partition':
  *                                       If <code>true</code>, a new partition
@@ -14137,13 +15077,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       The <a
  *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy</a> for
- *                                       the table and its columns. See <a
- *                                       href="../../../rm/concepts/#tier-strategies"
- *                                       target="_top">tier strategy usage</a>
- *                                       for format and <a
- *                                       href="../../../rm/usage/#tier-strategies"
- *                                       target="_top">tier strategy
- *                                       examples</a> for examples.
+ *                                       the table and its columns.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -14270,6 +15204,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          format; e.g., CSV, TSV, PSV, etc.
  *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'json': Json file format
+ *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': Whether to do a full
@@ -14341,6 +15276,21 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
+ *                                  <li> 'subscribe': Continuously poll the
+ *                          data source to check for new data and load it into
+ *                          the table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'poll_interval': If <code>true</code>,
+ *                          the number of seconds between attempts to load
+ *                          external files into the table.  If zero, polling
+ *                          will be continuous as long as data is found.  If no
+ *                          data is found, the interval will steadily increase
+ *                          to a maximum of 60 seconds.
  *                                  <li> 'text_comment_string': Specifies the
  *                          character string that should be interpreted as a
  *                          comment line
@@ -14439,7 +15389,30 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          column types so that 'all' values will fit with
  *                          minimum data scanned
  *                          </ul>
- *                          The default value is 'accuracy'.
+ *                          The default value is 'speed'.
+ *                                  <li> 'table_insert_mode': Optional:
+ *                          table_insert_mode. When inserting records from
+ *                          multiple files: if table_per_file then insert from
+ *                          each file into a new table. Currently supported
+ *                          only for shapefiles.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'single'
+ *                                  <li> 'table_per_file'
+ *                          </ul>
+ *                          The default value is 'single'.
+ *                                  <li> 'kafka_group_id': The group id to be
+ *                          used consuming data from a kakfa topic (valid only
+ *                          for kafka datasource subscriptions).
+ *                                  <li> 'text_search_columns': Add
+ *                          'text_search' property to internally inferenced
+ *                          string columns. Comma seperated list of column
+ *                          names or '*' for all columns. To add text_search
+ *                          property only to string columns of minimum size,
+ *                          set also the option 'text_search_min_column_length'
+ *                                  <li> 'text_search_min_column_length': Set
+ *                          minimum column size. Used only when
+ *                          'text_search_columns' has a value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -14603,6 +15576,9 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                               <li> 'HASH': Use <a
  *                                       href="../../../concepts/tables/#partitioning-by-hash"
  *                                       target="_top">hash partitioning</a>.
+ *                                               <li> 'SERIES': Use <a
+ *                                       href="../../../concepts/tables/#partitioning-by-series"
+ *                                       target="_top">series partitioning</a>.
  *                                       </ul>
  *                                               <li> 'partition_keys':
  *                                       Comma-separated list of partition
@@ -14623,9 +15599,12 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       partitioning</a>, <a
  *                                       href="../../../concepts/tables/#partitioning-by-list"
  *                                       target="_top">list partitioning</a>,
- *                                       or <a
+ *                                       <a
  *                                       href="../../../concepts/tables/#partitioning-by-hash"
- *                                       target="_top">hash partitioning</a>
+ *                                       target="_top">hash partitioning</a>,
+ *                                       or <a
+ *                                       href="../../../concepts/tables/#partitioning-by-series"
+ *                                       target="_top">series partitioning</a>
  *                                       for example formats.
  *                                               <li> 'is_automatic_partition':
  *                                       If <code>true</code>, a new partition
@@ -14670,13 +15649,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       The <a
  *                                       href="../../../rm/concepts/#tier-strategies"
  *                                       target="_top">tier strategy</a> for
- *                                       the table and its columns. See <a
- *                                       href="../../../rm/concepts/#tier-strategies"
- *                                       target="_top">tier strategy usage</a>
- *                                       for format and <a
- *                                       href="../../../rm/usage/#tier-strategies"
- *                                       target="_top">tier strategy
- *                                       examples</a> for examples.
+ *                                       the table and its columns.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -14800,6 +15773,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          format; e.g., CSV, TSV, PSV, etc.
  *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'json': Json file format
+ *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
  *                                  <li> 'ingestion_mode': Whether to do a full
@@ -14915,7 +15889,16 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          column types so that 'all' values will fit with
  *                          minimum data scanned
  *                          </ul>
- *                          The default value is 'accuracy'.
+ *                          The default value is 'speed'.
+ *                                  <li> 'text_search_columns': Add
+ *                          'text_search' property to internally inferenced
+ *                          string columns. Comma seperated list of column
+ *                          names or '*' for all columns. To add text_search
+ *                          property only to string columns of minimum size,
+ *                          set also the option 'text_search_min_column_length'
+ *                                  <li> 'text_search_min_column_length': Set
+ *                          minimum column size. Used only when
+ *                          'text_search_columns' has a value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -15500,11 +16483,11 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
  * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * <a href="../../../guide-tags/graph-match/" target="_top">/match/graph
+ * examples</a>
  * before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -15541,11 +16524,11 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
  * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * <a href="../../../guide-tags/graph-match/" target="_top">/match/graph
+ * examples</a>
  * before using this endpoint.
  *
  * @param {String} graph_name  Name of the underlying geospatial graph resource
@@ -15602,6 +16585,10 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               <code>sample_points</code> source and
  *                               destination pairs for the shortest path solves
  *                               in batch mode.
+ *                                       <li> 'match_loops': Matches closed
+ *                               loops (Eulerian paths) originating and ending
+ *                               at each graph node within min and max hops
+ *                               (levels).
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -15768,11 +16755,51 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          once from their depots.
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'max_truck_stops': For the
+ *                          <code>match_supply_demand</code> solver only. If
+ *                          specified (greater than zero), a truck can at most
+ *                          have this many stops (demand locations) in one
+ *                          round trip. Otherwise, it is unlimited. If
+ *                          'enable_truck_reuse' is on, this condition will be
+ *                          applied separately at each round trip use of the
+ *                          same truck.  The default value is '0'.
  *                                  <li> 'server_id': Indicates which graph
  *                          server(s) to send the request to. Default is to
  *                          send to the server, amongst those containing the
  *                          corresponding graph, that has the most
  *                          computational bandwidth.  The default value is ''.
+ *                                  <li> 'inverse_solve': For the
+ *                          <code>match_batch_solves</code> solver only. Solves
+ *                          source-destination pairs using inverse shortest
+ *                          path solver.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Solves using inverse shortest
+ *                          path solver.
+ *                                  <li> 'false': Solves using direct shortest
+ *                          path solver.
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'min_loop_level': For the
+ *                          <code>match_loops</code> solver only. Finds closed
+ *                          loops around each node deducible not less than this
+ *                          minimal hop (level) deep.  The default value is
+ *                          '0'.
+ *                                  <li> 'max_loop_level': For the
+ *                          <code>match_loops</code> solver only. Finds closed
+ *                          loops around each node deducible not more than this
+ *                          maximal hop (level) deep.  The default value is
+ *                          '5'.
+ *                                  <li> 'search_limit': For the
+ *                          <code>match_loops</code> solver only. Searches
+ *                          within this limit of nodes per vertex to detect
+ *                          loops. The value zero means there is no limit.  The
+ *                          default value is '10000'.
+ *                                  <li> 'output_batch_size': For the
+ *                          <code>match_loops</code> solver only. Uses this
+ *                          value as the batch size of the number of loops in
+ *                          flushing(inserting) to the output table.  The
+ *                          default value is '1000'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -15964,16 +16991,13 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
 /**
  * Update an existing graph network using given nodes, edges, weights,
  * restrictions, and options.
-
+ * <p>
  * IMPORTANT: It's highly recommended that you review the
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
- * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
- * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * concepts documentation and
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>
  * before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -16004,16 +17028,13 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
 /**
  * Update an existing graph network using given nodes, edges, weights,
  * restrictions, and options.
-
+ * <p>
  * IMPORTANT: It's highly recommended that you review the
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
- * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
- * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * concepts documentation and
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>
  * before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to modify.
@@ -16270,11 +17291,11 @@ GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restr
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
  * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * <a href="../../../guide-tags/graph-query" target="_top">/match/graph
+ * examples</a>
  * before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -16334,11 +17355,11 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
  * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * <a href="../../../guide-tags/graph-query" target="_top">/match/graph
+ * examples</a>
  * before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to query.
@@ -16491,16 +17512,6 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'export_solve_results': Returns
- *                          solution results inside the
- *                          <code>adjacency_list_int_array</code> array in the
- *                          response if set to <code>true</code>.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
  *                                  <li> 'server_id': Indicates which graph
  *                          server(s) to send the request to. Default is to
  *                          send to the server, amongst those containing the
@@ -16526,6 +17537,59 @@ GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjace
         this.submit_request("/query/graph", actual_request, callback);
     } else {
         var data = this.submit_request("/query/graph", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.reserve_resource_request = function(request, callback) {
+    var actual_request = {
+        component: request.component,
+        bytes_requested: request.bytes_requested,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/reserve/resource", actual_request, callback);
+    } else {
+        var data = this.submit_request("/reserve/resource", actual_request);
+        return data;
+    }
+};
+
+/**
+ *
+ * @param {String} component
+ * @param {Number} bytes_requested
+ * @param {Object} options
+ *                          <ul>
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ * @private
+ */
+GPUdb.prototype.reserve_resource = function(component, bytes_requested, options, callback) {
+    var actual_request = {
+        component: component,
+        bytes_requested: bytes_requested,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/reserve/resource", actual_request, callback);
+    } else {
+        var data = this.submit_request("/reserve/resource", actual_request);
         return data;
     }
 };
@@ -16660,6 +17724,74 @@ GPUdb.prototype.revoke_permission_datasource = function(name, permission, dataso
         this.submit_request("/revoke/permission/datasource", actual_request, callback);
     } else {
         var data = this.submit_request("/revoke/permission/datasource", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a <a href="../../../tools/kifs/" target="_top">KiFS</a>
+ * directory-level permission from a user or role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.revoke_permission_directory_request = function(request, callback) {
+    var actual_request = {
+        name: request.name,
+        permission: request.permission,
+        directory_name: request.directory_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/directory", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Revokes a <a href="../../../tools/kifs/" target="_top">KiFS</a>
+ * directory-level permission from a user or role.
+ *
+ * @param {String} name  Name of the user or role from which the permission
+ *                       will be revoked. Must be an existing user or role.
+ * @param {String} permission  Permission to revoke from the user or role.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'directory_read': For files in the
+ *                             directory, access to list files, download files,
+ *                             or use files in server side functions
+ *                                     <li> 'directory_write': Access to upload
+ *                             files to, or delete files from, the directory. A
+ *                             user or role with write access automatically has
+ *                             read acceess
+ *                             </ul>
+ * @param {String} directory_name  Name of the KiFS directory to which the
+ *                                 permission revokes access
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.revoke_permission_directory = function(name, permission, directory_name, options, callback) {
+    var actual_request = {
+        name: name,
+        permission: permission,
+        directory_name: directory_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/revoke/permission/directory", actual_request, callback);
+    } else {
+        var data = this.submit_request("/revoke/permission/directory", actual_request);
         return data;
     }
 };
@@ -17075,6 +18207,112 @@ GPUdb.prototype.show_datasource = function(name, options, callback) {
         this.submit_request("/show/datasource", actual_request, callback);
     } else {
         var data = this.submit_request("/show/datasource", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about directories in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. Can be used to show a single directory, or all
+ * directories.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_directories_request = function(request, callback) {
+    var actual_request = {
+        directory_name: (request.directory_name !== undefined && request.directory_name !== null) ? request.directory_name : "",
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/directories", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/directories", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about directories in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. Can be used to show a single directory, or all
+ * directories.
+ *
+ * @param {String} directory_name  The KiFS directory name to show. If empty,
+ *                                 shows all directories.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_directories = function(directory_name, options, callback) {
+    var actual_request = {
+        directory_name: (directory_name !== undefined && directory_name !== null) ? directory_name : "",
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/directories", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/directories", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about files in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. Can be used for individual files, or to show all
+ * files in a given directory.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_files_request = function(request, callback) {
+    var actual_request = {
+        paths: request.paths,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/files", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about files in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. Can be used for individual files, or to show all
+ * files in a given directory.
+ *
+ * @param {String[]} paths  File paths to show. Each path can be a KiFS
+ *                          directory name, or a full path to a KiFS file.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_files = function(paths, options, callback) {
+    var actual_request = {
+        paths: paths,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/files", actual_request);
         return data;
     }
 };
@@ -18376,6 +19614,56 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
 };
 
 /**
+ * Retrieves information about rendered videos.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_video_request = function(request, callback) {
+    var actual_request = {
+        paths: request.paths,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/video", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/video", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Retrieves information about rendered videos.
+ *
+ * @param {String[]} paths  The fully-qualified <a href="../../../tools/kifs/"
+ *                          target="_top">KiFS</a> paths for the videos to
+ *                          show. If empty, shows all videos.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_video = function(paths, options, callback) {
+    var actual_request = {
+        paths: paths,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/video", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/video", actual_request);
+        return data;
+    }
+};
+
+/**
  * Solves an existing graph for a type of problem (e.g., shortest path,
  * page rank, travelling salesman, etc.) using source nodes, destination nodes,
  * and
@@ -18385,11 +19673,11 @@ GPUdb.prototype.show_types = function(type_id, label, options, callback) {
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
  * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * <a href="../../../guide-tags/graph-solve" target="_top">/solve/graph
+ * examples</a>
  * before using this endpoint.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -18429,11 +19717,11 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * concepts documentation, the
- * <a href="../../../graph_solver/examples/graph_rest_guide/"
- * target="_top">Graph REST Tutorial</a>,
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
  * and/or some
- * <a href="../../../graph_solver/examples/#match-graph"
- * target="_top">/match/graph examples</a>
+ * <a href="../../../guide-tags/graph-solve" target="_top">/solve/graph
+ * examples</a>
  * before using this endpoint.
  *
  * @param {String} graph_name  Name of the graph resource to solve.
@@ -18541,6 +19829,14 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                              radia - Make sure to limit by the
  *                              'max_solution_targets' option. Min cost shoudl
  *                              be >= shortest_path cost.
+ *                                      <li> 'STATS_ALL': Solves for graph
+ *                              statistics such as graph diameter, longest
+ *                              pairs, vertex valences, topology numbers,
+ *                              average and max cluster sizes, etc.
+ *                                      <li> 'CLOSENESS': Solves for the
+ *                              centrality closeness score per node as the sum
+ *                              of the inverse shortest path costs to all nodes
+ *                              in the graph.
  *                              </ul>
  *                              The default value is 'SHORTEST_PATH'.
  * @param {String[]} source_nodes  It can be one of the nodal identifiers -
@@ -18560,17 +19856,17 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  * @param {Object} options  Additional parameters
  *                          <ul>
  *                                  <li> 'max_solution_radius': For
- *                          <code>SHORTEST_PATH</code> and
- *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
- *                          Sets the maximum solution cost radius, which
+ *                          <code>ALLPATHS</code>, <code>SHORTEST_PATH</code>
+ *                          and <code>INVERSE_SHORTEST_PATH</code> solvers
+ *                          only. Sets the maximum solution cost radius, which
  *                          ignores the <code>destination_nodes</code> list and
  *                          instead outputs the nodes within the radius sorted
  *                          by ascending cost. If set to '0.0', the setting is
  *                          ignored.  The default value is '0.0'.
  *                                  <li> 'min_solution_radius': For
- *                          <code>SHORTEST_PATH</code> and
- *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
- *                          Applicable only when
+ *                          <code>ALLPATHS</code>, <code>SHORTEST_PATH</code>
+ *                          and <code>INVERSE_SHORTEST_PATH</code> solvers
+ *                          only. Applicable only when
  *                          <code>max_solution_radius</code> is set. Sets the
  *                          minimum solution cost radius, which ignores the
  *                          <code>destination_nodes</code> list and instead
@@ -18578,14 +19874,14 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          ascending cost. If set to '0.0', the setting is
  *                          ignored.  The default value is '0.0'.
  *                                  <li> 'max_solution_targets': For
- *                          <code>SHORTEST_PATH</code> and
- *                          <code>INVERSE_SHORTEST_PATH</code> solvers only.
- *                          Sets the maximum number of solution targets, which
- *                          ignores the <code>destination_nodes</code> list and
- *                          instead outputs no more than n number of nodes
- *                          sorted by ascending cost where n is equal to the
- *                          setting value. If set to 0, the setting is ignored.
- *                          The default value is '0'.
+ *                          <code>ALLPATHS</code>, <code>SHORTEST_PATH</code>
+ *                          and <code>INVERSE_SHORTEST_PATH</code> solvers
+ *                          only. Sets the maximum number of solution targets,
+ *                          which ignores the <code>destination_nodes</code>
+ *                          list and instead outputs no more than n number of
+ *                          nodes sorted by ascending cost where n is equal to
+ *                          the setting value. If set to 0, the setting is
+ *                          ignored.  The default value is '1000'.
  *                                  <li> 'export_solve_results': Returns
  *                          solution results inside the
  *                          <code>result_per_destination_node</code> array in
@@ -18700,6 +19996,34 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                          computational bandwidth. For SHORTEST_PATH solver
  *                          type, the input is split amongst the server
  *                          containing the corresponding graph.
+ *                                  <li> 'convergence_limit': For
+ *                          <code>PAGE_RANK</code> solvers only; Maximum
+ *                          percent relative threshold on the pagerank scores
+ *                          of each node between consecutive iterations to
+ *                          satisfy convergence. Default value is 1 (one)
+ *                          percent.  The default value is '1.0'.
+ *                                  <li> 'max_iterations': For
+ *                          <code>PAGE_RANK</code> solvers only; Maximum number
+ *                          of pagerank iterations for satisfying convergence.
+ *                          Default value is 100.  The default value is '100'.
+ *                                  <li> 'max_runs': For all
+ *                          <code>CENTRALITY</code> solvers only; Sets the
+ *                          maximum number of shortest path runs; maximum
+ *                          possible value is the number of nodes in the graph.
+ *                          Default value of 0 enables this value to be auto
+ *                          computed by the solver.  The default value is '0'.
+ *                                  <li> 'output_clusters': For
+ *                          <code>STATS_ALL</code> solvers only; the cluster
+ *                          index for each node will be inserted as an
+ *                          additional column in the output.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': An additional column 'CLUSTER'
+ *                          will be added for each node
+ *                                  <li> 'false': No extra cluster info per
+ *                          node will be available in the output
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -19023,6 +20347,218 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
         this.submit_request("/update/records/byseries", actual_request, callback);
     } else {
         var data = this.submit_request("/update/records/byseries", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Uploads one or more files to <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. There are
+ * two methods for uploading files: load files in their entirety, or load files
+ * in
+ * parts. The latter is recommeded for files of approximately 60 MB or larger.
+ * <p>
+ * To upload files in their entirety, populate <code>file_names</code> with the
+ * file
+ * names to upload into on KiFS, and their respective byte content in
+ * <code>file_data</code>.
+ * <p>
+ * Multiple steps are involved when uploading in multiple parts. Only one file
+ * at a
+ * time can be uploaded in this manner. A user-provided UUID is utilized to tie
+ * all
+ * the upload steps together for a given file.  To upload a file in multiple
+ * parts:
+ * <p>
+ * 1. Provide the file name in <code>file_names</code>, the UUID in
+ *    the <code>multipart_upload_uuid</code> key in <code>options</code>, and
+ *    a <code>multipart_operation</code> value of
+ *    <code>init</code>.
+ * 2. Upload one or more parts by providing the file name, the part data
+ *    in <code>file_data</code>, the UUID, a <code>multipart_operation</code>
+ *    value of <code>upload_part</code>, and
+ *    the part number in the <code>multipart_upload_part_number</code>.
+ *    The part numbers must start at 1 and increase incrementally.
+ *    Parts may not be uploaded out of order.
+ * 3. Complete the upload by providing the file name, the UUID, and a
+ *    <code>multipart_operation</code> value of
+ *    <code>complete</code>.
+ * <p>
+ * Multipart uploads in progress may be canceled by providing the file name,
+ * the
+ * UUID, and a <code>multipart_operation</code> value of
+ * <code>cancel</code>.  If an new upload is
+ * initialized with a different UUID for an existing upload in progress, the
+ * pre-existing upload is automatically canceled in favor of the new upload.
+ * <p>
+ * The multipart upload must be completed for the file to be usable in KiFS.
+ * Information about multipart uploads in progress is available in
+ * {@linkcode GPUdb#show_files}.
+ * <p>
+ * File data may be pre-encoded using base64 encoding. This should be indicated
+ * using the <code>file_encoding</code> option, and is recommended when
+ * using JSON serialization.
+ * <p>
+ * Each file path must reside in a top-level KiFS directory, i.e. one of the
+ * directories listed in {@linkcode GPUdb#show_directories}. The user must
+ * have write
+ * permission on the directory. Nested directories are permitted in file name
+ * paths. Directories are deliniated with the directory separator of '/'.  For
+ * example, given the file path '/a/b/c/d.txt', 'a' must be a KiFS directory.
+ * <p>
+ * These characters are allowed in file name paths: letters, numbers, spaces,
+ * the
+ * path delimiter of '/', and the characters: '.' '-' ':' '[' ']' '(' ')' '#'
+ * '='.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.upload_files_request = function(request, callback) {
+    var actual_request = {
+        file_names: request.file_names,
+        file_data: request.file_data,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/upload/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/upload/files", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Uploads one or more files to <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>. There are
+ * two methods for uploading files: load files in their entirety, or load files
+ * in
+ * parts. The latter is recommeded for files of approximately 60 MB or larger.
+ * <p>
+ * To upload files in their entirety, populate <code>file_names</code> with the
+ * file
+ * names to upload into on KiFS, and their respective byte content in
+ * <code>file_data</code>.
+ * <p>
+ * Multiple steps are involved when uploading in multiple parts. Only one file
+ * at a
+ * time can be uploaded in this manner. A user-provided UUID is utilized to tie
+ * all
+ * the upload steps together for a given file.  To upload a file in multiple
+ * parts:
+ * <p>
+ * 1. Provide the file name in <code>file_names</code>, the UUID in
+ *    the <code>multipart_upload_uuid</code> key in <code>options</code>, and
+ *    a <code>multipart_operation</code> value of
+ *    <code>init</code>.
+ * 2. Upload one or more parts by providing the file name, the part data
+ *    in <code>file_data</code>, the UUID, a <code>multipart_operation</code>
+ *    value of <code>upload_part</code>, and
+ *    the part number in the <code>multipart_upload_part_number</code>.
+ *    The part numbers must start at 1 and increase incrementally.
+ *    Parts may not be uploaded out of order.
+ * 3. Complete the upload by providing the file name, the UUID, and a
+ *    <code>multipart_operation</code> value of
+ *    <code>complete</code>.
+ * <p>
+ * Multipart uploads in progress may be canceled by providing the file name,
+ * the
+ * UUID, and a <code>multipart_operation</code> value of
+ * <code>cancel</code>.  If an new upload is
+ * initialized with a different UUID for an existing upload in progress, the
+ * pre-existing upload is automatically canceled in favor of the new upload.
+ * <p>
+ * The multipart upload must be completed for the file to be usable in KiFS.
+ * Information about multipart uploads in progress is available in
+ * {@linkcode GPUdb#show_files}.
+ * <p>
+ * File data may be pre-encoded using base64 encoding. This should be indicated
+ * using the <code>file_encoding</code> option, and is recommended when
+ * using JSON serialization.
+ * <p>
+ * Each file path must reside in a top-level KiFS directory, i.e. one of the
+ * directories listed in {@linkcode GPUdb#show_directories}. The user must
+ * have write
+ * permission on the directory. Nested directories are permitted in file name
+ * paths. Directories are deliniated with the directory separator of '/'.  For
+ * example, given the file path '/a/b/c/d.txt', 'a' must be a KiFS directory.
+ * <p>
+ * These characters are allowed in file name paths: letters, numbers, spaces,
+ * the
+ * path delimiter of '/', and the characters: '.' '-' ':' '[' ']' '(' ')' '#'
+ * '='.
+ *
+ * @param {String[]} file_names  An array of full file name paths to be used
+ *                               for the files
+ *                               uploaded to KiFS. File names may have any
+ *                               number of nested directories in their
+ *                               paths, but the top-level directory must be an
+ *                               existing KiFS directory. Each file
+ *                               must reside in or under a top-level directory.
+ *                               A full file name path cannot be
+ *                               larger than 1024 characters.
+ * @param {String[]} file_data  File data for the files being uploaded, for the
+ *                              respective files in <code>file_names</code>.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'file_encoding': Encoding that has
+ *                          been applied to the uploaded
+ *                          file data. When using JSON serialization it is
+ *                          recommended to utilize
+ *                          <code>base64</code>. The caller is responsible
+ *                          for encoding the data provided in this payload
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'base64': Specifies that the file data
+ *                          being uploaded has been base64 encoded.
+ *                                  <li> 'none': The uploaded file data has not
+ *                          been encoded.
+ *                          </ul>
+ *                          The default value is 'none'.
+ *                                  <li> 'multipart_operation': Multipart
+ *                          upload operation to perform
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'none'
+ *                                  <li> 'init': Initialize a multipart file
+ *                          upload
+ *                                  <li> 'upload_part': Upload one or more
+ *                          parts of the specified multipart file upload
+ *                                  <li> 'complete': Complete the specified
+ *                          multipart file upload
+ *                                  <li> 'cancel': Cancel the specified
+ *                          multipart file upload
+ *                          </ul>
+ *                          The default value is 'none'.
+ *                                  <li> 'multipart_upload_uuid': UUID to
+ *                          uniquely identify a multipart upload
+ *                                  <li> 'multipart_upload_part_number':
+ *                          Incremental part number for each part in a
+ *                          multipart upload. Part numbers start at 1,
+ *                          increment by 1, and must be uploaded
+ *                          sequentially
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.upload_files = function(file_names, file_data, options, callback) {
+    var actual_request = {
+        file_names: file_names,
+        file_data: file_data,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/upload/files", actual_request, callback);
+    } else {
+        var data = this.submit_request("/upload/files", actual_request);
         return data;
     }
 };
@@ -20728,326 +22264,6 @@ GPUdb.prototype.visualize_isochrone = function(graph_name, source_node, max_solu
         this.submit_request("/visualize/isochrone", actual_request, callback);
     } else {
         var data = this.submit_request("/visualize/isochrone", actual_request);
-        return data;
-    }
-};
-
-/**
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * @private
- */
-GPUdb.prototype.visualize_video_request = function(request, callback) {
-    var actual_request = {
-        table_names: request.table_names,
-        world_table_names: request.world_table_names,
-        track_ids: request.track_ids,
-        x_column_name: request.x_column_name,
-        y_column_name: request.y_column_name,
-        geometry_column_name: request.geometry_column_name,
-        min_x: request.min_x,
-        max_x: request.max_x,
-        min_y: request.min_y,
-        max_y: request.max_y,
-        width: request.width,
-        height: request.height,
-        projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
-        bg_color: request.bg_color,
-        time_intervals: request.time_intervals,
-        video_style: request.video_style,
-        session_key: request.session_key,
-        style_options: request.style_options,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/visualize/video", actual_request, callback);
-    } else {
-        var data = this.submit_request("/visualize/video", actual_request);
-        return data;
-    }
-};
-
-/**
- *
- * @param {String[]} table_names
- * @param {String[]} world_table_names
- * @param {String[][]} track_ids
- * @param {String} x_column_name
- * @param {String} y_column_name
- * @param {String} geometry_column_name
- * @param {Number} min_x
- * @param {Number} max_x
- * @param {Number} min_y
- * @param {Number} max_y
- * @param {Number} width
- * @param {Number} height
- * @param {String} projection
- *                             Supported values:
- *                             <ul>
- *                                     <li> 'EPSG:4326'
- *                                     <li> 'PLATE_CARREE'
- *                                     <li> '900913'
- *                                     <li> 'EPSG:900913'
- *                                     <li> '102100'
- *                                     <li> 'EPSG:102100'
- *                                     <li> '3857'
- *                                     <li> 'EPSG:3857'
- *                                     <li> 'WEB_MERCATOR'
- *                             </ul>
- *                             The default value is 'PLATE_CARREE'.
- * @param {Number} bg_color
- * @param {Number[][]} time_intervals
- * @param {String} video_style
- * @param {String} session_key
- * @param {Object} style_options
- *                                <ul>
- *                                        <li> 'do_points':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'true'
- *                                        <li> 'false'
- *                                </ul>
- *                                The default value is 'true'.
- *                                        <li> 'do_shapes':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'true'
- *                                        <li> 'false'
- *                                </ul>
- *                                The default value is 'true'.
- *                                        <li> 'do_tracks':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'true'
- *                                        <li> 'false'
- *                                </ul>
- *                                The default value is 'true'.
- *                                        <li> 'pointcolors': The default value
- *                                is 'FF0000'.
- *                                        <li> 'pointsizes': The default value
- *                                is '3'.
- *                                        <li> 'pointshapes':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'none'
- *                                        <li> 'circle'
- *                                        <li> 'square'
- *                                        <li> 'diamond'
- *                                        <li> 'hollowcircle'
- *                                        <li> 'hollowsquare'
- *                                        <li> 'hollowdiamond'
- *                                        <li> 'symbolcode'
- *                                </ul>
- *                                        <li> 'shapelinewidths': The default
- *                                value is '3'.
- *                                        <li> 'shapelinecolors': The default
- *                                value is 'FFFF00 '.
- *                                        <li> 'shapefillcolors': The default
- *                                value is '-1'.
- *                                        <li> 'tracklinewidths': The default
- *                                value is '3'.
- *                                        <li> 'tracklinecolors': The default
- *                                value is '00FF00'.
- *                                        <li> 'trackmarkersizes': The default
- *                                value is '3'.
- *                                        <li> 'trackmarkercolors': The default
- *                                value is '0000FF'.
- *                                        <li> 'trackmarkershapes':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'none'
- *                                        <li> 'circle'
- *                                        <li> 'square'
- *                                        <li> 'diamond'
- *                                        <li> 'hollowcircle'
- *                                        <li> 'hollowsquare'
- *                                        <li> 'hollowdiamond'
- *                                        <li> 'symbolcode'
- *                                </ul>
- *                                The default value is 'none'.
- *                                        <li> 'trackheadcolors': The default
- *                                value is 'FFFFFF'.
- *                                        <li> 'trackheadsizes': The default
- *                                value is '10'.
- *                                        <li> 'trackheadshapes':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'none'
- *                                        <li> 'circle'
- *                                        <li> 'square'
- *                                        <li> 'diamond'
- *                                        <li> 'hollowcircle'
- *                                        <li> 'hollowsquare'
- *                                        <li> 'hollowdiamond'
- *                                        <li> 'symbolcode'
- *                                </ul>
- *                                The default value is 'circle'.
- *                                </ul>
- * @param {Object} options
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * @private
- */
-GPUdb.prototype.visualize_video = function(table_names, world_table_names, track_ids, x_column_name, y_column_name, geometry_column_name, min_x, max_x, min_y, max_y, width, height, projection, bg_color, time_intervals, video_style, session_key, style_options, options, callback) {
-    var actual_request = {
-        table_names: table_names,
-        world_table_names: world_table_names,
-        track_ids: track_ids,
-        x_column_name: x_column_name,
-        y_column_name: y_column_name,
-        geometry_column_name: geometry_column_name,
-        min_x: min_x,
-        max_x: max_x,
-        min_y: min_y,
-        max_y: max_y,
-        width: width,
-        height: height,
-        projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
-        bg_color: bg_color,
-        time_intervals: time_intervals,
-        video_style: video_style,
-        session_key: session_key,
-        style_options: style_options,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/visualize/video", actual_request, callback);
-    } else {
-        var data = this.submit_request("/visualize/video", actual_request);
-        return data;
-    }
-};
-
-/**
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * @private
- */
-GPUdb.prototype.visualize_video_heatmap_request = function(request, callback) {
-    var actual_request = {
-        table_names: request.table_names,
-        x_column_name: request.x_column_name,
-        y_column_name: request.y_column_name,
-        min_x: request.min_x,
-        max_x: request.max_x,
-        min_y: request.min_y,
-        max_y: request.max_y,
-        time_intervals: request.time_intervals,
-        width: request.width,
-        height: request.height,
-        projection: (request.projection !== undefined && request.projection !== null) ? request.projection : "PLATE_CARREE",
-        video_style: request.video_style,
-        session_key: request.session_key,
-        style_options: request.style_options,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/visualize/video/heatmap", actual_request, callback);
-    } else {
-        var data = this.submit_request("/visualize/video/heatmap", actual_request);
-        return data;
-    }
-};
-
-/**
- *
- * @param {String[]} table_names
- * @param {String} x_column_name
- * @param {String} y_column_name
- * @param {Number} min_x
- * @param {Number} max_x
- * @param {Number} min_y
- * @param {Number} max_y
- * @param {Number[][]} time_intervals
- * @param {Number} width
- * @param {Number} height
- * @param {String} projection
- *                             Supported values:
- *                             <ul>
- *                                     <li> 'EPSG:4326'
- *                                     <li> 'PLATE_CARREE'
- *                                     <li> '900913'
- *                                     <li> 'EPSG:900913'
- *                                     <li> '102100'
- *                                     <li> 'EPSG:102100'
- *                                     <li> '3857'
- *                                     <li> 'EPSG:3857'
- *                                     <li> 'WEB_MERCATOR'
- *                             </ul>
- *                             The default value is 'PLATE_CARREE'.
- * @param {String} video_style
- * @param {String} session_key
- * @param {Object} style_options
- *                                <ul>
- *                                        <li> 'colormap':
- *                                Supported values:
- *                                <ul>
- *                                        <li> 'jet'
- *                                        <li> 'hot'
- *                                        <li> 'hsv'
- *                                        <li> 'gray'
- *                                        <li> 'blues'
- *                                        <li> 'greens'
- *                                        <li> 'greys'
- *                                        <li> 'oranges'
- *                                        <li> 'purples'
- *                                        <li> 'reds'
- *                                </ul>
- *                                The default value is 'reds'.
- *                                        <li> 'blur_radius': The default value
- *                                is '5'.
- *                                        <li> 'bg_color': The default value is
- *                                'FF000000'.
- *                                        <li> 'gradient_start_color': The
- *                                default value is 'FFFFFF'.
- *                                        <li> 'gradient_end_color': The
- *                                default value is 'FF0000'.
- *                                </ul>
- * @param {Object} options
- * @param {GPUdbCallback} callback  Callback that handles the response.  If not
- *                                  specified, request will be synchronous.
- * @returns {Object} Response object containing the method_codes of the
- *                   operation.
- * @private
- */
-GPUdb.prototype.visualize_video_heatmap = function(table_names, x_column_name, y_column_name, min_x, max_x, min_y, max_y, time_intervals, width, height, projection, video_style, session_key, style_options, options, callback) {
-    var actual_request = {
-        table_names: table_names,
-        x_column_name: x_column_name,
-        y_column_name: y_column_name,
-        min_x: min_x,
-        max_x: max_x,
-        min_y: min_y,
-        max_y: max_y,
-        time_intervals: time_intervals,
-        width: width,
-        height: height,
-        projection: (projection !== undefined && projection !== null) ? projection : "PLATE_CARREE",
-        video_style: video_style,
-        session_key: session_key,
-        style_options: style_options,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    if (callback !== undefined && callback !== null) {
-        this.submit_request("/visualize/video/heatmap", actual_request, callback);
-    } else {
-        var data = this.submit_request("/visualize/video/heatmap", actual_request);
         return data;
     }
 };
