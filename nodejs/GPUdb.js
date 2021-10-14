@@ -4869,6 +4869,120 @@ GPUdb.prototype.alter_credential = function(credential_name, credential_updates_
 };
 
 /**
+ * Alters the properties of an existing <a href="../../../concepts/data_sinks/"
+ * target="_top">data sink</a>
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_datasink_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_datasink_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        datasink_updates_map: request.datasink_updates_map,
+        options: request.options
+    };
+
+    this.submit_request("/alter/datasink", actual_request, callback);
+};
+
+/**
+ * Alters the properties of an existing <a href="../../../concepts/data_sinks/"
+ * target="_top">data sink</a>
+ *
+ * @param {String} name  Name of the data sink to be altered. Must be an
+ *                       existing data sink.
+ * @param {Object} datasink_updates_map  Map containing the properties of the
+ *                                       data sink to be updated. Error if
+ *                                       empty.
+ *                                       <ul>
+ *                                               <li> 'destination':
+ *                                       Destination for the output data in
+ *                                       format
+ *                                       'destination_type://path[:port]'.
+ *                                       Supported destination types are
+ *                                       'http', 'https' and 'kafka'.
+ *                                               <li> 'destination_type':
+ *                                       Destination type for the output data
+ *                                               <li> 'user_name': Name of the
+ *                                       remote system user; may be an empty
+ *                                       string
+ *                                               <li> 'password': Password for
+ *                                       the remote system user; may be an
+ *                                       empty string
+ *                                               <li> 'connection_timeout':
+ *                                       Timeout in seconds for connecting to
+ *                                       this sink
+ *                                               <li> 'wait_timeout': Timeout
+ *                                       in seconds for waiting for a response
+ *                                       from this sink
+ *                                               <li> 'credential': Name of the
+ *                                       <a
+ *                                       href="../../../concepts/credentials/"
+ *                                       target="_top">credential</a> object to
+ *                                       be used in this data sink
+ *                                               <li> 'kafka_topic_name': Name
+ *                                       of the Kafka topic to use for this
+ *                                       data sink, if it references a Kafka
+ *                                       broker
+ *                                               <li> 'skip_validation': Bypass
+ *                                       validation of connection to this data
+ *                                       sink.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'true'
+ *                                               <li> 'false'
+ *                                       </ul>
+ *                                       The default value is 'false'.
+ *                                       </ul>
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_datasink = function(name, datasink_updates_map, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_datasink(name, datasink_updates_map, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        datasink_updates_map: datasink_updates_map,
+        options: options
+    };
+
+    this.submit_request("/alter/datasink", actual_request, callback);
+};
+
+/**
  * Alters the properties of an existing <a
  * href="../../../concepts/data_sources/" target="_top">data source</a>
  *
@@ -4993,6 +5107,24 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 <li> 'kafka_topic_name':
  *                                         Name of the Kafka topic to use as
  *                                         the data source
+ *                                                 <li> 'anonymous': Create an
+ *                                         anonymous connection to the storage
+ *                                         provider
+ *                                         Supported values:
+ *                                         <ul>
+ *                                                 <li> 'true'
+ *                                                 <li> 'false'
+ *                                         </ul>
+ *                                         The default value is 'false'.
+ *                                                 <li> 'use_https': Use https
+ *                                         to connect to datasource if true,
+ *                                         otherwise use http
+ *                                         Supported values:
+ *                                         <ul>
+ *                                                 <li> 'true'
+ *                                                 <li> 'false'
+ *                                         </ul>
+ *                                         The default value is 'true'.
  *                                         </ul>
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -5022,6 +5154,113 @@ GPUdb.prototype.alter_datasource = function(name, datasource_updates_map, option
     };
 
     this.submit_request("/alter/datasource", actual_request, callback);
+};
+
+/**
+ * For internal use only: Graph server admin command.
+ * For internal use only: Graph server admin command.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_graph_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_graph_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: request.graph_name,
+        action: request.action,
+        action_arg: request.action_arg,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/alter/graph", actual_request, callback);
+};
+
+/**
+ * For internal use only: Graph server admin command.
+ * For internal use only: Graph server admin command.
+ *
+ * @param {String} graph_name  Graph on which the operation should be applied.
+ *                             If empty then it will apply to all graphs.
+ *                             This request can be sent from the graph server
+ *                             to the graph client, or from the client to the
+ *                             server depending on the type of operation.
+ * @param {String} action  Operation to be applied
+ *                         Supported values:
+ *                         <ul>
+ *                                 <li> 'add_table_monitor': Add a table
+ *                         monitor to a graph. The table name is specified as
+ *                         the action argment.
+ *                                 <li> 'reset_client': Reset all current
+ *                         operations on the client side. Used when the graph
+ *                         server is restarted to recover from a failure.
+ *                                 <li> 'reset_server': Reset all current
+ *                         operations on the server side. This is also sent on
+ *                         (re)start.
+ *                                 <li> 'cancel_task': Cancel a specific task
+ *                         on the graph server.
+ *                                 <li> 'alter_logger': Change the server side
+ *                         log level; e.g., 'GraphServer.GraphSolver=DEBUG'
+ *                                 <li> 'delete_all': Delete all graphs, and
+ *                         remove any persistence info.
+ *                                 <li> 'status': Current status of the graph
+ *                         client (db side).
+ *                                 <li> 'collect_graphs': Get the create
+ *                         command for all persisted graphs.
+ *                                 <li> 'restore_graphs': Re-creates all graphs
+ *                         from persist info on rank0.
+ *                         </ul>
+ * @param {String} action_arg  Action specific argument.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'server_id': Indicates which graph
+ *                          server(s) to send the request to. Default is to
+ *                          send to get information about all the servers.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_graph = function(graph_name, action, action_arg, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_graph(graph_name, action, action_arg, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: graph_name,
+        action: action,
+        action_arg: action_arg,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/alter/graph", actual_request, callback);
 };
 
 /**
@@ -6921,6 +7160,31 @@ GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
  * @param {String} topic_id  The topic ID returned by
  *                           {@linkcode GPUdb#create_table_monitor}.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'keep_autogenerated_sink': If
+ *                          <code>true</code>, the auto-generated <a
+ *                          href="../../../concepts/data_sinks/"
+ *                          target="_top">datasink</a> associated with this
+ *                          monitor, if there is one, will be retained for
+ *                          further use. If <code>false</code>, then the
+ *                          auto-generated sink will be dropped if there are no
+ *                          other monitors referencing it.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'clear_all_references': If
+ *                          <code>true</code>, all references that share the
+ *                          same {@input topic_id} will be cleared.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7264,6 +7528,103 @@ GPUdb.prototype.create_credential = function(credential_name, type, identity, se
 };
 
 /**
+ * Creates a <a href="../../../concepts/data_sinks/" target="_top">data
+ * sink</a>, which contains the
+ * destination information for a data sink that is external to the database.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_datasink_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_datasink_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        destination: request.destination,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/create/datasink", actual_request, callback);
+};
+
+/**
+ * Creates a <a href="../../../concepts/data_sinks/" target="_top">data
+ * sink</a>, which contains the
+ * destination information for a data sink that is external to the database.
+ *
+ * @param {String} name  Name of the data sink to be created.
+ * @param {String} destination  Destination for the output data in format
+ *                              'destination_type://path[:port]'.
+ *                              Supported destination types are 'http', 'https'
+ *                              and 'kafka'.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'connection_timeout': Timeout in
+ *                          seconds for connecting to this data sink
+ *                                  <li> 'wait_timeout': Timeout in seconds for
+ *                          waiting for a response from this data sink
+ *                                  <li> 'credential': Name of the <a
+ *                          href="../../../concepts/credentials/"
+ *                          target="_top">credential</a> object to be used in
+ *                          this data sink
+ *                                  <li> 'kafka_topic_name': Name of the Kafka
+ *                          topic to publish to if <code>destination</code> is
+ *                          a Kafka broker
+ *                                  <li> 'skip_validation': Bypass validation
+ *                          of connection to this data sink.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_datasink = function(name, destination, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_datasink(name, destination, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        destination: destination,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/create/datasink", actual_request, callback);
+};
+
+/**
  * Creates a <a href="../../../concepts/data_sources/" target="_top">data
  * source</a>, which contains the
  * location and connection information for a data store that is external to the
@@ -7376,6 +7737,22 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'kafka_topic_name': Name of the Kafka
  *                          topic to use as the data source
+ *                                  <li> 'anonymous': Use anonymous connection
+ *                          to storage provider
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'use_https': Use https to connect to
+ *                          datasource if true, otherwise use http
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -7406,6 +7783,75 @@ GPUdb.prototype.create_datasource = function(name, location, user_name, password
     };
 
     this.submit_request("/create/datasource", actual_request, callback);
+};
+
+/**
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ * @private
+ */
+GPUdb.prototype.create_delta_table_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_delta_table_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        delta_table_name: request.delta_table_name,
+        table_name: request.table_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/create/deltatable", actual_request, callback);
+};
+
+/**
+ *
+ * @param {String} delta_table_name
+ * @param {String} table_name
+ * @param {Object} options
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ * @private
+ */
+GPUdb.prototype.create_delta_table = function(delta_table_name, table_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_delta_table(delta_table_name, table_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        delta_table_name: delta_table_name,
+        table_name: table_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/create/deltatable", actual_request, callback);
 };
 
 /**
@@ -8280,75 +8726,6 @@ GPUdb.prototype.create_materialized_view = function(table_name, options, callbac
     };
 
     this.submit_request("/create/materializedview", actual_request, callback);
-};
-
-/**
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- *
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- * @private
- */
-GPUdb.prototype.create_monitor_table_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.create_monitor_table_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        monitor_table_name: request.monitor_table_name,
-        table_name: request.table_name,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/create/monitortable", actual_request, callback);
-};
-
-/**
- *
- * @param {String} monitor_table_name
- * @param {String} table_name
- * @param {Object} options
- * @param {GPUdbCallback} callback  Callback that handles the response.
- *
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- * @private
- */
-GPUdb.prototype.create_monitor_table = function(monitor_table_name, table_name, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.create_monitor_table(monitor_table_name, table_name, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-
-    var actual_request = {
-        monitor_table_name: monitor_table_name,
-        table_name: table_name,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/create/monitortable", actual_request, callback);
 };
 
 /**
@@ -10096,6 +10473,46 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                          forwarded to the subscribers.
  *                          </ul>
  *                          The default value is 'insert'.
+ *                                  <li> 'monitor_id': ID to to use for this
+ *                          monitor instead of a randomly generated one
+ *                                  <li> 'datasink_name': Name of an existing
+ *                          <a href="../../../concepts/data_sinks/"
+ *                          target="_top">data sink</a> to send change data
+ *                          notifications to
+ *                                  <li> 'destination': Destination for the
+ *                          output data in format
+ *                          'destination_type://path[:port]'. Supported
+ *                          destination types are 'http', 'https' and 'kafka'.
+ *                                  <li> 'kafka_topic_name': Name of the Kafka
+ *                          topic to publish to if <code>destination</code> in
+ *                          <code>options</code> is specified and is a Kafka
+ *                          broker
+ *                                  <li> 'increasing_column': Column on
+ *                          subscribed table that will increase for new records
+ *                          (e.g., TIMESTAMP).
+ *                                  <li> 'expression': Filter expression to
+ *                          limit records for notification
+ *                                  <li> 'refresh_method': Method controlling
+ *                          when the table monitor reports changes to the
+ *                          <code>table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'on_change': Report changes as they
+ *                          occur.
+ *                                  <li> 'periodic': Report changes
+ *                          periodically at rate specified by
+ *                          <code>refresh_period</code>.
+ *                          </ul>
+ *                          The default value is 'on_change'.
+ *                                  <li> 'refresh_period': When
+ *                          <code>refresh_method</code> is
+ *                          <code>periodic</code>, specifies the period in
+ *                          seconds at which changes are reported.
+ *                                  <li> 'refresh_start_time': When
+ *                          <code>refresh_method</code> is
+ *                          <code>periodic</code>, specifies the first time at
+ *                          which changes are reported.  Value is a datetime
+ *                          string with format 'YYYY-MM-DD HH:MM:SS'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -12131,6 +12548,100 @@ GPUdb.prototype.drop_credential = function(credential_name, options, callback) {
     };
 
     this.submit_request("/drop/credential", actual_request, callback);
+};
+
+/**
+ * Drops an existing <a href="../../../concepts/data_sinks/" target="_top">data
+ * sink</a>.
+ * <p>
+ * By default, if any <a href="../../../concepts/table_monitors"
+ * target="_top">table monitors</a> use this
+ * sink as a destination, the request will be blocked unless option
+ * <code>clear_table_monitors</code> is
+ * <code>true</code>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.drop_datasink_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.drop_datasink_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/drop/datasink", actual_request, callback);
+};
+
+/**
+ * Drops an existing <a href="../../../concepts/data_sinks/" target="_top">data
+ * sink</a>.
+ * <p>
+ * By default, if any <a href="../../../concepts/table_monitors"
+ * target="_top">table monitors</a> use this
+ * sink as a destination, the request will be blocked unless option
+ * <code>clear_table_monitors</code> is
+ * <code>true</code>.
+ *
+ * @param {String} name  Name of the data sink to be dropped. Must be an
+ *                       existing data sink.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'clear_table_monitors': If
+ *                          <code>true</code>, any <a
+ *                          href="../../../concepts/table_monitors/"
+ *                          target="_top">table monitors</a> that use this data
+ *                          sink will be cleared.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.drop_datasink = function(name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.drop_datasink(name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/drop/datasink", actual_request, callback);
 };
 
 /**
@@ -15667,6 +16178,127 @@ GPUdb.prototype.get_vectortile = function(table_names, column_names, layers, til
 };
 
 /**
+ * Grant user or role the specified permission on the specified object.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.grant_permission_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.grant_permission_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        principal: (request.principal !== undefined && request.principal !== null) ? request.principal : "",
+        object: request.object,
+        object_type: request.object_type,
+        permission: request.permission,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/grant/permission", actual_request, callback);
+};
+
+/**
+ * Grant user or role the specified permission on the specified object.
+ *
+ * @param {String} principal  Name of the user or role for which the permission
+ *                            is being granted.  Must be an existing user or
+ *                            role.
+ * @param {String} object  Name of object permission is being granted to.  It
+ *                         is recommended to use a fully-qualified name when
+ *                         possible.
+ * @param {String} object_type  The type of object being granted to
+ *                              Supported values:
+ *                              <ul>
+ *                                      <li> 'credential': Credential
+ *                                      <li> 'datasink': Data Sink
+ *                                      <li> 'datasource': Data Source
+ *                                      <li> 'directory': KIFS File Directory
+ *                                      <li> 'graph': A Graph object
+ *                                      <li> 'proc': UDF Procedure
+ *                                      <li> 'schema': Schema
+ *                                      <li> 'sql_proc': SQL Procedure
+ *                                      <li> 'system': System-level access
+ *                                      <li> 'table': Database Table
+ *                              </ul>
+ * @param {String} permission  Permission being granted.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'admin': Full read/write and
+ *                             administrative access on the object.
+ *                                     <li> 'connect': Connect access on the
+ *                             given data source or data sink.
+ *                                     <li> 'delete': Delete rows from tables.
+ *                                     <li> 'execute': Ability to Execute the
+ *                             Procedure object.
+ *                                     <li> 'insert': Insert access to tables.
+ *                                     <li> 'read': Ability to read, list and
+ *                             use the object.
+ *                                     <li> 'update': Update access to the
+ *                             table.
+ *                                     <li> 'user_admin': Access to administer
+ *                             users and roles that do not have system_admin
+ *                             permission.
+ *                                     <li> 'write': Access to write, change
+ *                             and delete objects.
+ *                             </ul>
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'columns': Apply table security to
+ *                          these columns, comma-separated.  The default value
+ *                          is ''.
+ *                                  <li> 'filter_expression': Optional filter
+ *                          expression to apply to this grant.  Only rows that
+ *                          match the filter will be affected.  The default
+ *                          value is ''.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.grant_permission = function(principal, object, object_type, permission, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.grant_permission(principal, object, object_type, permission, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        principal: (principal !== undefined && principal !== null) ? principal : "",
+        object: object,
+        object_type: object_type,
+        permission: permission,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/grant/permission", actual_request, callback);
+};
+
+/**
  * Grants a <a
  * href="../../../security/sec_concepts/#security-concepts-permissions-credential"
  * target="_top">credential-level permission</a> to a user or role.
@@ -16286,8 +16918,9 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
     }
 
     var actual_request = {
-        name: (request.name !== undefined && request.name !== null) ? request.name : "",
-        target: request.target,
+        principal: (request.principal !== undefined && request.principal !== null) ? request.principal : "",
+        object: request.object,
+        object_type: request.object_type,
         permission: request.permission,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
@@ -16299,59 +16932,52 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  * Checks if the specified user has the specified permission on the specified
  * object.
  *
- * @param {String} name  Name of the user for which the permission is being
- *                       checked. Must be an existing user. If blank, will use
- *                       the current user.
- * @param {String} target  Name of object to check for the requested
+ * @param {String} principal  Name of the user for which the permission is
+ *                            being checked. Must be an existing user. If
+ *                            blank, will use the current user.
+ * @param {String} object  Name of object to check for the requested
  *                         permission.  It is recommended to use a
  *                         fully-qualified name when possible.
+ * @param {String} object_type  The type of object being checked
+ *                              Supported values:
+ *                              <ul>
+ *                                      <li> 'credential': Credential
+ *                                      <li> 'datasink': Data Sink
+ *                                      <li> 'datasource': Data Source
+ *                                      <li> 'directory': KiFS File Directory
+ *                                      <li> 'graph': A Graph object
+ *                                      <li> 'proc': UDF Procedure
+ *                                      <li> 'schema': Schema
+ *                                      <li> 'sql_proc': SQL Procedure
+ *                                      <li> 'system': System-level access
+ *                                      <li> 'table': Database Table
+ *                              </ul>
  * @param {String} permission  Permission to check for.
  *                             Supported values:
  *                             <ul>
+ *                                     <li> 'admin': Full read/write and
+ *                             administrative access on the object.
  *                                     <li> 'connect': Connect access on the
- *                             given data source
- *                                     <li> 'credential_admin': Full read/write
- *                             and administrative access on the credential.
- *                                     <li> 'credential_read': Ability to read
- *                             and use the credential.
- *                                     <li> 'directory_read': For files in the
- *                             directory, access to list files, download files,
- *                             or use files in server side functions
- *                                     <li> 'directory_write': Access to upload
- *                             files to, or delete files from, the directory. A
- *                             user with write access automatically has read
- *                             access
- *                                     <li> 'proc_execute': Execute access to
- *                             the UDF.
- *                                     <li> 'role': User is a member of this
- *                             role (including indirectly).
- *                                     <li> 'sql_proc_execute': Execute access
- *                             to the SQL proc.
- *                                     <li> 'system_admin': Full access to all
- *                             data and system functions.
- *                                     <li> 'system_read': Read-only access to
- *                             all tables.
- *                                     <li> 'system_user_admin': Access to
- *                             administer users and roles that do not have
- *                             system_admin permission.
- *                                     <li> 'system_write': Read and write
- *                             access to all tables.
- *                                     <li> 'table_admin': Full read/write and
- *                             administrative access to the table.
- *                                     <li> 'table_delete': Delete access to
- *                             the table.
- *                                     <li> 'table_insert': Insert access to
- *                             the table.
- *                                     <li> 'table_read': Read access to the
+ *                             given data source or data sink.
+ *                                     <li> 'delete': Delete rows from tables.
+ *                                     <li> 'execute': Ability to Execute the
+ *                             Procedure object.
+ *                                     <li> 'insert': Insert access to tables.
+ *                                     <li> 'read': Ability to read, list and
+ *                             use the object.
+ *                                     <li> 'update': Update access to the
  *                             table.
- *                                     <li> 'table_update': Update access to
- *                             the table.
+ *                                     <li> 'user_admin': Access to administer
+ *                             users and roles that do not have system_admin
+ *                             permission.
+ *                                     <li> 'write': Access to write, change
+ *                             and delete objects.
  *                             </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'no_error_if_not_exists': If
  *                          <code>false</code> will return an error if the
- *                          provided <code>target</code> does not exist or is
+ *                          provided <code>object</code> does not exist or is
  *                          blank. If <code>true</code> then it will return
  *                          <code>false</code> for <code>has_permission</code>.
  *                          Supported values:
@@ -16366,12 +16992,12 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.has_permission = function(name, target, permission, options, callback) {
+GPUdb.prototype.has_permission = function(principal, object, object_type, permission, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.has_permission(name, target, permission, options, function(err, response) {
+            self.has_permission(principal, object, object_type, permission, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -16382,8 +17008,9 @@ GPUdb.prototype.has_permission = function(name, target, permission, options, cal
     }
 
     var actual_request = {
-        name: (name !== undefined && name !== null) ? name : "",
-        target: target,
+        principal: (principal !== undefined && principal !== null) ? principal : "",
+        object: object,
+        object_type: object_type,
         permission: permission,
         options: (options !== undefined && options !== null) ? options : {}
     };
@@ -16455,6 +17082,102 @@ GPUdb.prototype.has_proc = function(proc_name, options, callback) {
     };
 
     this.submit_request("/has/proc", actual_request, callback);
+};
+
+/**
+ * Checks if the specified user has the specified role.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.has_role_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.has_role_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        principal: (request.principal !== undefined && request.principal !== null) ? request.principal : "",
+        role: request.role,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/has/role", actual_request, callback);
+};
+
+/**
+ * Checks if the specified user has the specified role.
+ *
+ * @param {String} principal  Name of the user for which role membersih is
+ *                            being checked. Must be an existing user. If
+ *                            blank, will use the current user.
+ * @param {String} role  Name of role to check for membership.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>false</code> will return an error if the
+ *                          provided <code>role</code> does not exist or is
+ *                          blank. If <code>true</code> then it will return
+ *                          <code>false</code> for <code>has_role</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'only_direct': If <code>false</code>
+ *                          will search recursively if the
+ *                          <code>principal</code> is a member of
+ *                          <code>role</code>.  If <code>true</code> then
+ *                          <code>principal</code> must directly be a member of
+ *                          <code>role</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.has_role = function(principal, role, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.has_role(principal, role, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        principal: (principal !== undefined && principal !== null) ? principal : "",
+        role: role,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/has/role", actual_request, callback);
 };
 
 /**
@@ -19924,6 +20647,123 @@ GPUdb.prototype.reserve_resource = function(component, bytes_requested, options,
 };
 
 /**
+ * Revoke user or role the specified permission on the specified object.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.revoke_permission_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.revoke_permission_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        principal: (request.principal !== undefined && request.principal !== null) ? request.principal : "",
+        object: request.object,
+        object_type: request.object_type,
+        permission: request.permission,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/revoke/permission", actual_request, callback);
+};
+
+/**
+ * Revoke user or role the specified permission on the specified object.
+ *
+ * @param {String} principal  Name of the user or role for which the permission
+ *                            is being revoked.  Must be an existing user or
+ *                            role.
+ * @param {String} object  Name of object permission is being revoked from.  It
+ *                         is recommended to use a fully-qualified name when
+ *                         possible.
+ * @param {String} object_type  The type of object being revoked
+ *                              Supported values:
+ *                              <ul>
+ *                                      <li> 'credential': Credential
+ *                                      <li> 'datasink': Data Sink
+ *                                      <li> 'datasource': Data Source
+ *                                      <li> 'directory': KIFS File Directory
+ *                                      <li> 'graph': A Graph object
+ *                                      <li> 'proc': UDF Procedure
+ *                                      <li> 'schema': Schema
+ *                                      <li> 'sql_proc': SQL Procedure
+ *                                      <li> 'system': System-level access
+ *                                      <li> 'table': Database Table
+ *                              </ul>
+ * @param {String} permission  Permission being revoked.
+ *                             Supported values:
+ *                             <ul>
+ *                                     <li> 'admin': Full read/write and
+ *                             administrative access on the object.
+ *                                     <li> 'connect': Connect access on the
+ *                             given data source or data sink.
+ *                                     <li> 'delete': Delete rows from tables.
+ *                                     <li> 'execute': Ability to Execute the
+ *                             Procedure object.
+ *                                     <li> 'insert': Insert access to tables.
+ *                                     <li> 'read': Ability to read, list and
+ *                             use the object.
+ *                                     <li> 'update': Update access to the
+ *                             table.
+ *                                     <li> 'user_admin': Access to administer
+ *                             users and roles that do not have system_admin
+ *                             permission.
+ *                                     <li> 'write': Access to write, change
+ *                             and delete objects.
+ *                             </ul>
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'columns': Revoke table security from
+ *                          these columns, comma-separated.  The default value
+ *                          is ''.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.revoke_permission = function(principal, object, object_type, permission, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.revoke_permission(principal, object, object_type, permission, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        principal: (principal !== undefined && principal !== null) ? principal : "",
+        object: object,
+        object_type: object_type,
+        permission: permission,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/revoke/permission", actual_request, callback);
+};
+
+/**
  * Revokes a <a
  * href="../../../security/sec_concepts/#security-concepts-permissions-credential"
  * target="_top">credential-level permission</a> from a user or role.
@@ -20645,6 +21485,77 @@ GPUdb.prototype.show_credential = function(credential_name, options, callback) {
     };
 
     this.submit_request("/show/credential", actual_request, callback);
+};
+
+/**
+ * Shows information about a specified <a href="../../../concepts/data_sinks/"
+ * target="_top">data sink</a> or all data sinks.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_datasink_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_datasink_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: request.name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/show/datasink", actual_request, callback);
+};
+
+/**
+ * Shows information about a specified <a href="../../../concepts/data_sinks/"
+ * target="_top">data sink</a> or all data sinks.
+ *
+ * @param {String} name  Name of the data sink for which to retrieve
+ *                       information. The name must refer to a currently
+ *                       existing data sink. If '*' is specified, information
+ *                       about all data sinks will be returned.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_datasink = function(name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_datasink(name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        name: name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/show/datasink", actual_request, callback);
 };
 
 /**
@@ -22283,6 +23194,78 @@ GPUdb.prototype.show_table_metadata = function(table_names, options, callback) {
 };
 
 /**
+ * Show table monitors and their properties. Table monitors are created using
+ * {@linkcode GPUdb#create_table_monitor}.
+ * Returns detailed information about existing table monitors.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_table_monitors_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_monitors_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        monitor_ids: request.monitor_ids,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/show/tablemonitors", actual_request, callback);
+};
+
+/**
+ * Show table monitors and their properties. Table monitors are created using
+ * {@linkcode GPUdb#create_table_monitor}.
+ * Returns detailed information about existing table monitors.
+ *
+ * @param {String[]} monitor_ids  List of monitors to be shown. An empty list
+ *                                or a single entry with an empty string
+ *                                returns all table monitors.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_table_monitors = function(monitor_ids, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_table_monitors(monitor_ids, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        monitor_ids: monitor_ids,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/show/tablemonitors", actual_request, callback);
+};
+
+/**
  * Gets names of the tables whose type matches the given criteria. Each table
  * has a particular type. This type comprises the schema and properties of the
  * table and sometimes a type label. This function allows a look up of the
@@ -23510,11 +24493,12 @@ GPUdb.prototype.upload_files_request = function(request, callback) {
  *                          upload operation to perform
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'none'
+ *                                  <li> 'none': Default, indicates this is not
+ *                          a multipart upload
  *                                  <li> 'init': Initialize a multipart file
  *                          upload
- *                                  <li> 'upload_part': Upload one or more
- *                          parts of the specified multipart file upload
+ *                                  <li> 'upload_part': Uploads a part of the
+ *                          specified multipart file upload
  *                                  <li> 'complete': Complete the specified
  *                          multipart file upload
  *                                  <li> 'cancel': Cancel the specified

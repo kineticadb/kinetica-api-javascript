@@ -2,6 +2,16 @@
 
 ## Version 7.1
 
+### Version 7.1.5.0 - 2021-10-13
+
+#### Added
+##### Javascript API
+-   A new class, `GPUdb.FileHandler`, to handle uploading files to KiFS.
+    It has the following methods:
+    -   ``upload``: Uploads local file objects from browsers to KiFS
+    -   ``download``: Downloads files from KiFS into the local filesystem
+    
+
 ### Version 7.1.4.0 - 2021-07-29
 
 #### Added
