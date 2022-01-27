@@ -893,7 +893,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.4.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.6.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1968,26 +1968,26 @@ GPUdb.prototype.admin_offline = function(offline, options, callback) {
  * distributed (as much as possible) across all the ranks.
  * <p>
  * The database must be offline for this operation, see
- * {@linkcode GPUdb#admin_offline}
+ * {@linkcode GPUdb#admin_offline}.
  * <p>
- * * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made
- * to the
- *   cluster, e.g., a host was added or removed,
- *   <a href="../../../concepts/tables/#sharding" target="_top">sharded
- * data</a> will be
- *   evenly redistributed across the cluster by number of shards per rank
- *   while unsharded data will be redistributed across the cluster by data
- *   size per rank
- * * If {@linkcode GPUdb#admin_rebalance} is invoked at some point when
+ * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made to
+ * the
+ * cluster, e.g., a host was added or removed,
+ * <a href="../../../concepts/tables/#sharding" target="_top">sharded data</a>
+ * will be
+ * evenly redistributed across the cluster by number of shards per rank
+ * while unsharded data will be redistributed across the cluster by data
+ * size per rank.
+ * <p>
+ * If {@linkcode GPUdb#admin_rebalance} is invoked at some point when
  * unsharded
- *   data (a.k.a.
- *   <a href="../../../concepts/tables/#random-sharding"
+ * data (a.k.a. <a href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>)
- *   in the cluster is unevenly distributed over time, sharded data will
- *   not move while unsharded data will be redistributed across the
- *   cluster by data size per rank
+ * in the cluster is unevenly distributed over time, sharded data will
+ * not move while unsharded data will be redistributed across the
+ * cluster by data size per rank.
  * <p>
- * NOTE: Replicated data will not move as a result of this call
+ * NOTE: Replicated data will not move as a result of this call.
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
@@ -2029,26 +2029,26 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  * distributed (as much as possible) across all the ranks.
  * <p>
  * The database must be offline for this operation, see
- * {@linkcode GPUdb#admin_offline}
+ * {@linkcode GPUdb#admin_offline}.
  * <p>
- * * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made
- * to the
- *   cluster, e.g., a host was added or removed,
- *   <a href="../../../concepts/tables/#sharding" target="_top">sharded
- * data</a> will be
- *   evenly redistributed across the cluster by number of shards per rank
- *   while unsharded data will be redistributed across the cluster by data
- *   size per rank
- * * If {@linkcode GPUdb#admin_rebalance} is invoked at some point when
+ * If {@linkcode GPUdb#admin_rebalance} is invoked after a change is made to
+ * the
+ * cluster, e.g., a host was added or removed,
+ * <a href="../../../concepts/tables/#sharding" target="_top">sharded data</a>
+ * will be
+ * evenly redistributed across the cluster by number of shards per rank
+ * while unsharded data will be redistributed across the cluster by data
+ * size per rank.
+ * <p>
+ * If {@linkcode GPUdb#admin_rebalance} is invoked at some point when
  * unsharded
- *   data (a.k.a.
- *   <a href="../../../concepts/tables/#random-sharding"
+ * data (a.k.a. <a href="../../../concepts/tables/#random-sharding"
  * target="_top">randomly-sharded</a>)
- *   in the cluster is unevenly distributed over time, sharded data will
- *   not move while unsharded data will be redistributed across the
- *   cluster by data size per rank
+ * in the cluster is unevenly distributed over time, sharded data will
+ * not move while unsharded data will be redistributed across the
+ * cluster by data size per rank.
  * <p>
- * NOTE: Replicated data will not move as a result of this call
+ * NOTE: Replicated data will not move as a result of this call.
  * <p>
  * This endpoint's processing time depends on the amount of data in the system,
  * thus the API call may time out if run directly.  It is recommended to run
@@ -3141,7 +3141,7 @@ GPUdb.prototype.aggregate_convex_hull = function(table_name, x_column_name, y_co
  * target="_top">aggregation functions</a> supplied to <code>having</code>.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
+ * href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -3248,7 +3248,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  * target="_top">aggregation functions</a> supplied to <code>having</code>.
  * <p>
  * The response is returned as a dynamic schema. For details see: <a
- * href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
+ * href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic schemas
  * documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
@@ -3291,6 +3291,22 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                        subsequent pages of results.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>result_table</code>. If
+ *                          <code>result_table_persist</code> is
+ *                          <code>false</code> (or unspecified), then this is
+ *                          always allowed even if the caller does not have
+ *                          permission to create tables. The generated name is
+ *                          returned in
+ *                          <code>qualified_result_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema as part of
  *                          <code>result_table</code> and use
@@ -4306,8 +4322,8 @@ GPUdb.prototype.aggregate_statistics_by_range = function(table_name, select_expr
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
- * documentation</a>.
+ * <a href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
  * <code>options</code>, the results are stored in a new table with that
@@ -4394,8 +4410,8 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  * {"limit":"10","sort_order":"descending"}.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
- * documentation</a>.
+ * <a href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  * <p>
  * If a <code>result_table</code> name is specified in the
  * <code>options</code>, the results are stored in a new table with that
@@ -4444,6 +4460,22 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                        subsequent pages of results.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>result_table</code>. If
+ *                          <code>result_table_persist</code> is
+ *                          <code>false</code> (or unspecified), then this is
+ *                          always allowed even if the caller does not have
+ *                          permission to create tables. The generated name is
+ *                          returned in
+ *                          <code>qualified_result_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema as part of
  *                          <code>result_table</code> and use
@@ -4578,8 +4610,8 @@ GPUdb.prototype.aggregate_unique = function(table_name, column_name, offset, lim
  * and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
- * documentation</a>.
+ * <a href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -4644,8 +4676,8 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  * and values respectively.
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
- * documentation</a>.
+ * <a href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {String} table_name  Name of the table on which the operation will be
  *                             performed. Must be an existing table/view, in
@@ -4665,6 +4697,22 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                    same data type.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>result_table</code>. If
+ *                          <code>result_table_persist</code> is
+ *                          <code>false</code> (or unspecified), then this is
+ *                          always allowed even if the caller does not have
+ *                          permission to create tables. The generated name is
+ *                          returned in
+ *                          <code>qualified_result_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema as part of
  *                          <code>result_table</code> and use
@@ -4919,14 +4967,6 @@ GPUdb.prototype.alter_datasink_request = function(request, callback) {
  *                                       'destination_type://path[:port]'.
  *                                       Supported destination types are
  *                                       'http', 'https' and 'kafka'.
- *                                               <li> 'destination_type':
- *                                       Destination type for the output data
- *                                               <li> 'user_name': Name of the
- *                                       remote system user; may be an empty
- *                                       string
- *                                               <li> 'password': Password for
- *                                       the remote system user; may be an
- *                                       empty string
  *                                               <li> 'connection_timeout':
  *                                       Timeout in seconds for connecting to
  *                                       this sink
@@ -4942,6 +4982,26 @@ GPUdb.prototype.alter_datasink_request = function(request, callback) {
  *                                       of the Kafka topic to use for this
  *                                       data sink, if it references a Kafka
  *                                       broker
+ *                                               <li> 'max_batch_size': Maximum
+ *                                       number of records per notification
+ *                                       message.  The default value is '1'.
+ *                                               <li> 'max_message_size':
+ *                                       Maximum size in bytes of each
+ *                                       notification message.  The default
+ *                                       value is '1000000'.
+ *                                               <li> 'json_format': The
+ *                                       desired format of JSON encoded
+ *                                       notifications message.
+ *                                       If <code>nested</code>, records are
+ *                                       returned as an array.
+ *                                       Otherwise, only a single record per
+ *                                       messages is returned.
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'flat'
+ *                                               <li> 'nested'
+ *                                       </ul>
+ *                                       The default value is 'flat'.
  *                                               <li> 'skip_validation': Bypass
  *                                       validation of connection to this data
  *                                       sink.
@@ -5109,7 +5169,22 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                         the data source
  *                                                 <li> 'anonymous': Create an
  *                                         anonymous connection to the storage
- *                                         provider
+ *                                         provider--DEPRECATED: this is now
+ *                                         the default.  Specify
+ *                                         use_managed_credentials for
+ *                                         non-anonymous connection
+ *                                         Supported values:
+ *                                         <ul>
+ *                                                 <li> 'true'
+ *                                                 <li> 'false'
+ *                                         </ul>
+ *                                         The default value is 'true'.
+ *                                                 <li>
+ *                                         'use_managed_credentials': When no
+ *                                         credentials are supplied, we use
+ *                                         anonymous access by default.  If
+ *                                         this is set, we will use cloud
+ *                                         provider user settings.
  *                                         Supported values:
  *                                         <ul>
  *                                                 <li> 'true'
@@ -5157,8 +5232,6 @@ GPUdb.prototype.alter_datasource = function(name, datasource_updates_map, option
 };
 
 /**
- * For internal use only: Graph server admin command.
- * For internal use only: Graph server admin command.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5166,6 +5239,7 @@ GPUdb.prototype.alter_datasource = function(name, datasource_updates_map, option
  *
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
+ * @private
  */
 GPUdb.prototype.alter_graph_request = function(request, callback) {
     if (callback === undefined || callback === null) {
@@ -5193,50 +5267,31 @@ GPUdb.prototype.alter_graph_request = function(request, callback) {
 };
 
 /**
- * For internal use only: Graph server admin command.
- * For internal use only: Graph server admin command.
  *
- * @param {String} graph_name  Graph on which the operation should be applied.
- *                             If empty then it will apply to all graphs.
- *                             This request can be sent from the graph server
- *                             to the graph client, or from the client to the
- *                             server depending on the type of operation.
- * @param {String} action  Operation to be applied
+ * @param {String} graph_name
+ * @param {String} action
  *                         Supported values:
  *                         <ul>
- *                                 <li> 'add_table_monitor': Add a table
- *                         monitor to a graph. The table name is specified as
- *                         the action argment.
- *                                 <li> 'reset_client': Reset all current
- *                         operations on the client side. Used when the graph
- *                         server is restarted to recover from a failure.
- *                                 <li> 'reset_server': Reset all current
- *                         operations on the server side. This is also sent on
- *                         (re)start.
- *                                 <li> 'cancel_task': Cancel a specific task
- *                         on the graph server.
- *                                 <li> 'alter_logger': Change the server side
- *                         log level; e.g., 'GraphServer.GraphSolver=DEBUG'
- *                                 <li> 'delete_all': Delete all graphs, and
- *                         remove any persistence info.
- *                                 <li> 'status': Current status of the graph
- *                         client (db side).
- *                                 <li> 'collect_graphs': Get the create
- *                         command for all persisted graphs.
- *                                 <li> 'restore_graphs': Re-creates all graphs
- *                         from persist info on rank0.
+ *                                 <li> 'add_table_monitor'
+ *                                 <li> 'reset_client'
+ *                                 <li> 'reset_server'
+ *                                 <li> 'cancel_task'
+ *                                 <li> 'alter_logger'
+ *                                 <li> 'delete_all'
+ *                                 <li> 'status'
+ *                                 <li> 'collect_graphs'
+ *                                 <li> 'restore_graphs'
  *                         </ul>
- * @param {String} action_arg  Action specific argument.
- * @param {Object} options  Optional parameters.
+ * @param {String} action_arg
+ * @param {Object} options
  *                          <ul>
- *                                  <li> 'server_id': Indicates which graph
- *                          server(s) to send the request to. Default is to
- *                          send to get information about all the servers.
+ *                                  <li> 'server_id':
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
+ * @private
  */
 GPUdb.prototype.alter_graph = function(graph_name, action, action_arg, options, callback) {
     if (callback === undefined || callback === null) {
@@ -5307,6 +5362,7 @@ GPUdb.prototype.alter_model_request = function(request, callback) {
  *                                 <li> 'container'
  *                                 <li> 'registry'
  *                                 <li> 'refresh'
+ *                                 <li> 'stop_deployment'
  *                         </ul>
  * @param {String} value
  * @param {Object} options
@@ -5427,6 +5483,9 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                  <li> 'max_cpu_concurrency': Maximum number
  *                          of simultaneous threads that will be used to
  *                          execute a request for this group.
+ *                                  <li> 'max_data': Maximum amount of
+ *                          cumulative ram usage regardless of tier status for
+ *                          this group.
  *                                  <li> 'max_scheduling_priority': Maximum
  *                          priority of a scheduled task for this group.
  *                                  <li> 'max_tier_priority': Maximum priority
@@ -5815,12 +5874,15 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       disable auditing of request bodies.
  *                                               <li> 'audit_data': Enable or
  *                                       disable auditing of request data.
+ *                                               <li> 'audit_response': Enable
+ *                                       or disable auditing of response
+ *                                       information.
  *                                               <li> 'shadow_agg_size': Size
  *                                       of the shadow aggregate chunk cache in
  *                                       bytes.  The default value is
  *                                       '10000000'.
  *                                               <li> 'shadow_filter_size':
- *                                       Size of the shdow filter chunk cache
+ *                                       Size of the shadow filter chunk cache
  *                                       in bytes.  The default value is
  *                                       '10000000'.
  *                                               <li>
@@ -6193,6 +6255,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 <li> 'resume_datasource_subscription':
  *                         Resubscribe to a paused data source subscription.
  *                         The data source can be kafka / S3 / Azure.
+ *                                 <li> 'change_owner': Change the owner
+ *                         resource group of the table.
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
  *                        <code>action</code>.  For example, if
@@ -7177,7 +7241,7 @@ GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'clear_all_references': If
  *                          <code>true</code>, all references that share the
- *                          same {@input topic_id} will be cleared.
+ *                          same <code>topic_id</code> will be cleared.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -7586,6 +7650,23 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  *                                  <li> 'kafka_topic_name': Name of the Kafka
  *                          topic to publish to if <code>destination</code> is
  *                          a Kafka broker
+ *                                  <li> 'max_batch_size': Maximum number of
+ *                          records per notification message.  The default
+ *                          value is '1'.
+ *                                  <li> 'max_message_size': Maximum size in
+ *                          bytes of each notification message.  The default
+ *                          value is '1000000'.
+ *                                  <li> 'json_format': The desired format of
+ *                          JSON encoded notifications message.
+ *                          If <code>nested</code>, records are returned as an
+ *                          array. Otherwise, only a single record per messages
+ *                          is returned.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'flat'
+ *                                  <li> 'nested'
+ *                          </ul>
+ *                          The default value is 'flat'.
  *                                  <li> 'skip_validation': Bypass validation
  *                          of connection to this data sink.
  *                          Supported values:
@@ -7673,8 +7754,8 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  * @param {String} location  Location of the remote storage in
  *                           'storage_provider_type://[storage_path[:storage_port]]'
  *                           format.
- *                           Supported storage provider types are 'hdfs' and
- *                           's3'.
+ *                           Supported storage provider types are
+ *                           'azure','hdfs','kafka' and 's3'.
  * @param {String} user_name  Name of the remote system user; may be an empty
  *                            string
  * @param {String} password  Password for the remote system user; may be an
@@ -7738,7 +7819,19 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                                  <li> 'kafka_topic_name': Name of the Kafka
  *                          topic to use as the data source
  *                                  <li> 'anonymous': Use anonymous connection
- *                          to storage provider
+ *                          to storage provider--DEPRECATED: this is now the
+ *                          default.  Specify use_managed_credentials for
+ *                          non-anonymous connection.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'use_managed_credentials': When no
+ *                          credentials are supplied, we use anonymous access
+ *                          by default.  If this is set, we will use cloud
+ *                          provider user settings.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -7899,6 +7992,11 @@ GPUdb.prototype.create_directory_request = function(request, callback) {
  * @param {String} directory_name  Name of the directory in KiFS to be created.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_home_directory': When set, a
+ *                          home directory is created for the user name
+ *                          provided in the value. The
+ *                          <code>directory_name</code> must be an empty string
+ *                          in this case. The user must exist.
  *                                  <li> 'no_error_if_exists': If
  *                          <code>true</code>, does not return an error if the
  *                          directory already exists
@@ -8274,6 +8372,11 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'label_delimiter': If provided the
+ *                          label string will be split according to this
+ *                          delimiter and each sub-string will be applied as a
+ *                          separate label onto the specified edge.  The
+ *                          default value is ''.
  *                                  <li> 'sql_request_avro_json': The default
  *                          value is ''.
  *                          </ul>
@@ -8511,6 +8614,19 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                target="_top">expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>join_table_name</code>. This is
+ *                          always allowed even if the caller does not have
+ *                          permission to create tables. The generated name is
+ *                          returned in <code>qualified_join_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the join as part
  *                          of <code>join_table_name</code> and use
@@ -8999,6 +9115,21 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                 alias'.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>projection_name</code>. If
+ *                          <code>persist</code> is <code>false</code> (or
+ *                          unspecified), then this is always allowed even if
+ *                          the caller does not have permission to create
+ *                          tables. The generated name is returned in
+ *                          <code>qualified_projection_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the projection as
  *                          part of <code>projection_name</code> and use
@@ -9196,6 +9327,9 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  <li> 'max_cpu_concurrency': Maximum number
  *                          of simultaneous threads that will be used to
  *                          execute a request for this group.
+ *                                  <li> 'max_data': Maximum amount of
+ *                          cumulative ram usage regardless of tier status for
+ *                          this group.
  *                                  <li> 'max_scheduling_priority': Maximum
  *                          priority of a scheduled task for this group.
  *                                  <li> 'max_tier_priority': Maximum priority
@@ -9561,6 +9695,21 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>table_name</code>. If
+ *                          <code>is_result_table</code> is <code>true</code>,
+ *                          then this is always allowed even if the caller does
+ *                          not have permission to create tables. The generated
+ *                          name is returned in
+ *                          <code>qualified_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema as part of
  *                          <code>table_name</code> and use
@@ -9699,7 +9848,6 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                          href="../../../rm/concepts/#tier-strategies"
  *                          target="_top">tier strategy</a> for the table and
  *                          its columns.
- *                                  <li> 'is_virtual_union': <DEVELOPER>
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -9735,8 +9883,8 @@ GPUdb.prototype.create_table = function(table_name, type_id, options, callback) 
  * target="_top">external table</a>, which is a
  * local database object whose source data is located externally to the
  * database.  The source data can
- * be located either on the cluster, accessible to the database; or remotely,
- * accessible via a
+ * be located either in <a href="../../../tools/kifs/" target="_top">KiFS</a>;
+ * on the cluster, accessible to the database; or remotely, accessible via a
  * pre-defined external <a href="../../../concepts/data_sources/"
  * target="_top">data source</a>.
  * <p>
@@ -9784,8 +9932,8 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  * target="_top">external table</a>, which is a
  * local database object whose source data is located externally to the
  * database.  The source data can
- * be located either on the cluster, accessible to the database; or remotely,
- * accessible via a
+ * be located either in <a href="../../../tools/kifs/" target="_top">KiFS</a>;
+ * on the cluster, accessible to the database; or remotely, accessible via a
  * pre-defined external <a href="../../../concepts/data_sources/"
  * target="_top">data source</a>.
  * <p>
@@ -9805,17 +9953,24 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
  * @param {String[]} filepaths  A list of file paths from which data will be
- *                              sourced; wildcards (*) can be used
- *                              to specify a group of files.
- *                              For paths in KiFS, use the uri prefix of
- *                              kifs:// followed by the full path to a file or
- *                              directory.
+ *                              sourced;
+ *                              For paths in <a href="../../../tools/kifs/"
+ *                              target="_top">KiFS</a>, use the uri prefix of
+ *                              kifs:// followed by the path to
+ *                              a file or directory. File matching by prefix is
+ *                              supported, e.g. kifs://dir/file would match
+ *                              dir/file_1
+ *                              and dir/file_2. When prefix matching is used,
+ *                              the path must start with a full, valid KiFS
+ *                              directory name.
  *                              If an external data source is specified in
  *                              <code>datasource_name</code>, these file
  *                              paths must resolve to accessible files at that
- *                              data source location. Also, wildcards will only
- *                              work
- *                              when used within the file name, not the path.
+ *                              data source location. Prefix matching is
+ *                              supported.
+ *                              If the data source is hdfs, prefixes must be
+ *                              aligned with directories, i.e. partial file
+ *                              names will not match.
  *                              If no data source is specified, the files are
  *                              assumed to be local to the database and must
  *                              all be
@@ -9823,7 +9978,15 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                              path (or relative to the path) specified by the
  *                              external files directory in the Kinetica
  *                              <a href="../../../config/#external-files"
- *                              target="_top">configuration file</a>.
+ *                              target="_top">configuration file</a>. Wildcards
+ *                              (*) can be used to specify a group of files
+ *                              Prefix matching is supported, the prefixes must
+ *                              be aligned with directories.
+ *                              If the first path ends in .tsv, the text
+ *                              delimiter will be defaulted to a tab character.
+ *                              If the first path ends in .psv, the text
+ *                              delimiter will be defaulted to a pipe character
+ *                              (|).
  * @param {Object} modify_columns  Not implemented yet
  * @param {Object} create_table_options  Options from
  *                                       {@linkcode GPUdb#create_table},
@@ -10008,18 +10171,18 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          Default value is 10000
  *                                  <li> 'batch_size': Internal tuning
  *                          parameter--number of records per batch when
- *                          inserting data
+ *                          inserting data.
  *                                  <li> 'column_formats': For each target
  *                          column specified, applies the column-property-bound
- *                          format to the source data loaded into that column.
- *                          Each column format will contain a mapping of one
- *                          or more of its column properties to an appropriate
- *                          format for each property.  Currently supported
- *                          column properties include date, time, & datetime.
- *                          The parameter value must be formatted as a JSON
- *                          string of maps of column names to maps of column
- *                          properties to their corresponding column formats,
- *                          e.g.,
+ *                          format to the source data
+ *                          loaded into that column.  Each column format will
+ *                          contain a mapping of one or more of its column
+ *                          properties to an appropriate format for each
+ *                          property.  Currently supported column properties
+ *                          include date, time, & datetime. The parameter value
+ *                          must be formatted as a JSON string of maps of
+ *                          column names to maps of column properties to their
+ *                          corresponding column formats, e.g.,
  *                          '{ "order_date" : { "date" : "%Y.%m.%d" },
  *                          "order_time" : { "time" : "%H:%M:%S" } }'.
  *                          See <code>default_column_formats</code> for valid
@@ -10103,15 +10266,15 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'permissive': Records with missing
  *                          columns are populated with nulls if possible;
- *                          otherwise, malformed records are skipped.
+ *                          otherwise, the malformed records are skipped.
  *                                  <li> 'ignore_bad_records': Malformed
  *                          records are skipped.
- *                                  <li> 'abort': Current insertion is stopped
- *                          and entire operation is aborted when an error is
+ *                                  <li> 'abort': Stops current insertion and
+ *                          aborts entire operation when an error is
  *                          encountered.  Primary key collisions are considered
  *                          abortable errors in this mode.
  *                          </ul>
- *                          The default value is 'permissive'.
+ *                          The default value is 'abort'.
  *                                  <li> 'external_table_type': Specifies
  *                          whether the external table holds a local copy of
  *                          the external data.
@@ -10127,21 +10290,20 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'materialized'.
  *                                  <li> 'file_type': Specifies the type of the
- *                          external data file(s) used as the source of data
- *                          for this table.
+ *                          file(s) whose records will be inserted.
  *                          Supported values:
  *                          <ul>
+ *                                  <li> 'avro': Avro file format
  *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
- *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'json': Json file format
+ *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
- *                                  <li> 'ingestion_mode': For
- *                          <code>materialized</code> external tables, whether
- *                          to do a full load, dry run, or perform a type
- *                          inference on the source data.
+ *                                  <li> 'ingestion_mode': Whether to do a full
+ *                          load, dry run, or perform a type inference on the
+ *                          source data.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'full': Run a type inference on the
@@ -10151,14 +10313,19 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          number of valid records, taking into account the
  *                          current mode of <code>error_handling</code>.
  *                                  <li> 'type_inference_only': Infer the type
- *                          of the source data and return, without creating the
- *                          table and ingesting data.  The inferred type is
- *                          returned in the response.
+ *                          of the source data and return, without ingesting
+ *                          any data.  The inferred type is returned in the
+ *                          response.
  *                          </ul>
  *                          The default value is 'full'.
+ *                                  <li> 'kafka_group_id': The group id to be
+ *                          used consuming data from a kakfa topic (valid only
+ *                          for kafka datasource subscriptions).
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
- *                          from the source data file(s).
+ *                          from the source data file(s). This option applies
+ *                          only when loading files that are local to the
+ *                          database
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'head': The head node loads all data.
@@ -10185,26 +10352,29 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          primary key (which will allow the worker to
  *                          automatically deduplicate data).
  *                          NOTE:
- *                          If the table's columns aren't defined, table
+ *                          If the target table doesn't exist, the table
  *                          structure will be determined by the head node. If
  *                          the
  *                          head node has no files local to it, it will be
  *                          unable to determine the structure and the request
  *                          will fail.
- *                          This mode should not be used in conjunction with a
- *                          data source, as data sources are seen by all
- *                          worker processes as shared resources with no
- *                          'local' component.
  *                          If the head node is configured to have no worker
  *                          processes, no data strictly accessible to the head
  *                          node will be loaded.
  *                          </ul>
  *                          The default value is 'head'.
+ *                                  <li> 'local_time_offset': For Avro local
+ *                          timestamp columns
+ *                                  <li> 'num_tasks_per_rank': Optional: number
+ *                          of tasks for reading file per rank. Default will be
+ *                          external_file_reader_num_tasks
+ *                                  <li> 'poll_interval': If <code>true</code>,
+ *                          the number of seconds between attempts to load
+ *                          external files into the table.  If zero, polling
+ *                          will be continuous as long as data is found.  If no
+ *                          data is found, the interval will steadily increase
+ *                          to a maximum of 60 seconds.
  *                                  <li> 'primary_keys': Optional: comma
- *                          separated list of column names, to set as primary
- *                          keys, when not specified in the type.  The default
- *                          value is ''.
- *                                  <li> 'shard_keys': Optional: comma
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
@@ -10221,6 +10391,12 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          on this table.
  *                          </ul>
  *                          The default value is 'manual'.
+ *                                  <li> 'shard_keys': Optional: comma
+ *                          separated list of column names, to set as primary
+ *                          keys, when not specified in the type.  The default
+ *                          value is ''.
+ *                                  <li> 'skip_lines': Skip number of lines
+ *                          from begining of file.
  *                                  <li> 'subscribe': Continuously poll the
  *                          data source to check for new data and load it into
  *                          the table.
@@ -10230,10 +10406,17 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'poll_interval': If <code>true</code>,
- *                          the number of seconds between attempts to load
- *                          external files into the table. If zero, polling
- *                          will be continuous.
+ *                                  <li> 'table_insert_mode': Optional:
+ *                          table_insert_mode. When inserting records from
+ *                          multiple files: if table_per_file then insert from
+ *                          each file into a new table. Currently supported
+ *                          only for shapefiles.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'single'
+ *                                  <li> 'table_per_file'
+ *                          </ul>
+ *                          The default value is 'single'.
  *                                  <li> 'text_comment_string': Specifies the
  *                          character string that should be interpreted as a
  *                          comment line
@@ -10293,7 +10476,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          value in the source data.
  *                          For <code>delimited_text</code>
  *                          <code>file_type</code> only.  The default value is
- *                          ''.
+ *                          '\\N'.
  *                                  <li> 'text_quote_character': Specifies the
  *                          character that should be interpreted as a field
  *                          value
@@ -10309,9 +10492,25 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          For <code>delimited_text</code>
  *                          <code>file_type</code> only.  The default value is
  *                          '"'.
- *                                  <li> 'num_tasks_per_rank': Optional: number
- *                          of tasks for reading file per rank. Default will be
- *                          external_file_reader_num_tasks
+ *                                  <li> 'text_search_columns': Add
+ *                          'text_search' property to internally inferenced
+ *                          string columns. Comma seperated list of column
+ *                          names or '*' for all columns. To add text_search
+ *                          property only to string columns of minimum size,
+ *                          set also the option 'text_search_min_column_length'
+ *                                  <li> 'text_search_min_column_length': Set
+ *                          minimum column size. Used only when
+ *                          'text_search_columns' has a value.
+ *                                  <li> 'truncate_table': If set to
+ *                          <code>true</code>, truncates the table specified by
+ *                          <code>table_name</code> prior to loading the
+ *                          file(s).
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'type_inference_mode': optimize type
  *                          inference for:
  *                          Supported values:
@@ -10323,29 +10522,6 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          minimum data scanned
  *                          </ul>
  *                          The default value is 'speed'.
- *                                  <li> 'table_insert_mode': Optional:
- *                          table_insert_mode. When inserting records from
- *                          multiple files: if table_per_file then insert from
- *                          each file into a new table. Currently supported
- *                          only for shapefiles.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'single'
- *                                  <li> 'table_per_file'
- *                          </ul>
- *                          The default value is 'single'.
- *                                  <li> 'kafka_group_id': The group id to be
- *                          used consuming data from a kakfa topic (valid only
- *                          for kafka datasource subscriptions).
- *                                  <li> 'text_search_columns': Add
- *                          'text_search' property to internally inferenced
- *                          string columns. Comma seperated list of column
- *                          names or '*' for all columns. To add text_search
- *                          property only to string columns of minimum size,
- *                          set also the option 'text_search_min_column_length'
- *                                  <li> 'text_search_min_column_length': Set
- *                          minimum column size. Used only when
- *                          'text_search_columns' has a value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -11091,8 +11267,8 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                             replace empty strings and invalid timestamps
  *                             with 'NOW()' upon insert.
  *                                     <li> 'init_with_uuid': For 'uuid' type,
- *                             repalce empty strings and invalid uuid values
- *                             with new_uuid()' upon insert.
+ *                             replace empty strings and invalid UUID values
+ *                             with randomly-generated UUIDs upon insert.
  *                             </ul>
  *                             The default value is an empty dict ( {} ).
  * @param {Object} options  Optional parameters.
@@ -11240,6 +11416,21 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                        be stored in the output table.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>table_name</code>. If
+ *                          <code>persist</code> is <code>false</code> (or
+ *                          unspecified), then this is always allowed even if
+ *                          the caller does not have permission to create
+ *                          tables. The generated name is returned in
+ *                          <code>qualified_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the projection as
  *                          part of <code>table_name</code> and use
@@ -11402,6 +11593,16 @@ GPUdb.prototype.create_user_external_request = function(request, callback) {
  *                       user's name in the external LDAP, prefixed with a @.
  *                       Must not be the same name as an existing user.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'create_home_directory': when true, a
+ *                          home directory in KiFS is created for this user
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -11481,6 +11682,14 @@ GPUdb.prototype.create_user_internal_request = function(request, callback) {
  *                          resource group to associate with this user
  *                                  <li> 'default_schema': default schema
  *                          associate with this user
+ *                                  <li> 'create_home_directory': when true, a
+ *                          home directory in KiFS is created for this user
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -12138,6 +12347,18 @@ GPUdb.prototype.delete_resource_group_request = function(request, callback) {
  *
  * @param {String} name  Name of the resource group to be deleted.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'cascade_delete': If
+ *                          <code>true</code>, delete any existing entities
+ *                          owned by this group. Otherwise this request will
+ *                          return an error of any such entities exist.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13158,8 +13379,8 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
 /**
  * Execute a SQL statement (query, DML, or DDL).
  * <p>
- * See <a href="../../../concepts/sql/" target="_top">SQL Support</a> for the
- * complete set of supported SQL commands.
+ * See <a href="../../../sql/" target="_top">SQL Support</a> for the complete
+ * set of supported SQL commands.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -13207,8 +13428,8 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
 /**
  * Execute a SQL statement (query, DML, or DDL).
  * <p>
- * See <a href="../../../concepts/sql/" target="_top">SQL Support</a> for the
- * complete set of supported SQL commands.
+ * See <a href="../../../sql/" target="_top">SQL Support</a> for the complete
+ * set of supported SQL commands.
  *
  * @param {String} statement  SQL statement (query, DML, or DDL) to be executed
  * @param {Number} offset  A positive integer indicating the number of initial
@@ -13498,6 +13719,19 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                             target="_top">Expressions</a>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -13624,6 +13858,19 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  *                             polygon representing the area to be filtered.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -13747,6 +13994,19 @@ GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
  *                             polygon representing the area to be filtered.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -13879,6 +14139,19 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                        greater than or equal to <code>min_y</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14014,6 +14287,19 @@ GPUdb.prototype.filter_by_box_geometry_request = function(request, callback) {
  *                        <code>min_y</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14145,6 +14431,19 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  *                            </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14277,6 +14576,19 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *                                    column in the table
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14427,6 +14739,19 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                         '42000' means 42 km.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14558,6 +14883,19 @@ GPUdb.prototype.filter_by_radius_geometry_request = function(request, callback) 
  *                         '42000' means 42 km.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14687,6 +15025,19 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  * @param {Number} upper_bound  Value of the upper bound (inclusive).
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14829,6 +15180,19 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                     set.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -14986,6 +15350,19 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                                 mode.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -15135,6 +15512,19 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                           <code>column_name</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -15310,6 +15700,19 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  *                              would be applied.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>view_name</code>. This is always
+ *                          allowed even if the caller does not have permission
+ *                          to create tables. The generated name is returned in
+ *                          <code>qualified_view_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the view as part
  *                          of <code>view_name</code> and use
@@ -15626,8 +16029,8 @@ GPUdb.prototype.get_records = function(table_name, offset, limit, options, callb
  * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
- * documentation</a>.
+ * <a href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -15706,8 +16109,8 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  * target="_top">GEODIST(-77.11, 38.88, -71.06, 42.36)</a>).
  * <p>
  * The response is returned as a dynamic schema. For details see:
- * <a href="../../../api/#dynamic-schemas" target="_top">dynamic schemas
- * documentation</a>.
+ * <a href="../../../api/concepts/#dynamic-schemas" target="_top">dynamic
+ * schemas documentation</a>.
  *
  * @param {String} table_name  Name of the table or view on which this
  *                             operation will be performed, in
@@ -16235,6 +16638,7 @@ GPUdb.prototype.grant_permission_request = function(request, callback) {
  *                                      <li> 'sql_proc': SQL Procedure
  *                                      <li> 'system': System-level access
  *                                      <li> 'table': Database Table
+ *                                      <li> 'table_monitor': Table monitor
  *                              </ul>
  * @param {String} permission  Permission being granted.
  *                             Supported values:
@@ -16951,6 +17355,7 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  *                                      <li> 'sql_proc': SQL Procedure
  *                                      <li> 'system': System-level access
  *                                      <li> 'table': Database Table
+ *                                      <li> 'table_monitor': Table monitor
  *                              </ul>
  * @param {String} permission  Permission to check for.
  *                             Supported values:
@@ -17661,10 +18066,14 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
 };
 
 /**
- * Reads from one or more files located on the server and inserts the data into
- * a new or
- * existing table.
+ * Reads from one or more files and inserts the data into a new or existing
+ * table.
+ * The source data can be located either in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>; on the cluster, accessible to the database; or
+ * remotely, accessible via a pre-defined external <a
+ * href="../../../concepts/data_sources/" target="_top">data source</a>.
  * <p>
+
  * For delimited text files, there are two loading schemes: positional and
  * name-based. The name-based
  * loading scheme is enabled when the file has a header present and
@@ -17679,6 +18088,13 @@ GPUdb.prototype.insert_records = function(table_name, data, options, callback) {
  * the file header's names may be provided to <code>columns_to_load</code>
  * instead of
  * numbers, but ranges are not supported.
+ * <p>
+ * Note: Due to data being loaded in parallel, there is no insertion order
+ * guaranteed.  For tables with
+ * primary keys, in the case of a primary key collision, this means it is
+ * indeterminate which record
+ * will be inserted first and remain, while the rest of the colliding key
+ * records are discarded.
  * <p>
  * Returns once all files are processed.
  *
@@ -17716,10 +18132,14 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
 };
 
 /**
- * Reads from one or more files located on the server and inserts the data into
- * a new or
- * existing table.
+ * Reads from one or more files and inserts the data into a new or existing
+ * table.
+ * The source data can be located either in <a href="../../../tools/kifs/"
+ * target="_top">KiFS</a>; on the cluster, accessible to the database; or
+ * remotely, accessible via a pre-defined external <a
+ * href="../../../concepts/data_sources/" target="_top">data source</a>.
  * <p>
+
  * For delimited text files, there are two loading schemes: positional and
  * name-based. The name-based
  * loading scheme is enabled when the file has a header present and
@@ -17734,6 +18154,13 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  * the file header's names may be provided to <code>columns_to_load</code>
  * instead of
  * numbers, but ranges are not supported.
+ * <p>
+ * Note: Due to data being loaded in parallel, there is no insertion order
+ * guaranteed.  For tables with
+ * primary keys, in the case of a primary key collision, this means it is
+ * indeterminate which record
+ * will be inserted first and remain, while the rest of the colliding key
+ * records are discarded.
  * <p>
  * Returns once all files are processed.
  *
@@ -17752,21 +18179,41 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                             <a
  *                             href="../../../concepts/tables/#table-naming-criteria"
  *                             target="_top">table naming criteria</a>.
- * @param {String[]} filepaths  Absolute or relative filepath(s) from where
- *                              files will be loaded. Relative filepaths are
- *                              relative to the defined <a
- *                              href="../../../config/#external-files"
- *                              target="_top">external_files_directory</a>
- *                              parameter in the server configuration. The
- *                              filepaths may include wildcards (*). If the
- *                              first path ends in .tsv, the text delimiter
- *                              will be defaulted to a tab character. If the
- *                              first path ends in .psv, the text delimiter
- *                              will be defaulted to a pipe character (|).
+ * @param {String[]} filepaths  A list of file paths from which data will be
+ *                              sourced;
  *                              For paths in <a href="../../../tools/kifs/"
  *                              target="_top">KiFS</a>, use the uri prefix of
- *                              kifs:// followed by the full path to a file or
- *                              directory
+ *                              kifs:// followed by the path to
+ *                              a file or directory. File matching by prefix is
+ *                              supported, e.g. kifs://dir/file would match
+ *                              dir/file_1
+ *                              and dir/file_2. When prefix matching is used,
+ *                              the path must start with a full, valid KiFS
+ *                              directory name.
+ *                              If an external data source is specified in
+ *                              <code>datasource_name</code>, these file
+ *                              paths must resolve to accessible files at that
+ *                              data source location. Prefix matching is is
+ *                              supported.
+ *                              If the data source is hdfs, prefixes must be
+ *                              aligned with directories, i.e. partial file
+ *                              names will not match.
+ *                              If no data source is specified, the files are
+ *                              assumed to be local to the database and must
+ *                              all be
+ *                              accessible to the gpudb user, residing on the
+ *                              path (or relative to the path) specified by the
+ *                              external files directory in the Kinetica
+ *                              <a href="../../../config/#external-files"
+ *                              target="_top">configuration file</a>. Wildcards
+ *                              (*) can be used to specify a group of files.
+ *                              Prefix matching is supported, the prefixes must
+ *                              be aligned with directories.
+ *                              If the first path ends in .tsv, the text
+ *                              delimiter will be defaulted to a tab character.
+ *                              If the first path ends in .psv, the text
+ *                              delimiter will be defaulted to a pipe character
+ *                              (|).
  * @param {Object} modify_columns  Not implemented yet
  * @param {Object} create_table_options  Options used when creating the target
  *                                       table.
@@ -17930,7 +18377,9 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
  *                          columns: line_number (long), line_rejected
- *                          (string), error_message (string).
+ *                          (string), error_message (string). When error
+ *                          handling is Abort, bad records table is not
+ *                          populated.
  *                                  <li> 'bad_record_table_limit': A positive
  *                          integer indicating the maximum number of records
  *                          that can be  written to the bad-record-table.
@@ -18040,15 +18489,16 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          encountered.  Primary key collisions are considered
  *                          abortable errors in this mode.
  *                          </ul>
- *                          The default value is 'permissive'.
+ *                          The default value is 'abort'.
  *                                  <li> 'file_type': Specifies the type of the
  *                          file(s) whose records will be inserted.
  *                          Supported values:
  *                          <ul>
+ *                                  <li> 'avro': Avro file format
  *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
- *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'json': Json file format
+ *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
@@ -18069,9 +18519,14 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          response.
  *                          </ul>
  *                          The default value is 'full'.
+ *                                  <li> 'kafka_group_id': The group id to be
+ *                          used consuming data from a kakfa topic (valid only
+ *                          for kafka datasource subscriptions).
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
- *                          from the source data file(s).
+ *                          from the source data file(s). This option applies
+ *                          only when loading files that are local to the
+ *                          database
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'head': The head node loads all data.
@@ -18104,15 +18559,22 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          head node has no files local to it, it will be
  *                          unable to determine the structure and the request
  *                          will fail.
- *                          This mode should not be used in conjuction with a
- *                          data source, as data sources are seen by all
- *                          worker processes as shared resources with no
- *                          'local' component.
  *                          If the head node is configured to have no worker
  *                          processes, no data strictly accessible to the head
  *                          node will be loaded.
  *                          </ul>
  *                          The default value is 'head'.
+ *                                  <li> 'local_time_offset': For Avro local
+ *                          timestamp columns
+ *                                  <li> 'num_tasks_per_rank': Optional: number
+ *                          of tasks for reading file per rank. Default will be
+ *                          external_file_reader_num_tasks
+ *                                  <li> 'poll_interval': If <code>true</code>,
+ *                          the number of seconds between attempts to load
+ *                          external files into the table.  If zero, polling
+ *                          will be continuous as long as data is found.  If no
+ *                          data is found, the interval will steadily increase
+ *                          to a maximum of 60 seconds.
  *                                  <li> 'primary_keys': Optional: comma
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
@@ -18121,6 +18583,8 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
+ *                                  <li> 'skip_lines': Skip number of lines
+ *                          from begining of file.
  *                                  <li> 'subscribe': Continuously poll the
  *                          data source to check for new data and load it into
  *                          the table.
@@ -18130,12 +18594,17 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'poll_interval': If <code>true</code>,
- *                          the number of seconds between attempts to load
- *                          external files into the table.  If zero, polling
- *                          will be continuous as long as data is found.  If no
- *                          data is found, the interval will steadily increase
- *                          to a maximum of 60 seconds.
+ *                                  <li> 'table_insert_mode': Optional:
+ *                          table_insert_mode. When inserting records from
+ *                          multiple files: if table_per_file then insert from
+ *                          each file into a new table. Currently supported
+ *                          only for shapefiles.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'single'
+ *                                  <li> 'table_per_file'
+ *                          </ul>
+ *                          The default value is 'single'.
  *                                  <li> 'text_comment_string': Specifies the
  *                          character string that should be interpreted as a
  *                          comment line
@@ -18195,7 +18664,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          value in the source data.
  *                          For <code>delimited_text</code>
  *                          <code>file_type</code> only.  The default value is
- *                          ''.
+ *                          '\\N'.
  *                                  <li> 'text_quote_character': Specifies the
  *                          character that should be interpreted as a field
  *                          value
@@ -18211,6 +18680,15 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          For <code>delimited_text</code>
  *                          <code>file_type</code> only.  The default value is
  *                          '"'.
+ *                                  <li> 'text_search_columns': Add
+ *                          'text_search' property to internally inferenced
+ *                          string columns. Comma seperated list of column
+ *                          names or '*' for all columns. To add text_search
+ *                          property only to string columns of minimum size,
+ *                          set also the option 'text_search_min_column_length'
+ *                                  <li> 'text_search_min_column_length': Set
+ *                          minimum column size. Used only when
+ *                          'text_search_columns' has a value.
  *                                  <li> 'truncate_table': If set to
  *                          <code>true</code>, truncates the table specified by
  *                          <code>table_name</code> prior to loading the
@@ -18221,9 +18699,6 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'num_tasks_per_rank': Optional: number
- *                          of tasks for reading file per rank. Default will be
- *                          external_file_reader_num_tasks
  *                                  <li> 'type_inference_mode': optimize type
  *                          inference for:
  *                          Supported values:
@@ -18235,29 +18710,6 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          minimum data scanned
  *                          </ul>
  *                          The default value is 'speed'.
- *                                  <li> 'table_insert_mode': Optional:
- *                          table_insert_mode. When inserting records from
- *                          multiple files: if table_per_file then insert from
- *                          each file into a new table. Currently supported
- *                          only for shapefiles.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'single'
- *                                  <li> 'table_per_file'
- *                          </ul>
- *                          The default value is 'single'.
- *                                  <li> 'kafka_group_id': The group id to be
- *                          used consuming data from a kakfa topic (valid only
- *                          for kafka datasource subscriptions).
- *                                  <li> 'text_search_columns': Add
- *                          'text_search' property to internally inferenced
- *                          string columns. Comma seperated list of column
- *                          names or '*' for all columns. To add text_search
- *                          property only to string columns of minimum size,
- *                          set also the option 'text_search_min_column_length'
- *                                  <li> 'text_search_min_column_length': Set
- *                          minimum column size. Used only when
- *                          'text_search_columns' has a value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -18619,7 +19071,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          <ul>
  *                                  <li> 'permissive': Records with missing
  *                          columns are populated with nulls if possible;
- *                          otherwise, malformed records are skipped.
+ *                          otherwise, the malformed records are skipped.
  *                                  <li> 'ignore_bad_records': Malformed
  *                          records are skipped.
  *                                  <li> 'abort': Stops current insertion and
@@ -18627,15 +19079,16 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          encountered.  Primary key collisions are considered
  *                          abortable errors in this mode.
  *                          </ul>
- *                          The default value is 'permissive'.
+ *                          The default value is 'abort'.
  *                                  <li> 'file_type': Specifies the type of the
  *                          file(s) whose records will be inserted.
  *                          Supported values:
  *                          <ul>
+ *                                  <li> 'avro': Avro file format
  *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
- *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'json': Json file format
+ *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
@@ -18656,6 +19109,59 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          response.
  *                          </ul>
  *                          The default value is 'full'.
+ *                                  <li> 'loading_mode': Scheme for
+ *                          distributing the extraction and loading of data
+ *                          from the source data file(s). This option applies
+ *                          only when loading files that are local to the
+ *                          database
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'head': The head node loads all data.
+ *                          All files must be available to the head node.
+ *                                  <li> 'distributed_shared': The head node
+ *                          coordinates loading data by worker
+ *                          processes across all nodes from shared files
+ *                          available to all workers.
+ *                          NOTE:
+ *                          Instead of existing on a shared source, the files
+ *                          can be duplicated on a source local to each host
+ *                          to improve performance, though the files must
+ *                          appear as the same data set from the perspective of
+ *                          all hosts performing the load.
+ *                                  <li> 'distributed_local': A single worker
+ *                          process on each node loads all files
+ *                          that are available to it. This option works best
+ *                          when each worker loads files from its own file
+ *                          system, to maximize performance. In order to avoid
+ *                          data duplication, either each worker performing
+ *                          the load needs to have visibility to a set of files
+ *                          unique to it (no file is visible to more than
+ *                          one node) or the target table needs to have a
+ *                          primary key (which will allow the worker to
+ *                          automatically deduplicate data).
+ *                          NOTE:
+ *                          If the target table doesn't exist, the table
+ *                          structure will be determined by the head node. If
+ *                          the
+ *                          head node has no files local to it, it will be
+ *                          unable to determine the structure and the request
+ *                          will fail.
+ *                          If the head node is configured to have no worker
+ *                          processes, no data strictly accessible to the head
+ *                          node will be loaded.
+ *                          </ul>
+ *                          The default value is 'head'.
+ *                                  <li> 'local_time_offset': For Avro local
+ *                          timestamp columns
+ *                                  <li> 'num_tasks_per_rank': Optional: number
+ *                          of tasks for reading file per rank. Default will be
+ *                          external_file_reader_num_tasks
+ *                                  <li> 'poll_interval': If <code>true</code>,
+ *                          the number of seconds between attempts to load
+ *                          external files into the table.  If zero, polling
+ *                          will be continuous as long as data is found.  If no
+ *                          data is found, the interval will steadily increase
+ *                          to a maximum of 60 seconds.
  *                                  <li> 'primary_keys': Optional: comma
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
@@ -18664,6 +19170,28 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
+ *                                  <li> 'skip_lines': Skip number of lines
+ *                          from begining of file.
+ *                                  <li> 'subscribe': Continuously poll the
+ *                          data source to check for new data and load it into
+ *                          the table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'table_insert_mode': Optional:
+ *                          table_insert_mode. When inserting records from
+ *                          multiple files: if table_per_file then insert from
+ *                          each file into a new table. Currently supported
+ *                          only for shapefiles.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'single'
+ *                                  <li> 'table_per_file'
+ *                          </ul>
+ *                          The default value is 'single'.
  *                                  <li> 'text_comment_string': Specifies the
  *                          character string that should be interpreted as a
  *                          comment line
@@ -18723,7 +19251,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          value in the source data.
  *                          For <code>delimited_text</code>
  *                          <code>file_type</code> only.  The default value is
- *                          ''.
+ *                          '\\N'.
  *                                  <li> 'text_quote_character': Specifies the
  *                          character that should be interpreted as a field
  *                          value
@@ -18739,9 +19267,25 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          For <code>delimited_text</code>
  *                          <code>file_type</code> only.  The default value is
  *                          '"'.
- *                                  <li> 'num_tasks_per_rank': Optional: number
- *                          of tasks for reading file per rank. Default will be
- *                          external_file_reader_num_tasks
+ *                                  <li> 'text_search_columns': Add
+ *                          'text_search' property to internally inferenced
+ *                          string columns. Comma seperated list of column
+ *                          names or '*' for all columns. To add text_search
+ *                          property only to string columns of minimum size,
+ *                          set also the option 'text_search_min_column_length'
+ *                                  <li> 'text_search_min_column_length': Set
+ *                          minimum column size. Used only when
+ *                          'text_search_columns' has a value.
+ *                                  <li> 'truncate_table': If set to
+ *                          <code>true</code>, truncates the table specified by
+ *                          <code>table_name</code> prior to loading the
+ *                          file(s).
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'type_inference_mode': optimize type
  *                          inference for:
  *                          Supported values:
@@ -18753,15 +19297,6 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          minimum data scanned
  *                          </ul>
  *                          The default value is 'speed'.
- *                                  <li> 'text_search_columns': Add
- *                          'text_search' property to internally inferenced
- *                          string columns. Comma seperated list of column
- *                          names or '*' for all columns. To add text_search
- *                          property only to string columns of minimum size,
- *                          set also the option 'text_search_min_column_length'
- *                                  <li> 'text_search_min_column_length': Set
- *                          minimum column size. Used only when
- *                          'text_search_columns' has a value.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -19910,6 +20445,21 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                               type of the new target column.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'create_temp_table': If
+ *                          <code>true</code>, a unique temporary table name
+ *                          will be generated in the sys_temp schema and used
+ *                          in place of <code>table_name</code>. If
+ *                          <code>persist</code> is <code>false</code>, then
+ *                          this is always allowed even if the caller does not
+ *                          have permission to create tables. The generated
+ *                          name is returned in
+ *                          <code>qualified_table_name</code>.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'collection_name': [DEPRECATED--please
  *                          specify the containing schema for the merged table
  *                          as part of <code>table_name</code> and use
@@ -20576,6 +21126,114 @@ GPUdb.prototype.query_graph = function(graph_name, queries, restrictions, adjace
 };
 
 /**
+ * Rebalances an existing partitioned graph.
+
+ * IMPORTANT: It's highly recommended that you review the
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
+ * Graphs & Solvers</a>
+ * concepts documentation, the
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
+ * and/or some <a href="../../../guide-tags/graph/" target="_top">graph
+ * examples</a> before
+ * using this endpoint.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.repartition_graph_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.repartition_graph_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: request.graph_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/repartition/graph", actual_request, callback);
+};
+
+/**
+ * Rebalances an existing partitioned graph.
+
+ * IMPORTANT: It's highly recommended that you review the
+ * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
+ * Graphs & Solvers</a>
+ * concepts documentation, the
+ * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
+ * Tutorial</a>,
+ * and/or some <a href="../../../guide-tags/graph/" target="_top">graph
+ * examples</a> before
+ * using this endpoint.
+ *
+ * @param {String} graph_name  Name of the graph resource to rebalance.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'new_graph_name': If a non-empty value
+ *                          is specified, the original graph will be kept
+ *                          (non-default behaviour) and a new balanced graph
+ *                          will be created under this given name.  When the
+ *                          value is empty (default), the generated 'balanced'
+ *                          graph will replace the original 'unbalanced'
+ *                          graph under the same graph name.  The default value
+ *                          is ''.
+ *                                  <li> 'source_node': The distributed
+ *                          shortest path solve is run from this source node to
+ *                          all the nodes in the graph to create balaced
+ *                          partitions using the iso-distance levels of the
+ *                          solution.  The source node is selected by the
+ *                          rebalance algorithm automatically (default case
+ *                          when
+ *                          the value is an empty string). Otherwise, the user
+ *                          specified node is used as the source.  The default
+ *                          value is ''.
+ *                                  <li> 'sql_request_avro_json': The default
+ *                          value is ''.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.repartition_graph = function(graph_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.repartition_graph(graph_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        graph_name: graph_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/repartition/graph", actual_request, callback);
+};
+
+/**
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -20602,7 +21260,10 @@ GPUdb.prototype.reserve_resource_request = function(request, callback) {
 
     var actual_request = {
         component: request.component,
-        bytes_requested: request.bytes_requested,
+        name: request.name,
+        action: request.action,
+        bytes_requested: (request.bytes_requested !== undefined && request.bytes_requested !== null) ? request.bytes_requested : 0,
+        owner_id: (request.owner_id !== undefined && request.owner_id !== null) ? request.owner_id : 0,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -20612,7 +21273,19 @@ GPUdb.prototype.reserve_resource_request = function(request, callback) {
 /**
  *
  * @param {String} component
+ * @param {String} name
+ * @param {String} action
+ *                         Supported values:
+ *                         <ul>
+ *                                 <li> 'get_size'
+ *                                 <li> 'notify_untiered'
+ *                                 <li> 'tier'
+ *                                 <li> 'evict'
+ *                                 <li> 'delete'
+ *                                 <li> 'change_owner'
+ *                         </ul>
  * @param {Number} bytes_requested
+ * @param {Number} owner_id
  * @param {Object} options
  *                          <ul>
  *                          </ul>
@@ -20622,12 +21295,12 @@ GPUdb.prototype.reserve_resource_request = function(request, callback) {
  *                    object, if no callback function is provided.
  * @private
  */
-GPUdb.prototype.reserve_resource = function(component, bytes_requested, options, callback) {
+GPUdb.prototype.reserve_resource = function(component, name, action, bytes_requested, owner_id, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.reserve_resource(component, bytes_requested, options, function(err, response) {
+            self.reserve_resource(component, name, action, bytes_requested, owner_id, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -20639,7 +21312,10 @@ GPUdb.prototype.reserve_resource = function(component, bytes_requested, options,
 
     var actual_request = {
         component: component,
-        bytes_requested: bytes_requested,
+        name: name,
+        action: action,
+        bytes_requested: (bytes_requested !== undefined && bytes_requested !== null) ? bytes_requested : 0,
+        owner_id: (owner_id !== undefined && owner_id !== null) ? owner_id : 0,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -20704,6 +21380,7 @@ GPUdb.prototype.revoke_permission_request = function(request, callback) {
  *                                      <li> 'sql_proc': SQL Procedure
  *                                      <li> 'system': System-level access
  *                                      <li> 'table': Database Table
+ *                                      <li> 'table_monitor': Table monitor
  *                              </ul>
  * @param {String} permission  Permission being revoked.
  *                             Supported values:
@@ -22271,6 +22948,115 @@ GPUdb.prototype.show_proc_status = function(run_id, options, callback) {
 };
 
 /**
+ * Returns information about the internal sub-components (tiered objects)
+ * which use resources of the system. The request can either return results
+ * from
+ * actively used objects (default) or it can be used to query the status of the
+ * objects of a given list of tables.
+ * Returns detailed information about the requested resource objects.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_resource_objects_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_resource_objects_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/show/resource/objects", actual_request, callback);
+};
+
+/**
+ * Returns information about the internal sub-components (tiered objects)
+ * which use resources of the system. The request can either return results
+ * from
+ * actively used objects (default) or it can be used to query the status of the
+ * objects of a given list of tables.
+ * Returns detailed information about the requested resource objects.
+ *
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'tiers': Comma-separated list of tiers
+ *                          to query, leave blank for all tiers.
+ *                                  <li> 'expression': An expression to filter
+ *                          the returned objects. Expression is
+ *                          limited to the following operators:
+ *                          =,!=,<,<=,>,>=,+,-,*,AND,OR,LIKE. For details see
+ *                          <a href="../../../concepts/expressions/"
+ *                          target="_top">Expressions</a>. To use a more
+ *                          complex expression, query the
+ *                          ki_catalog.ki_tiered_objects table directly.
+ *                                  <li> 'order_by': Single column to be sorted
+ *                          by as well as the sort direction, e.g., 'size asc'.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'size'
+ *                                  <li> 'id'
+ *                                  <li> 'priority'
+ *                                  <li> 'tier'
+ *                                  <li> 'evictable'
+ *                                  <li> 'owner_resource_group'
+ *                          </ul>
+ *                                  <li> 'limit': An integer indicating the
+ *                          maximum number of results to be
+ *                          returned, per rank, or (-1) to indicate that the
+ *                          maximum number of results allowed by the server
+ *                          should be returned.  The number of records returned
+ *                          will never exceed the server's own limit,
+ *                          defined by the <a href="../../../config/#general"
+ *                          target="_top">max_get_records_size</a> parameter in
+ *                          the server configuration.  The default value is
+ *                          '100'.
+ *                                  <li> 'table_names': Comma-separated list of
+ *                          tables to restrict the results to. Use '*' to show
+ *                          all tables.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_resource_objects = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_resource_objects(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/show/resource/objects", actual_request, callback);
+};
+
+/**
  * Requests various statistics for storage/memory tiers and resource groups.
  * Returns statistics on a per-rank basis.
  *
@@ -22387,14 +23173,25 @@ GPUdb.prototype.show_resource_groups_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'true'.
  *                                  <li> 'show_default_group': If
- *                          <code>true</code> include the default resource
- *                          group in the response.
+ *                          <code>true</code> include the default and system
+ *                          resource groups in the response. This value
+ *                          defaults to false if an explicit list of group
+ *                          names is provided, and true otherwise.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'show_tier_usage': If
+ *                          <code>true</code> include the resource group usage
+ *                          on the worker ranks in the response.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
