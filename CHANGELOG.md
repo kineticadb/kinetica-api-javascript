@@ -2,6 +2,12 @@
 
 ## Version 7.1
 
+### Version 7.1.7.0 - 2022-07-18
+
+#### Notes
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+
+
 ### Version 7.1.6.0 - 2022-01-27
 
 #### Notes
