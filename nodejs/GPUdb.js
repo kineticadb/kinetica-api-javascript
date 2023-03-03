@@ -893,7 +893,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.8.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.8.2" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -2969,7 +2969,12 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'verify_persist': When
  *                          <code>true</code>, persistent objects will be
- *                          compared against their state in memory.
+ *                          compared against their state in memory and workers
+ *                          will be checked for orphaned table data in persist.
+ *                          To check for orphaned worker data, either set
+ *                          <code>concurrent_safe</code> in
+ *                          <code>options</code> to <code>true</code> or place
+ *                          the database offline.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -3001,7 +3006,10 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                          on workers for which there is no corresponding
  *                          metadata will be deleted. Must set
  *                          <code>verify_persist</code> in <code>options</code>
- *                          to <code>true</code>
+ *                          to <code>true</code>. It is recommended to run this
+ *                          while the database is offline OR set
+ *                          <code>concurrent_safe</code> in
+ *                          <code>options</code> to <code>true</code>
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5471,7 +5479,7 @@ GPUdb.prototype.alter_directory_request = function(request, callback) {
     var actual_request = {
         directory_name: request.directory_name,
         directory_updates_map: request.directory_updates_map,
-        options: request.options
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
     this.submit_request("/alter/directory", actual_request, callback);
@@ -5515,7 +5523,7 @@ GPUdb.prototype.alter_directory = function(directory_name, directory_updates_map
     var actual_request = {
         directory_name: directory_name,
         directory_updates_map: directory_updates_map,
-        options: options
+        options: (options !== undefined && options !== null) ? options : {}
     };
 
     this.submit_request("/alter/directory", actual_request, callback);
@@ -6128,18 +6136,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       send; check_values=[enabled] where if
  *                                       enabled is true the value of the
  *                                       messages received are verified.
- *                                               <li>
- *                                       'set_message_timers_enabled': Enables
- *                                       the communicator test to collect
- *                                       additional timing statistics when the
- *                                       value string is <code>true</code>.
- *                                       Disables collecting statistics when
- *                                       the value string is <code>false</code>
- *                                       Supported values:
- *                                       <ul>
- *                                               <li> 'true'
- *                                               <li> 'false'
- *                                       </ul>
  *                                               <li> 'network_speed': Invoke
  *                                       the network speed test and report
  *                                       timing results. Value string is a
@@ -7075,6 +7071,8 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'rank': Apply the requested change
+ *                          only to a specific rank.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -7373,7 +7371,27 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          values that match those of a source table record
  *                          being inserted will remain unchanged and the new
  *                          record discarded.  If the specified table does not
- *                          have a primary key, then this option is ignored.
+ *                          have a primary key, then this option has no effect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision policy for inserting the source
+ *                          table records (specified by
+ *                          <code>source_table_name</code>) into the target
+ *                          table (specified by <code>table_name</code>) table
+ *                          with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>.  If set to
+ *                          <code>true</code>, any source table records being
+ *                          inserted with primary key values that match those
+ *                          of an existing target table record will be ignored
+ *                          with no error generated.  If the specified table
+ *                          does not have a primary key, then this option has
+ *                          no affect.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -10807,6 +10825,19 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'kafka_group_id': The group id to be
  *                          used consuming data from a kakfa topic (valid only
  *                          for kafka datasource subscriptions).
+ *                                  <li> 'kafka_offset_reset_policy': Policy to
+ *                          determine whether the data consumption starts
+ *                          either at earliest offset or latest offset.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'earliest'
+ *                                  <li> 'latest'
+ *                          </ul>
+ *                          The default value is 'earliest'.
+ *                                  <li> 'kafka_subscription_cancel_after':
+ *                          Sets the subscription lifespan (in minutes).
+ *                          Expired subscription will be cancelled
+ *                          automatically.
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
  *                          from the source data file(s). This option applies
@@ -11018,6 +11049,13 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
  *                                  <li> 'update_on_existing_pk':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk':
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -14090,6 +14128,16 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk': Can be used to
+ *                          customize behavior when the updated primary key
+ *                          value already exists as described in
+ *                          {@linkcode GPUdb#insert_records}.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'preserve_dict_encoding': If
  *                          <code>true</code>, then columns that were dict
  *                          encoded in the source table will be dict encoded in
@@ -14329,7 +14377,7 @@ GPUdb.prototype.export_records_to_files_request = function(request, callback) {
  *                          as "05/04/2000 12:12:11"
  *                                  <li> 'export_ddl': Save DDL to a separate
  *                          file.  The default value is 'false'.
- *                                  <li> 'file_extention': Extension to give
+ *                                  <li> 'file_extension': Extension to give
  *                          the export file.  The default value is '.csv'.
  *                                  <li> 'file_type': Specifies the file format
  *                          to use when exporting data.
@@ -14446,7 +14494,7 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
 
     var actual_request = {
         table_name: request.table_name,
-        remote_query: request.remote_query,
+        remote_query: (request.remote_query !== undefined && request.remote_query !== null) ? request.remote_query : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -14472,6 +14520,34 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
  *                                  <li> 'datasink_name': Name of an existing
  *                          external data sink to which table name specified in
  *                          <code>table_name</code> will be exported
+ *                                  <li> 'jdbc_session_init_statement':
+ *                          Executes the statement per each jdbc session before
+ *                          doing actual load.  The default value is ''.
+ *                                  <li> 'jdbc_connection_init_statement':
+ *                          Executes the statement once before doing actual
+ *                          load.  The default value is ''.
+ *                                  <li> 'remote_table': Name of the target
+ *                          table to which source table is exported. When this
+ *                          option is specified remote_query cannot be
+ *                          specified.  The default value is ''.
+ *                                  <li> 'use_st_geomfrom_casts': Wraps
+ *                          parametrized variables with st_geomfromtext or
+ *                          st_geomfromwkb based on source column type
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'use_indexed_parameters': Uses $n
+ *                          style syntax when generating insert query for
+ *                          remote_table option
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -14495,7 +14571,7 @@ GPUdb.prototype.export_records_to_table = function(table_name, remote_query, opt
 
     var actual_request = {
         table_name: table_name,
-        remote_query: remote_query,
+        remote_query: (remote_query !== undefined && remote_query !== null) ? remote_query : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -18838,8 +18914,24 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                          record with primary key values that match those of
  *                          a record being inserted will remain unchanged and
  *                          the new record discarded.  If the specified table
- *                          does not have a primary key, then this option is
- *                          ignored.
+ *                          does not have a primary key, then this option has
+ *                          no affect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision policy for inserting into a table
+ *                          with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>.  If set to
+ *                          <code>true</code>, any record being inserted with
+ *                          primary key values that match those of an existing
+ *                          table record will be ignored with no error
+ *                          generated.  If the specified table does not have a
+ *                          primary key, then this option has no affect.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -19401,6 +19493,19 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'kafka_group_id': The group id to be
  *                          used consuming data from a kakfa topic (valid only
  *                          for kafka datasource subscriptions).
+ *                                  <li> 'kafka_offset_reset_policy': Policy to
+ *                          determine whether the data consumption starts
+ *                          either at earliest offset or latest offset.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'earliest'
+ *                                  <li> 'latest'
+ *                          </ul>
+ *                          The default value is 'earliest'.
+ *                                  <li> 'kafka_subscription_cancel_after':
+ *                          Sets the subscription lifespan (in minutes).
+ *                          Expired subscription will be cancelled
+ *                          automatically.
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
  *                          from the source data file(s). This option applies
@@ -19590,6 +19695,13 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          </ul>
  *                          The default value is 'speed'.
  *                                  <li> 'update_on_existing_pk':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk':
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -20200,6 +20312,13 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -20501,6 +20620,13 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                                  <li> 'jdbc_fetch_size': The JDBC fetch
  *                          size, which determines how many rows to fetch per
  *                          round trip.
+ *                                  <li> 'jdbc_session_init_statement':
+ *                          Executes the statement per each jdbc session before
+ *                          doing actual load.  The default value is ''.
+ *                                  <li> 'num_splits_per_rank': Optional:
+ *                          number of splits for reading data per rank. Default
+ *                          will be external_file_reader_num_tasks.  The
+ *                          default value is ''.
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading data per rank. Default will be
  *                          external_file_reader_num_tasks
@@ -20523,6 +20649,10 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                          The default value is 'false'.
  *                                  <li> 'remote_query': Remote SQL query from
  *                          which data will be sourced
+ *                                  <li> 'remote_query_order_by': Name of
+ *                          column to be used for splitting the query into
+ *                          multiple sub-queries using ordering of given
+ *                          column.  The default value is ''.
  *                                  <li> 'remote_query_filter_column': Name of
  *                          column to be used for splitting the query into
  *                          multiple sub-queries using the data distribution of
@@ -20531,6 +20661,13 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
  *                                  <li> 'update_on_existing_pk':
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk':
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -21338,6 +21475,12 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                               Matches an optimal path across a number of
  *                               ev-charging stations between source and target
  *                               locations.
+ *                                       <li> 'match_similarity': Matches the
+ *                               intersection set(s) by computing the Jaccard
+ *                               similarity score between node pairs.
+ *                                       <li> 'match_pickup_dropoff': Matches
+ *                               the pickups and dropoffs by optimizing the
+ *                               total trip costs
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -21455,13 +21598,14 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          the edge weights starting from their originating
  *                          depots.  The default value is 'false'.
  *                                  <li> 'max_trip_cost': For the
- *                          <code>match_supply_demand</code> solver only. If
+ *                          <code>match_supply_demand</code> and
+ *                          <code>match_pickup_dropoff</code> solvers only. If
  *                          this constraint is greater than zero (default) then
- *                          the trucks will skip travelling from one demand
- *                          location to another if the cost between them is
- *                          greater than this number (distance or time). Zero
- *                          (default) value means no check is performed.  The
- *                          default value is '0.0'.
+ *                          the trucks/rides will skip travelling from one
+ *                          demand/pick location to another if the cost between
+ *                          them is greater than this number (distance or
+ *                          time). Zero (default) value means no check is
+ *                          performed.  The default value is '0.0'.
  *                                  <li> 'filter_folding_paths': For the
  *                          <code>markov_chain</code> solver only. When true
  *                          (non-default), the paths per sequence combination
@@ -21492,38 +21636,59 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          algorithm to set the maximal number of threads
  *                          within these constraints.  The default value is
  *                          '0'.
- *                                  <li> 'truck_service_limit': For the
+ *                                  <li> 'service_limit': For the
  *                          <code>match_supply_demand</code> solver only. If
- *                          specified (greater than zero), any truck's total
- *                          service cost (distance or time) will be limited by
- *                          the specified value including multiple rounds (if
- *                          set).  The default value is '0.0'.
- *                                  <li> 'enable_truck_reuse': For the
+ *                          specified (greater than zero), any supply actor's
+ *                          total service cost (distance or time) will be
+ *                          limited by the specified value including multiple
+ *                          rounds (if set).  The default value is '0.0'.
+ *                                  <li> 'enable_reuse': For the
  *                          <code>match_supply_demand</code> solver only. If
- *                          specified (true), all trucks can be scheduled for
- *                          second rounds from their originating depots.
+ *                          specified (true), all supply actors can be
+ *                          scheduled for second rounds from their originating
+ *                          depots.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true': Allows reusing trucks for
- *                          scheduling again.
- *                                  <li> 'false': Trucks are scheduled only
- *                          once from their depots.
+ *                                  <li> 'true': Allows reusing supply actors
+ *                          (trucks, e.g.) for scheduling again.
+ *                                  <li> 'false': Supply actors are scheduled
+ *                          only once from their depots.
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'max_truck_stops': For the
+ *                                  <li> 'max_stops': For the
  *                          <code>match_supply_demand</code> solver only. If
- *                          specified (greater than zero), a truck can at most
- *                          have this many stops (demand locations) in one
- *                          round trip. Otherwise, it is unlimited. If
- *                          'enable_truck_reuse' is on, this condition will be
- *                          applied separately at each round trip use of the
- *                          same truck.  The default value is '0'.
- *                                  <li> 'truck_service_radius': For the
- *                          <code>match_supply_demand</code> solver only. If
+ *                          specified (greater than zero), a supply actor
+ *                          (truck) can at most have this many stops (demand
+ *                          locations) in one round trip. Otherwise, it is
+ *                          unlimited. If 'enable_truck_reuse' is on, this
+ *                          condition will be applied separately at each round
+ *                          trip use of the same truck.  The default value is
+ *                          '0'.
+ *                                  <li> 'service_radius': For the
+ *                          <code>match_supply_demand</code> and
+ *                          <code>match_pickup_dropoff</code> solvers only. If
  *                          specified (greater than zero), it filters the
- *                          demands outside this radius centered around the
- *                          truck's originating location (distance or time).
- *                          The default value is '0.0'.
+ *                          demands/picks outside this radius centered around
+ *                          the supply actor/ride's originating location
+ *                          (distance or time).  The default value is '0.0'.
+ *                                  <li> 'permute_supplies': For the
+ *                          <code>match_supply_demand</code> solver only. If
+ *                          specified (true), supply side actors are permuted
+ *                          for the demand combinations during msdo
+ *                          optimization - note that this option increases
+ *                          optimization time significantly - use of
+ *                          'max_combinations' option is recommended to prevent
+ *                          prohibitively long runs
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Generates sequences over
+ *                          supply side permutations if total supply is less
+ *                          than twice the total demand
+ *                                  <li> 'false': Permutations are not
+ *                          performed, rather a specific order of supplies
+ *                          based on capacity is computed
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 'batch_tsm_mode': For the
  *                          <code>match_supply_demand</code> solver only. When
  *                          enabled, it sets the number of visits on each
@@ -21538,11 +21703,26 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          mode)
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'restricted_truck_type': For the
+ *                                  <li> 'round_trip': For the
+ *                          <code>match_supply_demand</code> solver only. When
+ *                          enabled, the supply will have to return back to the
+ *                          origination location.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': The optimization is done for
+ *                          trips in round trip manner always returning to
+ *                          originating locations
+ *                                  <li> 'false': Supplies do not have to come
+ *                          back to their originating locations in their
+ *                          routes. The routes are considered finished at the
+ *                          final dropoff.
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'restricted_type': For the
  *                          <code>match_supply_demand</code> solver only.
  *                          Optimization is performed by restricting routes
  *                          labeled by 'MSDO_ODDEVEN_RESTRICTED' only for this
- *                          truck type
+ *                          supply actor (truck) type
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'odd': Applies odd/even rule
@@ -21605,6 +21785,27 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          <code>match_charging_stations</code> solver only.
  *                          This is the penalty for full charging.  The default
  *                          value is '30000.0'.
+ *                                  <li> 'max_hops': For the
+ *                          <code>match_similarity</code> solver only. Searches
+ *                          within this maximum hops for source and target node
+ *                          pairs to compute the Jaccard scores.  The default
+ *                          value is '3'.
+ *                                  <li> 'traversal_node_limit': For the
+ *                          <code>match_similarity</code> solver only. Limits
+ *                          the traversal depth if it reaches this many number
+ *                          of nodes.  The default value is '1000'.
+ *                                  <li> 'paired_similarity': For the
+ *                          <code>match_similarity</code> solver only. If true,
+ *                          it computes Jaccard score between each pair,
+ *                          otherwise it will compute Jaccard from the
+ *                          intersection set between the source and target
+ *                          nodes
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -22322,7 +22523,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
- *                          The default value is 'true'.
+ *                          The default value is 'false'.
  *                                  <li> 'and_labels': If set to
  *                          <code>true</code>, the result of the query has
  *                          entities that satisfy all of the target labels,
@@ -26154,6 +26355,25 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          records when the same primary keys already exist
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision policy for tables with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a> when updating columns
+ *                          of the <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a> or inserting new
+ *                          records.  If set to <code>true</code>, any record
+ *                          being updated or inserted with primary key values
+ *                          that match those of an existing record will be
+ *                          ignored with no error generated.  If the specified
+ *                          table does not have a primary key, then this option
+ *                          has no affect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'update_partition': Force qualifying
  *                          records to be deleted and reinserted so their
  *                          partition membership will be reevaluated.
@@ -26521,6 +26741,22 @@ GPUdb.prototype.upload_files_request = function(request, callback) {
  *                          multipart upload. Part numbers start at 1,
  *                          increment by 1, and must be uploaded
  *                          sequentially
+ *                                  <li> 'delete_if_exists': If
+ *                          <code>true</code>,
+ *                          any existing files specified in
+ *                          <code>file_names</code> will be deleted prior to
+ *                          start of upload.
+ *                          Otherwise the file is replaced once the upload
+ *                          completes.  Rollback of the original file is
+ *                          no longer possible if the upload is cancelled,
+ *                          aborted or fails if the file was deleted
+ *                          beforehand.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *

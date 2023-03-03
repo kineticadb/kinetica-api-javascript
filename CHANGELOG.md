@@ -2,28 +2,41 @@
 
 ## Version 7.1
 
+### Version 7.1.8.2 - 2023-03-03
+
+#### JavaScript API
+
+##### Changed
+-   Fixed bug in error reporting of job processing
+
+#### Node.js API
+
+##### Changed
+-   Updated packaging; added read me and change log files
+
+
 ### Version 7.1.8.0 - 2022-10-22
 
 #### Notes
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.1.7.0 - 2022-07-18
 
 #### Notes
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.1.6.0 - 2022-01-27
 
 #### Notes
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.1.5.0 - 2021-10-13
 
 #### Added
-##### Javascript API
+##### JavaScript API
 -   A new class, `GPUdb.FileHandler`, to handle uploading files to KiFS.
     It has the following methods:
     -   ``upload``: Uploads local file objects from browsers to KiFS
@@ -33,7 +46,7 @@
 ### Version 7.1.4.0 - 2021-07-29
 
 #### Added
-##### NodeJS API
+##### Node.js API
 -   A new class, `GPUdb.FileHandler`, to handle uploading and downloading
     files to KiFS.  It has the following useful methods:
     -   ``upload``: Uploads files or file objects to KiFS
@@ -41,21 +54,21 @@
     -   ``download_and_save``: Downloads KiFS files into the local filesystem
 
 #### Notes
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 
 ### Version 7.1.3.0 - 2021-03-05
 
 #### Notes
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 
 ### Version 7.1.2.0 - 2021-01-25
 
 #### Notes
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 
@@ -68,7 +81,7 @@
     -   ``remove_http_header()``
     -   ``get_http_headers()``
 
-##### NodeJS API
+##### Node.js API
 -   GPUdb methods for adding custom headers per endpoint call:
     -   ``add_http_header()``
     -   ``remove_http_header()``
@@ -78,7 +91,7 @@
 ### Version 7.1.0.0 - 2020-08-18
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ## Version 7.0
@@ -98,7 +111,7 @@
     being used in the example.
 
 
-#### NodeJS API
+#### Node.js API
 
 ##### Added
 -   GPUdb methods for adding custom headers per endpoint call:
@@ -113,60 +126,60 @@
 
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.0.19.0 - 2020-08-24
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.0.18.0 - 2020-07-30
 
 #### Notes
 -   Version release
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.0.17.0 - 2020-07-06
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 ### Version 7.0.16.0 - TBD
 
 #### Fixed
--   Occassional data corruption issue with replacing '\U' with '\u'.
+-   Occassional data corruption issue with replacing `\U` with `\u`.
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.0.15.0 - 2020-04-27
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.0.14.0 - 2020-03-25
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 
 ### Version 7.0.13.0 - 2020-03-10
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 
 ### Version 7.0.12.0 - 2020-01-17
 
 #### Note
--   Check CHANGELOG-FUNCTIONS.md for endpoint related changes.
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
 
 
 ### Version 7.0.5.0 - 2019-06-26
@@ -175,7 +188,7 @@
 -   Minor documentation and some options for some endpoints
 
 #### Changed
--   Parameters for /visualize/isoschrone
+-   Parameters for `/visualize/isoschrone`
 
 
 ### Version 7.0.4.0 - 2019-05-24
@@ -204,8 +217,8 @@
 
 ### Version 6.2.0.0 - 2018-04-17
 
--   Added a convenience method get_geo_json() that returns a GeoJSON object
-    from a table (to both the JavaScript and NodeJS APIs).
+-   Added a convenience method `get_geo_json()` that returns a GeoJSON object
+    from a table (to both the JavaScript and Node.js APIs).
 
 
 ## Version 6.1.0 - 2017-10-05
