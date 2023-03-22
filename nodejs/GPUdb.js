@@ -264,6 +264,21 @@ function GPUdb(url, options) {
                                }
                            }
                          );
+    
+    this.validate_json = false;
+    Object.defineProperty( this, "validate_json", {
+        enumerable: true,
+        get: function() { return this.validate_json;},
+        set: function( value ) { this.validate_json = value;}
+    });
+
+    this.json_compression_on = true;
+    Object.defineProperty( this, "compression_on", {
+        enumerable: true,
+        get: function() { return this.json_compression_on;},
+        set: function( value ) { this.json_compression_on = value;}
+    });
+
 } // end GPUdb
 
 
@@ -517,11 +532,21 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
                 }
 
                 if (response.status === "OK") {
+                    // 'response.data_str' will be available for all calls except 'insert_records_from_json', which
+                    // has a different response object. So, in case, the first 'try' block fails to parse the
+                    // response, the second one in the 'catch' block will be invoked.
                     try {
                         var data = JSON.parse( response.data_str );
                     } catch (e) {
-                        callback(new Error("Unable to parse response: " + e), null);
-                        return;
+                        // The following try-catch block handles the special case where the response is
+                        // in the form of a JSON which has the 'data' map.
+                        try {
+                            var data = response.data;
+                        } catch( e) {
+                            callback(new Error("Unable to parse response: " + e), null);
+                            return;
+                        }
+                        
                     }
 
                     if ("x-request-time-secs" in res.headers) {
@@ -893,7 +918,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.8.2" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1257,6 +1282,78 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
     });
 };
 
+
+/**
+ * @param {string} records - Either a single JSON record or an array of JSON records
+ * @param {Map} create_table_options - the same options that apply to the '/create/table' endpoint
+ * @param {Map} options - the 'table_name' to insert in must be passed as a mandatory option
+ * @param {Function} callback - an optional callback method that receives the results
+ * @returns {Promise} A promise that will be fulfilled with the 'data' (containing insertion
+ *                    results like counts etc) object, if no callback function is provided.
+ */
+GPUdb.prototype.insert_records_from_json = function(records, create_table_options, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.insert_records_from_json(records, create_table_options, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    if( options === undefined || options === null ) {
+        throw new Error("At least the table name must be passed as an option - {\"table_name\": \"some_table\"}");
+    }
+
+    if( !(Object.hasOwn(options,'table_name')) || (typeof options.table_name !== 'string') || options.table_name.length == 0 ) {
+        throw new Error("Options passed must have the mandatory 'table_name' property of type 'string'");
+    }
+
+    if( records === undefined || records === null ) {
+        throw new Error("Records cannot be undefined or null");
+    }
+
+    let json_records = null
+    try {
+        json_records = JSON.parse(records)
+    } catch (objError) {
+        let error_message = null
+        if (objError instanceof SyntaxError) {
+            error_message = `Syntax error : ${objError.message}`
+            console.error(error_message);
+            throw new Error( error_message )
+        } else {
+            error_message = `Error : ${objError.message}`
+            console.error(error_message);
+            throw new Error( error_message )
+        }
+    }
+
+    let params = {...options, ...create_table_options};
+
+    let queryString = '/insert/records/json?' + Object.keys(params).map(function(key) {
+        return key + '=' + params[key]
+    }).join('&');
+    
+
+    this.submit_request(queryString, json_records, function(err, data) {
+        if (err === null) {
+            let response = data;
+            // Return just the Map received
+            callback(err, response);
+        }
+        else {
+            // There was an error
+            callback(err, data);
+        }
+    });
+
+};
 
 
 /**
@@ -6194,17 +6291,17 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       overlapped-equi-join filter.  The
  *                                       default value is 'true'.
  *                                               <li> 'kafka_batch_size':
- *                                       Maximum number of records to be read
- *                                       in a single kafka batched request.
- *                                       The default value is '1000'.
+ *                                       Maximum number of records to be
+ *                                       ingested in a single batch.  The
+ *                                       default value is '1000'.
+ *                                               <li> 'kafka_poll_timeout':
+ *                                       Maximum time (milliseconds) for each
+ *                                       poll to get records from kafka.  The
+ *                                       default value is '0'.
  *                                               <li> 'kafka_wait_time':
- *                                       Maximum number of seconds to wait in a
- *                                       single kafka batched request.  The
- *                                       default value is '30'.
- *                                               <li> 'kafka_timeout': Number
- *                                       of seconds after which kakfa poll will
- *                                       timeout if datasource has no records.
- *                                       The default value is '5'.
+ *                                       Maximum time (seconds) to buffer
+ *                                       records received from kafka before
+ *                                       ingestion.  The default value is '30'.
  *                                               <li>
  *                                       'egress_single_file_max_size': Max
  *                                       file size (in MB) to allow saving to a
@@ -6544,12 +6641,21 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         string specified in <code>value</code> with format
  *                         'YYYY-MM-DD HH:MM:SS'.  Subsequent refreshes occur
  *                         at the specified time + N * the refresh period.
+ *                                 <li> 'set_refresh_stop_time': Sets the time
+ *                         to stop periodic refreshes of this <a
+ *                         href="../../../concepts/materialized_views/"
+ *                         target="_top">materialized view</a> to the datetime
+ *                         string specified in <code>value</code> with format
+ *                         'YYYY-MM-DD HH:MM:SS'.
  *                                 <li> 'set_refresh_period': Sets the time
  *                         interval in seconds at which to refresh this <a
  *                         href="../../../concepts/materialized_views/"
  *                         target="_top">materialized view</a> to the value
  *                         specified in <code>value</code>.  Also, sets the
  *                         refresh method to periodic if not already set.
+ *                                 <li> 'set_refresh_span': Sets the future
+ *                         time-offset(in seconds) for the view refresh to
+ *                         stop.
  *                                 <li> 'set_refresh_execute_as': Sets the user
  *                         name to refresh this <a
  *                         href="../../../concepts/materialized_views/"
@@ -9204,9 +9310,8 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                          to contain the newly created view. If the schema
  *                          provided is non-existent, it will be automatically
  *                          created.
- *                                  <li> 'ttl': Sets the <a
- *                          href="../../../concepts/ttl/" target="_top">TTL</a>
- *                          of the table specified in <code>table_name</code>.
+ *                                  <li> 'execute_as': User name to use to run
+ *                          the refresh job
  *                                  <li> 'persist': If <code>true</code>, then
  *                          the materialized view specified in
  *                          <code>table_name</code> will be persisted and will
@@ -9220,6 +9325,14 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'refresh_span': Sets the future
+ *                          time-offset(in seconds) at which periodic refresh
+ *                          stops
+ *                                  <li> 'refresh_stop_time': When
+ *                          <code>refresh_method</code> is
+ *                          <code>periodic</code>, specifies the time at which
+ *                          a periodic refresh is stopped.  Value is a datetime
+ *                          string with format 'YYYY-MM-DD HH:MM:SS'.
  *                                  <li> 'refresh_method': Method by which the
  *                          join can be refreshed when the data in underlying
  *                          member tables have changed.
@@ -9249,8 +9362,9 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                          <code>periodic</code>, specifies the first time at
  *                          which a refresh is to be done.  Value is a datetime
  *                          string with format 'YYYY-MM-DD HH:MM:SS'.
- *                                  <li> 'execute_as': User name to use to run
- *                          the refresh job
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the table specified in <code>table_name</code>.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -9587,8 +9701,11 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'offset': The number of initial
+ *                          results to skip (this can be useful for paging
+ *                          through the results).  The default value is '0'.
  *                                  <li> 'limit': The number of records to
- *                          keep.  The default value is ''.
+ *                          keep.  The default value is '-9999'.
  *                                  <li> 'order_by': Comma-separated list of
  *                          the columns to be sorted by; e.g. 'timestamp asc, x
  *                          desc'.  The columns specified must be present in
@@ -10651,6 +10768,11 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'avro_num_records': Optional number of
+ *                          avro records, if data includes only records.
+ *                                  <li> 'avro_schema': Optional string
+ *                          representing avro schema, for insert records in
+ *                          avro format, that does not include is schema.
  *                                  <li> 'bad_record_table_name': Optional name
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
@@ -10722,6 +10844,17 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          data to
  *                          skip.  Mutually exclusive with
  *                          <code>columns_to_load</code>.
+ *                                  <li> 'compression_type': Optional:
+ *                          compression type
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'none': Uncompressed
+ *                                  <li> 'auto': Default. Auto detect
+ *                          compression type
+ *                                  <li> 'gzip': gzip file compression.
+ *                                  <li> 'bzip2': bzip2 file compression.
+ *                          </ul>
+ *                          The default value is 'auto'.
  *                                  <li> 'datasource_name': Name of an existing
  *                          external data source from which data file(s)
  *                          specified in <code>filepaths</code> will be loaded
@@ -10882,6 +11015,12 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          The default value is 'head'.
  *                                  <li> 'local_time_offset': For Avro local
  *                          timestamp columns
+ *                                  <li> 'max_records_to_load': Limit the
+ *                          number of records to load in this request: If this
+ *                          number is larger than a batch_size, then the number
+ *                          of records loaded will be limited to the next whole
+ *                          number of batch_size (per working thread).  The
+ *                          default value is ''.
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading file per rank. Default will be
  *                          external_file_reader_num_tasks
@@ -11018,6 +11157,15 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'text_search_min_column_length': Set
  *                          minimum column size. Used only when
  *                          'text_search_columns' has a value.
+ *                                  <li> 'truncate_strings': If set to
+ *                          <code>true</code>, truncate string values that are
+ *                          longer than the column's type size.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'truncate_table': If set to
  *                          <code>true</code>, truncates the table specified by
  *                          <code>table_name</code> prior to loading the
@@ -11045,6 +11193,10 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          column to be used for splitting the query into
  *                          multiple sub-queries using the data distribution of
  *                          given column.  The default value is ''.
+ *                                  <li> 'remote_query_increasing_column':
+ *                          Column on subscribed remote query result that will
+ *                          increase for new records (e.g., TIMESTAMP).  The
+ *                          default value is ''.
  *                                  <li> 'remote_query_partition_column': Alias
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
@@ -14012,18 +14164,11 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                        subsequent pages of results.
  * @param {String} request_schema_str  Avro schema of <code>data</code>.
  * @param {String[]} data  An array of binary-encoded data for the records to
- *                         be binded to the SQL query.
+ *                         be binded to the SQL query.  Or use
+ *                         <code>query_parameters</code> to pass the data in
+ *                         JSON format.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                                  <li> 'parallel_execution': If
- *                          <code>false</code>, disables the parallel step
- *                          execution of the given query.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
  *                                  <li> 'cost_based_optimization': If
  *                          <code>false</code>, disables the cost-based
  *                          optimization of the given query.
@@ -14033,42 +14178,6 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'plan_cache': If <code>false</code>,
- *                          disables plan caching for the given query.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
- *                                  <li> 'rule_based_optimization': If
- *                          <code>false</code>, disables rule-based rewrite
- *                          optimizations for the given query
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
- *                                  <li> 'results_caching': If
- *                          <code>false</code>, disables caching of the results
- *                          of the given query
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
- *                                  <li> 'paging_table': When empty or the
- *                          specified paging table not exists, the system will
- *                          create a paging table and return when query output
- *                          has more records than the user asked. If the paging
- *                          table exists in the system, the records from the
- *                          paging table are returned without evaluating the
- *                          query.
- *                                  <li> 'paging_table_ttl': Sets the <a
- *                          href="../../../concepts/ttl/" target="_top">TTL</a>
- *                          of the paging table.
  *                                  <li> 'distributed_joins': If
  *                          <code>true</code>, enables the use of distributed
  *                          joins in servicing the given query.  Any query
@@ -14095,39 +14204,6 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'ssq_optimization': If
- *                          <code>false</code>, scalar subqueries will be
- *                          translated into joins
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'true'.
- *                                  <li> 'late_materialization': If
- *                          <code>true</code>, Joins/Filters results  will
- *                          always be materialized ( saved to result tables
- *                          format)
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'ttl': Sets the <a
- *                          href="../../../concepts/ttl/" target="_top">TTL</a>
- *                          of the intermediate result tables used in query
- *                          execution.
- *                                  <li> 'update_on_existing_pk': Can be used
- *                          to customize behavior when the updated primary key
- *                          value already exists as described in
- *                          {@linkcode GPUdb#insert_records}.
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
  *                                  <li> 'ignore_existing_pk': Can be used to
  *                          customize behavior when the updated primary key
  *                          value already exists as described in
@@ -14138,23 +14214,37 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'preserve_dict_encoding': If
- *                          <code>true</code>, then columns that were dict
- *                          encoded in the source table will be dict encoded in
- *                          the projection table.
+ *                                  <li> 'late_materialization': If
+ *                          <code>true</code>, Joins/Filters results  will
+ *                          always be materialized ( saved to result tables
+ *                          format)
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'paging_table': When empty or the
+ *                          specified paging table not exists, the system will
+ *                          create a paging table and return when query output
+ *                          has more records than the user asked. If the paging
+ *                          table exists in the system, the records from the
+ *                          paging table are returned without evaluating the
+ *                          query.
+ *                                  <li> 'paging_table_ttl': Sets the <a
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the paging table.
+ *                                  <li> 'parallel_execution': If
+ *                          <code>false</code>, disables the parallel step
+ *                          execution of the given query.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
- *                                  <li> 'validate_change_column': When
- *                          changing a column using alter table, validate the
- *                          change before applying it. If <code>true</code>,
- *                          then validate all values. A value too large (or too
- *                          long) for the new type will prevent any change. If
- *                          <code>false</code>, then when a value is too large
- *                          or long, it will be truncated.
+ *                                  <li> 'plan_cache': If <code>false</code>,
+ *                          disables plan caching for the given query.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -14171,6 +14261,75 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'preserve_dict_encoding': If
+ *                          <code>true</code>, then columns that were dict
+ *                          encoded in the source table will be dict encoded in
+ *                          the projection table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'query_parameters': Query parameters
+ *                          in JSON array or arrays (for inserting multiple
+ *                          rows).  This can be used instead of
+ *                          <code>data</code> and
+ *                          <code>request_schema_str</code>.
+ *                                  <li> 'results_caching': If
+ *                          <code>false</code>, disables caching of the results
+ *                          of the given query
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'rule_based_optimization': If
+ *                          <code>false</code>, disables rule-based rewrite
+ *                          optimizations for the given query
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'ssq_optimization': If
+ *                          <code>false</code>, scalar subqueries will be
+ *                          translated into joins
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
+ *                                  <li> 'ttl': Sets the <a
+ *                          href="../../../concepts/ttl/" target="_top">TTL</a>
+ *                          of the intermediate result tables used in query
+ *                          execution.
+ *                                  <li> 'update_on_existing_pk': Can be used
+ *                          to customize behavior when the updated primary key
+ *                          value already exists as described in
+ *                          {@linkcode GPUdb#insert_records}.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'validate_change_column': When
+ *                          changing a column using alter table, validate the
+ *                          change before applying it. If <code>true</code>,
+ *                          then validate all values. A value too large (or too
+ *                          long) for the new type will prevent any change. If
+ *                          <code>false</code>, then when a value is too large
+ *                          or long, it will be truncated.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -19334,6 +19493,11 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'avro_num_records': Optional number of
+ *                          avro records, if data includes only records.
+ *                                  <li> 'avro_schema': Optional string
+ *                          representing avro schema, if data includes only
+ *                          records.
  *                                  <li> 'bad_record_table_name': Optional name
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
@@ -19407,6 +19571,17 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          data to
  *                          skip.  Mutually exclusive with
  *                          <code>columns_to_load</code>.
+ *                                  <li> 'compression_type': Optional:
+ *                          compression type
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'none': Uncompressed file
+ *                                  <li> 'auto': Default. Auto detect
+ *                          compression type
+ *                                  <li> 'gzip': gzip file compression.
+ *                                  <li> 'bzip2': bzip2 file compression.
+ *                          </ul>
+ *                          The default value is 'auto'.
  *                                  <li> 'datasource_name': Name of an existing
  *                          external data source from which data file(s)
  *                          specified in <code>filepaths</code> will be loaded
@@ -19550,6 +19725,12 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          The default value is 'head'.
  *                                  <li> 'local_time_offset': For Avro local
  *                          timestamp columns
+ *                                  <li> 'max_records_to_load': Limit the
+ *                          number of records to load in this request: If this
+ *                          number is larger than a batch_size, then the number
+ *                          of records loaded will be limited to the next whole
+ *                          number of batch_size (per working thread).  The
+ *                          default value is ''.
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading file per rank. Default will be
  *                          external_file_reader_num_tasks
@@ -19673,6 +19854,15 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'text_search_min_column_length': Set
  *                          minimum column size. Used only when
  *                          'text_search_columns' has a value.
+ *                                  <li> 'truncate_strings': If set to
+ *                          <code>true</code>, truncate string values that are
+ *                          longer than the column's type size.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'truncate_table': If set to
  *                          <code>true</code>, truncates the table specified by
  *                          <code>table_name</code> prior to loading the
@@ -19966,6 +20156,11 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'avro_num_records': Optional number of
+ *                          avro records, if data includes only records.
+ *                                  <li> 'avro_schema': Optional string
+ *                          representing avro schema, for insert records in
+ *                          avro format, that does not include is schema.
  *                                  <li> 'bad_record_table_name': Optional name
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
@@ -20037,6 +20232,17 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          data to
  *                          skip.  Mutually exclusive with
  *                          <code>columns_to_load</code>.
+ *                                  <li> 'compression_type': Optional: payload
+ *                          compression type
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'none': Uncompressed
+ *                                  <li> 'auto': Default. Auto detect
+ *                          compression type
+ *                                  <li> 'gzip': gzip file compression.
+ *                                  <li> 'bzip2': bzip2 file compression.
+ *                          </ul>
+ *                          The default value is 'auto'.
  *                                  <li> 'default_column_formats': Specifies
  *                          the default format to be applied to source data
  *                          loaded
@@ -20161,6 +20367,12 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          The default value is 'head'.
  *                                  <li> 'local_time_offset': For Avro local
  *                          timestamp columns
+ *                                  <li> 'max_records_to_load': Limit the
+ *                          number of records to load in this request: If this
+ *                          number is larger than a batch_size, then the number
+ *                          of records loaded will be limited to the next whole
+ *                          number of batch_size (per working thread).  The
+ *                          default value is ''.
  *                                  <li> 'num_tasks_per_rank': Optional: number
  *                          of tasks for reading file per rank. Default will be
  *                          external_file_reader_num_tasks
@@ -20284,6 +20496,15 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  <li> 'text_search_min_column_length': Set
  *                          minimum column size. Used only when
  *                          'text_search_columns' has a value.
+ *                                  <li> 'truncate_strings': If set to
+ *                          <code>true</code>, truncate string values that are
+ *                          longer than the column's type size.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'truncate_table': If set to
  *                          <code>true</code>, truncates the table specified by
  *                          <code>table_name</code> prior to loading the
@@ -20638,6 +20859,15 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
+ *                                  <li> 'subscribe': Continuously poll the
+ *                          data source to check for new data and load it into
+ *                          the table.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'truncate_table': If set to
  *                          <code>true</code>, truncates the table specified by
  *                          <code>table_name</code> prior to loading the data.
@@ -20657,6 +20887,10 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                          column to be used for splitting the query into
  *                          multiple sub-queries using the data distribution of
  *                          given column.  The default value is ''.
+ *                                  <li> 'remote_query_increasing_column':
+ *                          Column on subscribed remote query result that will
+ *                          increase for new records (e.g., TIMESTAMP).  The
+ *                          default value is ''.
  *                                  <li> 'remote_query_partition_column': Alias
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
@@ -21481,6 +21715,9 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                       <li> 'match_pickup_dropoff': Matches
  *                               the pickups and dropoffs by optimizing the
  *                               total trip costs
+ *                                       <li> 'match_clusters': Matches the
+ *                               graph nodes with a cluster index using Louvain
+ *                               clustering algorithm
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -21718,6 +21955,37 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          final dropoff.
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'num_cycles': For the
+ *                          <code>match_clusters</code> solver only. Terminates
+ *                          the cluster exchange iterations across
+ *                          2-step-cycles (outer loop) when quality does not
+ *                          improve during iterations.  The default value is
+ *                          '10'.
+ *                                  <li> 'num_loops_per_cycle': For the
+ *                          <code>match_clusters</code> solver only. Terminates
+ *                          the cluster exchanges within the first step
+ *                          iterations of a cycle (inner loop) unless
+ *                          convergence is reached.  The default value is '10'.
+ *                                  <li> 'num_output_clusters': For the
+ *                          <code>match_clusters</code> solver only.  Limits
+ *                          the output to the top 'num_output_clusters'
+ *                          clusters based on density. Default value of zero
+ *                          outputs all clusters.  The default value is '0'.
+ *                                  <li> 'max_num_clusters': For the
+ *                          <code>match_clusters</code> solver only. If set
+ *                          (value greater than zero), it terminates when the
+ *                          number of clusters goes below than this number.
+ *                          The default value is '0'.
+ *                                  <li> 'cluster_quality_metric': For the
+ *                          <code>match_clusters</code> solver only. The
+ *                          quality metric for Louvain modularity optimization
+ *                          solver.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'girwan': Uses the Newman Girwan
+ *                          quality metric for cluster solver
+ *                          </ul>
+ *                          The default value is 'girwan'.
  *                                  <li> 'restricted_type': For the
  *                          <code>match_supply_demand</code> solver only.
  *                          Optimization is performed by restricting routes
@@ -27219,6 +27487,8 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                </ul>
  * @param {Object} options
  *                          <ul>
+ *                                  <li> 'pointcolor_attr':
+ *                                  <li> 'shapefillcolor_attr':
  *                                  <li> 'track_id_column_name':
  *                                  <li> 'track_order_column_name':
  *                          </ul>

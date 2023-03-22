@@ -2,6 +2,19 @@
 
 ## Version 7.1
 
+### Version 7.1.9.0 - 2023-03-19
+
+#### Added
+##### JavaScript API
+-   A new function, `insert_records_from_json`, for inserting JSON data.
+
+##### Node.js API
+-   A new function, `insert_records_from_json`, for inserting JSON data.
+
+#### Notes
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
+
+
 ### Version 7.1.8.2 - 2023-03-03
 
 #### JavaScript API
