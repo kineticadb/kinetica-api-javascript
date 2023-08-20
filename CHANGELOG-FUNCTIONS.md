@@ -21,6 +21,12 @@
     -  ``/insert/records/fromfiles``
     -  ``/insert/records/frompayload``
 -   Added options``remote_query_increasing_column`` & ``subscribe`` for remote table/query subscriptions via JDBC data sources
+-   Added 'file_names' to response for endpoint ``/delete/files``. Added wildcard support to KiFS endpoints:
+    -  ``/show/files``
+    -  ``/download/files``
+    -  ``/delete/files``
+-   Added ``/admin/ha/refresh``
+-   Added ``evict_to_cold`` option to ``/alter/system/properties``
 
 
 ### Version 7.1.8.7

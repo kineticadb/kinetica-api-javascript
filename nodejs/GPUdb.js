@@ -918,7 +918,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.1" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1285,18 +1285,19 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
 
 /**
  * @param {string} records - Either a single JSON record or an array of JSON records
- * @param {Map} create_table_options - the same options that apply to the '/create/table' endpoint
- * @param {Map} options - the 'table_name' to insert in must be passed as a mandatory option
+ * @param {string} table_name - The name of the table to insert into
+ * @param {Object} create_table_options - the same 'create_table_options' that apply to the '/insert/records/frompayload' endpoint
+ * @param {Object} options - the 'options' that apply to the '/insert/records/frompayload' endpoint
  * @param {Function} callback - an optional callback method that receives the results
  * @returns {Promise} A promise that will be fulfilled with the 'data' (containing insertion
  *                    results like counts etc) object, if no callback function is provided.
  */
-GPUdb.prototype.insert_records_from_json = function(records, create_table_options, options, callback) {
+GPUdb.prototype.insert_records_from_json = function(records, table_name, create_table_options, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
-        return new Promise( function( resolve, reject) {
-            self.insert_records_from_json(records, create_table_options, options, function(err, response) {
+        return new Promise( (resolve, reject) => {
+            self.insert_records_from_json(records, table_name, create_table_options, options, (err, response) => {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -1306,15 +1307,7 @@ GPUdb.prototype.insert_records_from_json = function(records, create_table_option
         });
     }
 
-    if( options === undefined || options === null ) {
-        throw new Error("At least the table name must be passed as an option - {\"table_name\": \"some_table\"}");
-    }
-
-    if( !(Object.hasOwn(options,'table_name')) || (typeof options.table_name !== 'string') || options.table_name.length == 0 ) {
-        throw new Error("Options passed must have the mandatory 'table_name' property of type 'string'");
-    }
-
-    if( records === undefined || records === null ) {
+    if( records == null ) {
         throw new Error("Records cannot be undefined or null");
     }
 
@@ -1323,39 +1316,109 @@ GPUdb.prototype.insert_records_from_json = function(records, create_table_option
         json_records = JSON.parse(records)
     } catch (objError) {
         let error_message = null
-        if (objError instanceof SyntaxError) {
-            error_message = `Syntax error : ${objError.message}`
-            console.error(error_message);
-            throw new Error( error_message )
-        } else {
-            error_message = `Error : ${objError.message}`
-            console.error(error_message);
-            throw new Error( error_message )
-        }
+        error_message = objError instanceof SyntaxError ? `Syntax error : ${objError.message}` : `Error : ${objError.message}`;
+        console.error(error_message);
+        throw new Error( error_message )
     }
 
-    let params = {...options, ...create_table_options};
+    if( table_name == null ) {
+        throw new Error("'table_name' cannot be undefined or null")
+    }
 
-    let queryString = '/insert/records/json?' + Object.keys(params).map(function(key) {
-        return key + '=' + params[key]
-    }).join('&');
-    
+    if( create_table_options == null) {
+        create_table_options = new Object()
+    }
 
-    this.submit_request(queryString, json_records, function(err, data) {
-        if (err === null) {
-            let response = data;
-            // Return just the Map received
-            callback(err, response);
-        }
-        else {
-            // There was an error
-            callback(err, data);
-        }
+    if( options == null ) {
+        options = {'table_name': table_name}
+    }
+
+    // overwrite the value
+    options.table_name = table_name
+
+    const params = {...options, ...create_table_options};
+
+    const queryString = `/insert/records/json?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}`;
+
+    this.submit_request(queryString, json_records, (err, data) => {
+        callback(err, data);
     });
 
 };
 
+/**
+ * This method is used to retrieve records from a Kinetica table in the form of
+ * a JSON array (stringified). The only mandatory parameter is the 'tableName'.
+ * The rest are all optional with suitable defaults wherever applicable.
+ * 
+ * @param {string} table_name 
+ * @param {array} column_names 
+ * @param {int} offset 
+ * @param {int} limit 
+ * @param {string} expression 
+ * @param {array} orderby_columns 
+ * @param {string} having_clause 
+ * @param {object} callback 
+ */
+GPUdb.prototype.get_records_json = function(table_name, column_names, offset, limit, expression, orderby_columns, having_clause, callback) {
 
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( (resolve, reject) => {
+            self.get_records_json(table_name, column_names, offset, limit, expression, orderby_columns, having_clause, (err, response) => {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    if( table_name == null || table_name.length == 0 ) throw new Error(`Table name ${table_name} is null or empty`);
+
+    const options = new Object();
+
+    if( column_names !== null && !Array.isArray(column_names) ) {
+        throw new Error(`column_names ${column_names} must be an array of string or null`)
+    }
+
+    if( orderby_columns !== null && !Array.isArray(orderby_columns)) {
+        throw new Error(`orderby_columns ${orderby_columns} must be an array of string or null`)
+    }
+
+    if( expression !== null && typeof expression != "string") throw new Error(`expression ${expression} must be a string`);
+    if( having_clause !== null && typeof having_clause != "string") throw new Error(`expression ${expression} must be a string`);
+
+    if( offset < 0 ) offset = 0;
+    if( limit < 0 ) limit = GPUdb.END_OF_SET;
+    
+    options["table_name"] = table_name;
+    
+    if( column_names !== null && column_names.length > 0) {
+        options["column_names"] = column_names.join(",");
+    }
+
+    options["offset"] = offset;
+    options["limit"] = limit;
+
+    if( expression !== null && expression.length > 0) {
+        options["expression"] = expression;
+    }
+
+    if( having_clause !== null && having_clause.length > 0 ) {
+        options["having_clause"] = having_clause;
+    }
+
+    const queryString = `/get/records/json?${Object.keys(options).map((key) => `${key}=${options[key]}`).join('&')}`;
+    console.log(queryString);
+
+    this.submit_request(queryString, null, (err, data) => {
+        callback(err, data);
+    });
+
+}
 /**
  * Adds a host to an existing cluster.
  * <p>
@@ -1416,9 +1479,7 @@ GPUdb.prototype.admin_add_host_request = function(request, callback) {
  *                                  <li> 'accepts_failover': If set to
  *                          <code>true</code>, the host will accept processes
  *                          (ranks, graph server, etc.) in the event of a
- *                          failover on another node in the cluster. See <a
- *                          href="../../../n_plus_1/" target="_top">Cluster
- *                          Resilience</a> for more information.
+ *                          failover on another node in the cluster.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -1722,9 +1783,7 @@ GPUdb.prototype.admin_alter_host_request = function(request, callback) {
  *                                  <li> 'accepts_failover': If set to
  *                          <code>true</code>, the host will accept processes
  *                          (ranks, graph server, etc.) in the event of a
- *                          failover on another node in the cluster. See <a
- *                          href="../../../n_plus_1/" target="_top">Cluster
- *                          Resilience</a> for more information.
+ *                          failover on another node in the cluster.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -1982,6 +2041,73 @@ GPUdb.prototype.admin_backup_end = function(options, callback) {
     };
 
     this.submit_request("/admin/backup/end", actual_request, callback);
+};
+
+/**
+ * Restarts the HA processing on the given cluster as a mechanism of accepting
+ * breaking HA conf changes. Additionally the cluster is put into read-only
+ * while HA is restarting.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_ha_refresh_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_ha_refresh_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/ha/refresh", actual_request, callback);
+};
+
+/**
+ * Restarts the HA processing on the given cluster as a mechanism of accepting
+ * breaking HA conf changes. Additionally the cluster is put into read-only
+ * while HA is restarting.
+ *
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_ha_refresh = function(options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_ha_refresh(options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+
+    var actual_request = {
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/ha/refresh", actual_request, callback);
 };
 
 /**
@@ -6303,6 +6429,16 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       records received from kafka before
  *                                       ingestion.  The default value is '30'.
  *                                               <li>
+ *                                       'egress_parquet_compression': Parquet
+ *                                       file compression type
+ *                                       Supported values:
+ *                                       <ul>
+ *                                               <li> 'uncompressed'
+ *                                               <li> 'snappy'
+ *                                               <li> 'gzip'
+ *                                       </ul>
+ *                                       The default value is 'snappy'.
+ *                                               <li>
  *                                       'egress_single_file_max_size': Max
  *                                       file size (in MB) to allow saving to a
  *                                       single file. May be overridden by
@@ -6318,6 +6454,15 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'evict_to_cold': If <code>true</code>
+ *                          and evict_columns is specified, the given objects
+ *                          will be evicted to cold storage (if such a tier
+ *                          exists).
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
  *                                  <li> 'persist': If <code>true</code> the
  *                          system configuration will be written to disk upon
  *                          successful application of this request. This will
@@ -7166,6 +7311,9 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
  *                          usage that once fallen below after crossing the
  *                          <code>high_watermark</code>, will cease
  *                          watermark-based eviction from this tier.
+ *                                  <li> 'wait_timeout': Timeout in seconds for
+ *                          reading from or writing to this resource. Applies
+ *                          to cold storage tiers only.
  *                                  <li> 'persist': If <code>true</code> the
  *                          system configuration will be written to disk upon
  *                          successful application of this request. This will
@@ -7462,46 +7610,69 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                          present in <code>field_map</code>.  The default
  *                          value is ''.
  *                                  <li> 'update_on_existing_pk': Specifies the
- *                          record collision policy for inserting the source
- *                          table records (specified by
- *                          <code>source_table_name</code>) into the target
- *                          table (specified by <code>table_name</code>) table
- *                          with a <a
+ *                          record collision policy for inserting source table
+ *                          records (specified by
+ *                          <code>source_table_name</code>) into a target table
+ *                          (specified by <code>table_name</code>) with a <a
  *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a>.  If set to
- *                          <code>true</code>, any existing target table record
- *                          with primary key values that match those of a
- *                          source table record being inserted will be replaced
- *                          by that new record.  If set to <code>false</code>,
- *                          any existing target table record with primary key
- *                          values that match those of a source table record
- *                          being inserted will remain unchanged and the new
- *                          record discarded.  If the specified table does not
- *                          have a primary key, then this option has no effect.
+ *                          target="_top">primary key</a>. If
+ *                          set to <code>true</code>, any existing table record
+ *                          with
+ *                          primary key values that match those of a source
+ *                          table record being inserted will be replaced by
+ *                          that
+ *                          new record (the new data will be "upserted"). If
+ *                          set to
+ *                          <code>false</code>, any existing table record with
+ *                          primary
+ *                          key values that match those of a source table
+ *                          record being inserted will remain unchanged, while
+ *                          the
+ *                          source record will be rejected and an error handled
+ *                          as determined by
+ *                          <code>ignore_existing_pk</code>.  If the specified
+ *                          table does not have a primary key,
+ *                          then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Upsert new records when
+ *                          primary keys match existing records
+ *                                  <li> 'false': Reject new records when
+ *                          primary keys match existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ignore_existing_pk': Specifies the
- *                          record collision policy for inserting the source
- *                          table records (specified by
- *                          <code>source_table_name</code>) into the target
- *                          table (specified by <code>table_name</code>) table
- *                          with a <a
+ *                          record collision error-suppression policy for
+ *                          inserting source table records (specified by
+ *                          <code>source_table_name</code>) into a target table
+ *                          (specified by <code>table_name</code>) with a <a
  *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a>.  If set to
- *                          <code>true</code>, any source table records being
- *                          inserted with primary key values that match those
- *                          of an existing target table record will be ignored
- *                          with no error generated.  If the specified table
- *                          does not have a primary key, then this option has
- *                          no affect.
+ *                          target="_top">primary key</a>, only
+ *                          used when not in upsert mode (upsert mode is
+ *                          disabled when
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any source table record being
+ *                          inserted that
+ *                          is rejected for having primary key values that
+ *                          match those of an existing target table record will
+ *                          be ignored with no error generated.  If
+ *                          <code>false</code>,
+ *                          the rejection of any source table record for having
+ *                          primary key values matching an existing target
+ *                          table record will result in an error being raised.
+ *                          If the specified table does not have a primary
+ *                          key or if upsert mode is in effect
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>true</code>), then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Ignore source table records
+ *                          whose primary key values collide with those of
+ *                          target table records
+ *                                  <li> 'false': Raise an error for any source
+ *                          table record whose primary key values collide with
+ *                          those of a target table record
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'truncate_strings': If set to
@@ -8195,6 +8366,18 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  *                          S3 bucket to use as the data sink
  *                                  <li> 's3_region': Name of the Amazon S3
  *                          region where the given bucket is located
+ *                                  <li> 's3_use_virtual_addressing': When true
+ *                          (default), the requests URI should be specified in
+ *                          virtual-hosted-style format where the bucket name
+ *                          is part of the domain name in the URL.
+ *                          Otherwise set to false to use path-style URI for
+ *                          requests.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 's3_aws_role_arn': Amazon IAM Role ARN
  *                          which has required S3 permissions that can be
  *                          assumed for the given S3 IAM user
@@ -8389,6 +8572,18 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                          S3 bucket to use as the data source
  *                                  <li> 's3_region': Name of the Amazon S3
  *                          region where the given bucket is located
+ *                                  <li> 's3_use_virtual_addressing': When true
+ *                          (default), the requests URI should be specified in
+ *                          virtual-hosted-style format where the bucket name
+ *                          is part of the domain name in the URL.
+ *                          Otherwise set to false to use path-style URI for
+ *                          requests.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                                  <li> 's3_aws_role_arn': Amazon IAM Role ARN
  *                          which has required S3 permissions that can be
  *                          assumed for the given S3 IAM user
@@ -10768,11 +10963,23 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'avro_header_bytes': Optional number
+ *                          of bytes to skip when reading an avro record.
  *                                  <li> 'avro_num_records': Optional number of
  *                          avro records, if data includes only records.
  *                                  <li> 'avro_schema': Optional string
  *                          representing avro schema, for insert records in
  *                          avro format, that does not include is schema.
+ *                                  <li> 'avro_schemaless': When user provides
+ *                          'avro_schema', avro data is assumed to be
+ *                          schemaless, unless specified. Default is 'true'
+ *                          when given avro_schema. Igonred when avro_schema is
+ *                          not given.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
  *                                  <li> 'bad_record_table_name': Optional name
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
@@ -10935,6 +11142,38 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision error-suppression policy for
+ *                          inserting into a table with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>, only used when
+ *                          not in upsert mode (upsert mode is disabled when
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any record being inserted that
+ *                          is rejected
+ *                          for having primary key values that match those of
+ *                          an existing table record will be ignored with no
+ *                          error generated.  If <code>false</code>, the
+ *                          rejection of any
+ *                          record for having primary key values matching an
+ *                          existing record will result in an error being
+ *                          reported, as determined by
+ *                          <code>error_handling</code>.  If the specified
+ *                          table does not
+ *                          have a primary key or if upsert mode is in effect
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>true</code>), then this option has no effect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Ignore new records whose
+ *                          primary key values collide with those of existing
+ *                          records
+ *                                  <li> 'false': Treat as errors any new
+ *                          records whose primary key values collide with those
+ *                          of existing records
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ingestion_mode': Whether to do a full
  *                          load, dry run, or perform a type inference on the
  *                          source data.
@@ -11180,11 +11419,11 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          inference for:
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'accuracy': scans all data to get
- *                          exactly-typed & sized columns for all data present
- *                                  <li> 'speed': picks the widest possible
- *                          column types so that 'all' values will fit with
- *                          minimum data scanned
+ *                                  <li> 'accuracy': Scans data to get
+ *                          exactly-typed & sized columns for all data scanned.
+ *                                  <li> 'speed': Scans data and picks the
+ *                          widest possible column types so that 'all' values
+ *                          will fit with minimum data scanned
  *                          </ul>
  *                          The default value is 'speed'.
  *                                  <li> 'remote_query': Remote SQL query from
@@ -11200,18 +11439,32 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'remote_query_partition_column': Alias
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
- *                                  <li> 'update_on_existing_pk':
+ *                                  <li> 'update_on_existing_pk': Specifies the
+ *                          record collision policy for inserting into a table
+ *                          with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>. If set to
+ *                          <code>true</code>, any existing table record with
+ *                          primary
+ *                          key values that match those of a record being
+ *                          inserted will be replaced by that new record (the
+ *                          new
+ *                          data will be "upserted"). If set to
+ *                          <code>false</code>,
+ *                          any existing table record with primary key values
+ *                          that match those of a record being inserted will
+ *                          remain unchanged, while the new record will be
+ *                          rejected and the error handled as determined by
+ *                          <code>ignore_existing_pk</code> &
+ *                          <code>error_handling</code>.  If the
+ *                          specified table does not have a primary key, then
+ *                          this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'ignore_existing_pk':
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Upsert new records when
+ *                          primary keys match existing records
+ *                                  <li> 'false': Reject new records when
+ *                          primary keys match existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                          </ul>
@@ -12711,7 +12964,13 @@ GPUdb.prototype.delete_files_request = function(request, callback) {
  * Deletes one or more files from <a href="../../../tools/kifs/"
  * target="_top">KiFS</a>.
  *
- * @param {String[]} file_names  An array of names of files to be deleted.
+ * @param {String[]} file_names  An array of names of files to be deleted. File
+ *                               paths may contain wildcard characters after
+ *                               the KiFS directory delimeter.
+ *                               Accepted wildcard characters are asterisk (*)
+ *                               to represent any string of zero or more
+ *                               characters, and question mark (?) to indicate
+ *                               a single character.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'no_error_if_not_exists': If
@@ -13288,7 +13547,12 @@ GPUdb.prototype.download_files_request = function(request, callback) {
  * target="_top">KiFS</a>.
  *
  * @param {String[]} file_names  An array of the file names to download from
- *                               KiFS. The full path must be provided.
+ *                               KiFS. File paths may contain wildcard
+ *                               characters after the KiFS directory delimeter.
+ *                               Accepted wildcard characters are asterisk (*)
+ *                               to represent any string of zero or more
+ *                               characters, and question mark (?) to indicate
+ *                               a single character.
  * @param {Number[]} read_offsets  An array of starting byte offsets from which
  *                                 to read each
  *                                 respective file in <code>file_names</code>.
@@ -14204,14 +14468,34 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'ignore_existing_pk': Can be used to
- *                          customize behavior when the updated primary key
- *                          value already exists as described in
- *                          {@linkcode GPUdb#insert_records}.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision error-suppression policy for
+ *                          inserting into or updating a table with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>, only
+ *                          used when primary key record collisions are
+ *                          rejected (<code>update_on_existing_pk</code>
+ *                          is <code>false</code>).  If set to
+ *                          <code>true</code>, any record insert/update that is
+ *                          rejected
+ *                          for resulting in a primary key collision with an
+ *                          existing table record will be ignored with no error
+ *                          generated.  If <code>false</code>, the rejection of
+ *                          any
+ *                          insert/update for resulting in a primary key
+ *                          collision will cause an error to be reported.  If
+ *                          the
+ *                          specified table does not have a primary key or if
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>true</code>, then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Ignore inserts/updates that
+ *                          result in primary key collisions with existing
+ *                          records
+ *                                  <li> 'false': Treat as errors any
+ *                          inserts/updates that result in primary key
+ *                          collisions with existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'late_materialization': If
@@ -14307,14 +14591,32 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                          href="../../../concepts/ttl/" target="_top">TTL</a>
  *                          of the intermediate result tables used in query
  *                          execution.
- *                                  <li> 'update_on_existing_pk': Can be used
- *                          to customize behavior when the updated primary key
- *                          value already exists as described in
- *                          {@linkcode GPUdb#insert_records}.
+ *                                  <li> 'update_on_existing_pk': Specifies the
+ *                          record collision policy for inserting into or
+ *                          updating
+ *                          a table with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>. If set to
+ *                          <code>true</code>, any existing table record with
+ *                          primary
+ *                          key values that match those of a record being
+ *                          inserted or updated will be replaced by that
+ *                          record.
+ *                          If set to <code>false</code>, any such primary key
+ *                          collision will result in the insert/update being
+ *                          rejected and the error handled as determined by
+ *                          <code>ignore_existing_pk</code>.  If the specified
+ *                          table does not have a primary key,
+ *                          then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Replace the collided-into
+ *                          record with the record inserted or updated when a
+ *                          new/modified record causes a primary key collision
+ *                          with an existing record
+ *                                  <li> 'false': Reject the insert or update
+ *                          when it results in a primary key collision with an
+ *                          existing record
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'validate_change_column': When
@@ -14330,6 +14632,11 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'current_schema': Use the supplied
+ *                          value as the <a
+ *                          href="../../../concepts/schemas/#default-schema"
+ *                          target="_top">default schema</a> when processing
+ *                          this SQL command.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -14562,6 +14869,17 @@ GPUdb.prototype.export_records_to_files_request = function(request, callback) {
  *                          specify a
  *                          property separator. Different from column
  *                          delimiter.  The default value is '|'.
+ *                                  <li> 'compression_type': File compression
+ *                          type. Different file types support different
+ *                          compresion types. text: uncompressed, gzip.
+ *                          parquet: uncompressed, snappy, gzip.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'uncompressed'
+ *                                  <li> 'snappy'
+ *                                  <li> 'gzip'
+ *                          </ul>
+ *                          The default value is 'snappy'.
  *                                  <li> 'single_file': Save records to a
  *                          single file. This option may be ignored if file
  *                          size exceeds internal file size limits (this limit
@@ -14570,6 +14888,7 @@ GPUdb.prototype.export_records_to_files_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'true'
  *                                  <li> 'false'
+ *                                  <li> 'overwrite'
  *                          </ul>
  *                          The default value is 'true'.
  *                                  <li> 'text_delimiter': Specifies the
@@ -19065,36 +19384,62 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                          record collision policy for inserting into a table
  *                          with a <a
  *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a>.  If set to
+ *                          target="_top">primary key</a>. If set to
  *                          <code>true</code>, any existing table record with
- *                          primary key values that match those of a record
- *                          being inserted will be replaced by that new record.
- *                          If set to <code>false</code>, any existing table
- *                          record with primary key values that match those of
- *                          a record being inserted will remain unchanged and
- *                          the new record discarded.  If the specified table
- *                          does not have a primary key, then this option has
- *                          no affect.
+ *                          primary
+ *                          key values that match those of a record being
+ *                          inserted will be replaced by that new record (the
+ *                          new
+ *                          data will be "upserted"). If set to
+ *                          <code>false</code>,
+ *                          any existing table record with primary key values
+ *                          that match those of a record being inserted will
+ *                          remain unchanged, while the new record will be
+ *                          rejected and the error handled as determined by
+ *                          <code>ignore_existing_pk</code>,
+ *                          <code>allow_partial_batch</code>, &
+ *                          <code>return_individual_errors</code>.  If the
+ *                          specified table does not have a primary
+ *                          key, then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Upsert new records when
+ *                          primary keys match existing records
+ *                                  <li> 'false': Reject new records when
+ *                          primary keys match existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ignore_existing_pk': Specifies the
- *                          record collision policy for inserting into a table
- *                          with a <a
+ *                          record collision error-suppression policy for
+ *                          inserting into a table with a <a
  *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a>.  If set to
- *                          <code>true</code>, any record being inserted with
- *                          primary key values that match those of an existing
- *                          table record will be ignored with no error
- *                          generated.  If the specified table does not have a
- *                          primary key, then this option has no affect.
+ *                          target="_top">primary key</a>, only used when
+ *                          not in upsert mode (upsert mode is disabled when
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any record being inserted that
+ *                          is rejected
+ *                          for having primary key values that match those of
+ *                          an existing table record will be ignored with no
+ *                          error generated.  If <code>false</code>, the
+ *                          rejection of any
+ *                          record for having primary key values matching an
+ *                          existing record will result in an error being
+ *                          reported, as determined by
+ *                          <code>allow_partial_batch</code> &
+ *                          <code>return_individual_errors</code>.  If the
+ *                          specified table does not
+ *                          have a primary key or if upsert mode is in effect
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>true</code>), then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Ignore new records whose
+ *                          primary key values collide with those of existing
+ *                          records
+ *                                  <li> 'false': Treat as errors any new
+ *                          records whose primary key values collide with those
+ *                          of existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'return_record_ids': If
@@ -19493,11 +19838,23 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'avro_header_bytes': Optional number
+ *                          of bytes to skip when reading an avro record.
  *                                  <li> 'avro_num_records': Optional number of
  *                          avro records, if data includes only records.
  *                                  <li> 'avro_schema': Optional string
  *                          representing avro schema, if data includes only
  *                          records.
+ *                                  <li> 'avro_schemaless': When user provides
+ *                          'avro_schema', avro data is assumed to be
+ *                          schemaless, unless specified. Default is 'true'
+ *                          when given avro_schema. Igonred when avro_schema is
+ *                          not given.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
  *                                  <li> 'bad_record_table_name': Optional name
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
@@ -19648,6 +20005,38 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision error-suppression policy for
+ *                          inserting into a table with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>, only used when
+ *                          not in upsert mode (upsert mode is disabled when
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any record being inserted that
+ *                          is rejected
+ *                          for having primary key values that match those of
+ *                          an existing table record will be ignored with no
+ *                          error generated.  If <code>false</code>, the
+ *                          rejection of any
+ *                          record for having primary key values matching an
+ *                          existing record will result in an error being
+ *                          reported, as determined by
+ *                          <code>error_handling</code>.  If the specified
+ *                          table does not
+ *                          have a primary key or if upsert mode is in effect
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>true</code>), then this option has no effect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Ignore new records whose
+ *                          primary key values collide with those of existing
+ *                          records
+ *                                  <li> 'false': Treat as errors any new
+ *                          records whose primary key values collide with those
+ *                          of existing records
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ingestion_mode': Whether to do a full
  *                          load, dry run, or perform a type inference on the
  *                          source data.
@@ -19877,25 +20266,39 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          inference for:
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'accuracy': scans all data to get
- *                          exactly-typed & sized columns for all data present
- *                                  <li> 'speed': picks the widest possible
- *                          column types so that 'all' values will fit with
- *                          minimum data scanned
+ *                                  <li> 'accuracy': Scans data to get
+ *                          exactly-typed & sized columns for all data scanned.
+ *                                  <li> 'speed': Scans data and picks the
+ *                          widest possible column types so that 'all' values
+ *                          will fit with minimum data scanned
  *                          </ul>
  *                          The default value is 'speed'.
- *                                  <li> 'update_on_existing_pk':
+ *                                  <li> 'update_on_existing_pk': Specifies the
+ *                          record collision policy for inserting into a table
+ *                          with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>. If set to
+ *                          <code>true</code>, any existing table record with
+ *                          primary
+ *                          key values that match those of a record being
+ *                          inserted will be replaced by that new record (the
+ *                          new
+ *                          data will be "upserted"). If set to
+ *                          <code>false</code>,
+ *                          any existing table record with primary key values
+ *                          that match those of a record being inserted will
+ *                          remain unchanged, while the new record will be
+ *                          rejected and the error handled as determined by
+ *                          <code>ignore_existing_pk</code> &
+ *                          <code>error_handling</code>.  If the
+ *                          specified table does not have a primary key, then
+ *                          this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'ignore_existing_pk':
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Upsert new records when
+ *                          primary keys match existing records
+ *                                  <li> 'false': Reject new records when
+ *                          primary keys match existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                          </ul>
@@ -20156,11 +20559,23 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                                  <li> 'avro_header_bytes': Optional number
+ *                          of bytes to skip when reading an avro record.
  *                                  <li> 'avro_num_records': Optional number of
  *                          avro records, if data includes only records.
  *                                  <li> 'avro_schema': Optional string
  *                          representing avro schema, for insert records in
  *                          avro format, that does not include is schema.
+ *                                  <li> 'avro_schemaless': When user provides
+ *                          'avro_schema', avro data is assumed to be
+ *                          schemaless, unless specified. Default is 'true'
+ *                          when given avro_schema. Igonred when avro_schema is
+ *                          not given.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
  *                                  <li> 'bad_record_table_name': Optional name
  *                          of a table to which records that were rejected are
  *                          written.  The bad-record-table has the following
@@ -20306,6 +20721,38 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision error-suppression policy for
+ *                          inserting into a table with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>, only used when
+ *                          not in upsert mode (upsert mode is disabled when
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any record being inserted that
+ *                          is rejected
+ *                          for having primary key values that match those of
+ *                          an existing table record will be ignored with no
+ *                          error generated.  If <code>false</code>, the
+ *                          rejection of any
+ *                          record for having primary key values matching an
+ *                          existing record will result in an error being
+ *                          reported, as determined by
+ *                          <code>error_handling</code>.  If the specified
+ *                          table does not
+ *                          have a primary key or if upsert mode is in effect
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>true</code>), then this option has no effect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Ignore new records whose
+ *                          primary key values collide with those of existing
+ *                          records
+ *                                  <li> 'false': Treat as errors any new
+ *                          records whose primary key values collide with those
+ *                          of existing records
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ingestion_mode': Whether to do a full
  *                          load, dry run, or perform a type inference on the
  *                          source data.
@@ -20519,25 +20966,39 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          inference for:
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'accuracy': scans all data to get
- *                          exactly-typed & sized columns for all data present
- *                                  <li> 'speed': picks the widest possible
- *                          column types so that 'all' values will fit with
- *                          minimum data scanned
+ *                                  <li> 'accuracy': Scans data to get
+ *                          exactly-typed & sized columns for all data scanned.
+ *                                  <li> 'speed': Scans data and picks the
+ *                          widest possible column types so that 'all' values
+ *                          will fit with minimum data scanned
  *                          </ul>
  *                          The default value is 'speed'.
- *                                  <li> 'update_on_existing_pk':
+ *                                  <li> 'update_on_existing_pk': Specifies the
+ *                          record collision policy for inserting into a table
+ *                          with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>. If set to
+ *                          <code>true</code>, any existing table record with
+ *                          primary
+ *                          key values that match those of a record being
+ *                          inserted will be replaced by that new record (the
+ *                          new
+ *                          data will be "upserted"). If set to
+ *                          <code>false</code>,
+ *                          any existing table record with primary key values
+ *                          that match those of a record being inserted will
+ *                          remain unchanged, while the new record will be
+ *                          rejected and the error handled as determined by
+ *                          <code>ignore_existing_pk</code> &
+ *                          <code>error_handling</code>.  If the
+ *                          specified table does not have a primary key, then
+ *                          this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'ignore_existing_pk':
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Upsert new records when
+ *                          primary keys match existing records
+ *                                  <li> 'false': Reject new records when
+ *                          primary keys match existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                          </ul>
@@ -20821,6 +21282,38 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                          abortable errors in this mode.
  *                          </ul>
  *                          The default value is 'abort'.
+ *                                  <li> 'ignore_existing_pk': Specifies the
+ *                          record collision error-suppression policy for
+ *                          inserting into a table with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>, only used when
+ *                          not in upsert mode (upsert mode is disabled when
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any record being inserted that
+ *                          is rejected
+ *                          for having primary key values that match those of
+ *                          an existing table record will be ignored with no
+ *                          error generated.  If <code>false</code>, the
+ *                          rejection of any
+ *                          record for having primary key values matching an
+ *                          existing record will result in an error being
+ *                          reported, as determined by
+ *                          <code>error_handling</code>.  If the specified
+ *                          table does not
+ *                          have a primary key or if upsert mode is in effect
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>true</code>), then this option has no effect.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true': Ignore new records whose
+ *                          primary key values collide with those of existing
+ *                          records
+ *                                  <li> 'false': Treat as errors any new
+ *                          records whose primary key values collide with those
+ *                          of existing records
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'ingestion_mode': Whether to do a full
  *                          load, dry run, or perform a type inference on the
  *                          source data.
@@ -20894,18 +21387,32 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                                  <li> 'remote_query_partition_column': Alias
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
- *                                  <li> 'update_on_existing_pk':
+ *                                  <li> 'update_on_existing_pk': Specifies the
+ *                          record collision policy for inserting into a table
+ *                          with a <a
+ *                          href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>. If set to
+ *                          <code>true</code>, any existing table record with
+ *                          primary
+ *                          key values that match those of a record being
+ *                          inserted will be replaced by that new record (the
+ *                          new
+ *                          data will be "upserted"). If set to
+ *                          <code>false</code>,
+ *                          any existing table record with primary key values
+ *                          that match those of a record being inserted will
+ *                          remain unchanged, while the new record will be
+ *                          rejected and the error handled as determined by
+ *                          <code>ignore_existing_pk</code> &
+ *                          <code>error_handling</code>.  If the
+ *                          specified table does not have a primary key, then
+ *                          this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
- *                          </ul>
- *                          The default value is 'false'.
- *                                  <li> 'ignore_existing_pk':
- *                          Supported values:
- *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Upsert new records when
+ *                          primary keys match existing records
+ *                                  <li> 'false': Reject new records when
+ *                          primary keys match existing records
  *                          </ul>
  *                          The default value is 'false'.
  *                          </ul>
@@ -21982,10 +22489,12 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                          solver.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'girwan': Uses the Newman Girwan
+ *                                  <li> 'girvan': Uses the Newman Girvan
  *                          quality metric for cluster solver
+ *                                  <li> 'spectral': Applies recursive spectral
+ *                          bisection (RSB) partitioning solver
  *                          </ul>
- *                          The default value is 'girwan'.
+ *                          The default value is 'girvan'.
  *                                  <li> 'restricted_type': For the
  *                          <code>match_supply_demand</code> solver only.
  *                          Optimization is performed by restricting routes
@@ -22779,10 +23288,10 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
- *                                  <li> 'limit': When specified, limits the
- *                          number of query results. The size of the nodes
+ *                                  <li> 'limit': When specified (>0), limits
+ *                          the number of query results. The size of the nodes
  *                          table will be limited by the <code>limit</code>
- *                          value.  The default value is an empty dict ( {} ).
+ *                          value.  The default value is '0'.
  *                                  <li> 'output_wkt_path': If true then
  *                          concatenated wkt line segments will be added as the
  *                          WKT column of the adjacency table.
@@ -24135,7 +24644,13 @@ GPUdb.prototype.show_files_request = function(request, callback) {
  * files in a given directory.
  *
  * @param {String[]} paths  File paths to show. Each path can be a KiFS
- *                          directory name, or a full path to a KiFS file.
+ *                          directory name, or a full path to a KiFS file. File
+ *                          paths may contain wildcard characters after the
+ *                          KiFS directory delimeter.
+ *                          Accepted wildcard characters are asterisk (*) to
+ *                          represent any string of zero or more characters,
+ *                          and question mark (?) to indicate a single
+ *                          character.
  * @param {Object} options  Optional parameters.
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -26480,11 +26995,14 @@ GPUdb.prototype.solve_graph = function(graph_name, weights_on_edges, restriction
  * restrictions can be removed by utilizing some available options through
  * <code>options</code>.
  * <p>
- * The <code>update_on_existing_pk</code> option specifies the record
- * collision policy for tables with a <a
- * href="../../../concepts/tables/#primary-keys" target="_top">primary key</a>,
- * and
- * is ignored on tables with no primary key.
+ * The <code>update_on_existing_pk</code> option specifies the record primary
+ * key collision
+ * policy for tables with a <a href="../../../concepts/tables/#primary-keys"
+ * target="_top">primary key</a>, while
+ * <code>ignore_existing_pk</code> specifies the record primary key collision
+ * error-suppression policy when those collisions result in the update being
+ * rejected.  Both are
+ * ignored on tables with no primary key.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -26549,18 +27067,22 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  * restrictions can be removed by utilizing some available options through
  * <code>options</code>.
  * <p>
- * The <code>update_on_existing_pk</code> option specifies the record
- * collision policy for tables with a <a
- * href="../../../concepts/tables/#primary-keys" target="_top">primary key</a>,
- * and
- * is ignored on tables with no primary key.
+ * The <code>update_on_existing_pk</code> option specifies the record primary
+ * key collision
+ * policy for tables with a <a href="../../../concepts/tables/#primary-keys"
+ * target="_top">primary key</a>, while
+ * <code>ignore_existing_pk</code> specifies the record primary key collision
+ * error-suppression policy when those collisions result in the update being
+ * rejected.  Both are
+ * ignored on tables with no primary key.
  *
  * @param {String} table_name  Name of table to be updated, in
  *                             [schema_name.]table_name format, using standard
  *                             <a
  *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.  Must
- *                             be a currently existing table and not a view.
+ *                             be a currently
+ *                             existing table and not a view.
  * @param {String[]} expressions  A list of the actual predicates, one for each
  *                                update; format should follow the guidelines
  *                                [here]{@linkcode GPUdb#filter}.
@@ -26568,10 +27090,10 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                    records.  Each element is a map with
  *                                    (key, value) pairs where the keys are the
  *                                    names of the columns whose values are to
- *                                    be updated; the values are the new
- *                                    values.  The number of elements in the
- *                                    list should match the length of
- *                                    <code>expressions</code>.
+ *                                    be updated; the
+ *                                    values are the new values.  The number of
+ *                                    elements in the list should match the
+ *                                    length of <code>expressions</code>.
  * @param {Object[]} data  An optional list of JSON encoded objects to insert,
  *                         one for each update, to be added if the particular
  *                         update did not match any objects.
@@ -26582,15 +27104,16 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          predicates listed in <code>expressions</code>.  The
  *                          default value is ''.
  *                                  <li> 'bypass_safety_checks': When set to
- *                          <code>true</code>, all predicates are available for
- *                          primary key updates.  Keep in mind that it is
- *                          possible to destroy data in this case, since a
- *                          single predicate may match multiple objects
- *                          (potentially all of records of a table), and then
- *                          updating all of those records to have the same
- *                          primary key will, due to the primary key uniqueness
- *                          constraints, effectively delete all but one of
- *                          those updated records.
+ *                          <code>true</code>,
+ *                          all predicates are available for primary key
+ *                          updates.  Keep in mind that it is possible to
+ *                          destroy
+ *                          data in this case, since a single predicate may
+ *                          match multiple objects (potentially all of records
+ *                          of a table), and then updating all of those records
+ *                          to have the same primary key will, due to the
+ *                          primary key uniqueness constraints, effectively
+ *                          delete all but one of those updated records.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -26598,48 +27121,84 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'update_on_existing_pk': Specifies the
- *                          record collision policy for tables with a <a
- *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a> when updating columns
- *                          of the <a
- *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a> or inserting new
- *                          records.  If <code>true</code>, existing records
- *                          with primary key values that match those of a
- *                          record being updated or inserted will be replaced
- *                          by the updated and new records.  If
- *                          <code>false</code>, existing records with matching
- *                          primary key values will remain unchanged, and the
- *                          updated or new records with primary key values that
- *                          match those of existing records will be discarded.
- *                          If the specified table does not have a primary key,
+ *                          record collision policy for updating a table with a
+ *                          <a href="../../../concepts/tables/#primary-keys"
+ *                          target="_top">primary key</a>.  There are two ways
+ *                          that a record collision can
+ *                          occur.
+ *                          The first is an "update collision", which happens
+ *                          when the update changes the value of the updated
+ *                          record's primary key, and that new primary key
+ *                          already exists as the primary key of another record
+ *                          in the table.
+ *                          The second is an "insert collision", which occurs
+ *                          when a given filter in <code>expressions</code>
+ *                          finds no records to update, and the alternate
+ *                          insert record given in
+ *                          <code>records_to_insert</code> (or
+ *                          <code>records_to_insert_str</code>) contains a
+ *                          primary key matching that of an existing record in
+ *                          the
+ *                          table.
+ *                          If <code>update_on_existing_pk</code> is set to
+ *                          <code>true</code>, "update collisions" will result
+ *                          in the
+ *                          existing record collided into being removed and the
+ *                          record updated with values specified in
+ *                          <code>new_values_maps</code> taking its place;
+ *                          "insert collisions" will result in the
+ *                          collided-into
+ *                          record being updated with the values in
+ *                          <code>records_to_insert</code>/<code>records_to_insert_str</code>
+ *                          (if given).
+ *                          If set to <code>false</code>, the existing
+ *                          collided-into
+ *                          record will remain unchanged, while the update will
+ *                          be rejected and the error handled as determined
+ *                          by <code>ignore_existing_pk</code>.  If the
+ *                          specified table does not have a primary key,
  *                          then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true': Overwrite existing records
- *                          when updated and inserted records have the same
- *                          primary keys
- *                                  <li> 'false': Discard updated and inserted
- *                          records when the same primary keys already exist
+ *                                  <li> 'true': Overwrite the collided-into
+ *                          record when updating a
+ *                          record's primary key or inserting an alternate
+ *                          record causes a primary key collision between the
+ *                          record being updated/inserted and another existing
+ *                          record in the table
+ *                                  <li> 'false': Reject updates which cause
+ *                          primary key collisions
+ *                          between the record being updated/inserted and an
+ *                          existing record in the table
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'ignore_existing_pk': Specifies the
- *                          record collision policy for tables with a <a
+ *                          record collision error-suppression policy for
+ *                          updating a table with a <a
  *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a> when updating columns
- *                          of the <a
- *                          href="../../../concepts/tables/#primary-keys"
- *                          target="_top">primary key</a> or inserting new
- *                          records.  If set to <code>true</code>, any record
- *                          being updated or inserted with primary key values
- *                          that match those of an existing record will be
- *                          ignored with no error generated.  If the specified
- *                          table does not have a primary key, then this option
- *                          has no affect.
+ *                          target="_top">primary key</a>, only used when
+ *                          primary
+ *                          key record collisions are rejected
+ *                          (<code>update_on_existing_pk</code> is
+ *                          <code>false</code>).  If set to
+ *                          <code>true</code>, any record update that is
+ *                          rejected for
+ *                          resulting in a primary key collision with an
+ *                          existing table record will be ignored with no error
+ *                          generated.  If <code>false</code>, the rejection of
+ *                          any update
+ *                          for resulting in a primary key collision will cause
+ *                          an error to be reported.  If the specified table
+ *                          does not have a primary key or if
+ *                          <code>update_on_existing_pk</code> is
+ *                          <code>true</code>, then this option has no effect.
  *                          Supported values:
  *                          <ul>
- *                                  <li> 'true'
- *                                  <li> 'false'
+ *                                  <li> 'true': Ignore updates that result in
+ *                          primary key collisions with existing records
+ *                                  <li> 'false': Treat as errors any updates
+ *                          that result in primary key collisions with existing
+ *                          records
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'update_partition': Force qualifying
@@ -26662,13 +27221,15 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                          </ul>
  *                          The default value is 'false'.
  *                                  <li> 'use_expressions_in_new_values_maps':
- *                          When set to <code>true</code>, all new values in
- *                          <code>new_values_maps</code> are considered as
- *                          expression values. When set to <code>false</code>,
+ *                          When set to <code>true</code>,
  *                          all new values in <code>new_values_maps</code> are
- *                          considered as constants.  NOTE:  When
- *                          <code>true</code>, string constants will need to be
- *                          quoted to avoid being evaluated as expressions.
+ *                          considered as expression values. When set to
+ *                          <code>false</code>, all new values in
+ *                          <code>new_values_maps</code> are considered as
+ *                          constants.  NOTE:  When
+ *                          <code>true</code>, string constants will need
+ *                          to be quoted to avoid being evaluated as
+ *                          expressions.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -28677,7 +29238,6 @@ GPUdb.prototype.visualize_image_labels = function(table_name, x_column_name, y_c
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * for more information on graphs.
- * .
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -28727,7 +29287,6 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
  * for more information on graphs.
- * .
  *
  * @param {String} graph_name  Name of the graph on which the isochrone is to
  *                             be computed.
@@ -29608,8 +30167,8 @@ GPUdb.FileHandler.prototype.parse_flag_to_str = function(value, default_value) {
     }
 };
 
-GPUdb.FileHandler.extract_filename = function(full_path, sep) {
-    var filename_parts = full_path.split(sep);
+GPUdb.FileHandler.extract_filename = (full_path, sep) => {
+    const filename_parts = full_path.split(sep);
     return filename_parts[filename_parts.length-1];
 };
 
@@ -29623,12 +30182,12 @@ GPUdb.FileHandler.prototype.parse_dir_destination = function(destination) {
         if (first_slash_pos != 0) {
             // Empty path or path that does not start with a slash
             // Add the slash to path
-            destination = "/" + destination;
+            destination = `/${destination}`;
         }
 
         const last_slash_pos = destination.lastIndexOf("/");
         if (last_slash_pos != destination.length-1 ) {
-            destination = destination + "/";
+            destination += "/";
         }
         return destination;
     } else {
@@ -29678,9 +30237,9 @@ GPUdb.FileHandler.prototype.parse_dir_destination = function(destination) {
 // };
 
 
-GPUdb.FileHandler.prototype.parse_options = function(incoming_options, endpoint) {
-    var options = {};
-    var default_file_encoding = 'base64';
+GPUdb.FileHandler.prototype.parse_options = (incoming_options, endpoint) => {
+    const options = {};
+    const default_file_encoding = 'base64';
     switch(endpoint) {
     case "upload":
         options.file_encoding = default_file_encoding;
