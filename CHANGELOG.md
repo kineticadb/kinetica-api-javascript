@@ -2,6 +2,19 @@
 
 ## Version 7.1
 
+### Version 7.1.9.1 - 2023-08-20
+
+#### Added
+##### JavaScript API
+-   A new function, `get_records_json`, for retrieving data in JSON format.
+
+##### Node.js API
+-   A new function, `get_records_json`, for retrieving data in JSON format.
+
+#### Notes
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
+
+
 ### Version 7.1.9.0 - 2023-03-19
 
 #### Added
