@@ -943,7 +943,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.1" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.2" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1408,8 +1408,12 @@ GPUdb.prototype.get_records_json = function(table_name, column_names, offset, li
         options["expression"] = expression;
     }
 
+    if( orderby_columns !== null && orderby_columns.length > 0) {
+        options["order_by"] = orderby_columns;
+    }
+
     if( having_clause !== null && having_clause.length > 0 ) {
-        options["having_clause"] = having_clause;
+        options["having"] = having_clause;
     }
 
     const queryString = `/get/records/json?${Object.keys(options).map((key) => `${key}=${options[key]}`).join('&')}`;
@@ -5703,6 +5707,95 @@ GPUdb.prototype.alter_directory = function(directory_name, directory_updates_map
 };
 
 /**
+ * Alters an existing environment which can be referenced by a <a
+ * href="../../../concepts/udf/" target="_top">user-defined function</a> (UDF).
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.alter_environment_request = function(request, callback) {
+    var actual_request = {
+        environment_name: request.environment_name,
+        action: request.action,
+        value: request.value,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/environment", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Alters an existing environment which can be referenced by a <a
+ * href="../../../concepts/udf/" target="_top">user-defined function</a> (UDF).
+ *
+ * @param {String} environment_name  Name of the environment to be altered.
+ * @param {String} action  Modification operation to be applied
+ *                         Supported values:
+ *                         <ul>
+ *                                 <li> 'install_package': Install a python
+ *                         package
+ *                                 <li> 'install_requirements': Install
+ *                         packages from a requirements file
+ *                                 <li> 'uninstall_package': Uninstall a python
+ *                         package.
+ *                                 <li> 'uninstall_requirements': Uninstall
+ *                         packages from a requirements file
+ *                                 <li> 'reset': Uninstalls all packages in the
+ *                         environment and resets it to the original state at
+ *                         time of creation
+ *                         </ul>
+ * @param {String} value  The value of the modification, depending on
+ *                        <code>action</code>.  For example, if
+ *                        <code>action</code> is <code>install_package</code>,
+ *                        this would be the python package name.
+ *                        If <code>action</code> is
+ *                        <code>install_requirements</code>, this would be the
+ *                        path of a requirements file from which to install
+ *                        packages.
+ *                        If an external data source is specified in
+ *                        <code>datasource_name</code>, this can be the path to
+ *                        a wheel file or source archive.
+ *                        Alternatively, if installing from a file (wheel or
+ *                        source archive), the value may be a reference to a
+ *                        file in <a href="../../../tools/kifs/"
+ *                        target="_top">KiFS</a>.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'datasource_name': Name of an existing
+ *                          external data source from which packages specified
+ *                          in <code>value</code> can be loaded
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.alter_environment = function(environment_name, action, value, options, callback) {
+    var actual_request = {
+        environment_name: environment_name,
+        action: action,
+        value: value,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/alter/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/alter/environment", actual_request);
+        return data;
+    }
+};
+
+/**
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -6644,6 +6737,10 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         href="../../../concepts/full_text_search/"
  *                         target="_top">text search</a> attribute from all
  *                         columns.
+ *                                 <li> 'remove_shard_keys': Removes the shard
+ *                         key property from all columns, so that the table
+ *                         will be considered randomly sharded.  The data is
+ *                         not moved.  The <code>value</code> is ignored.
  *                                 <li> 'set_strategy_definition': Sets the <a
  *                         href="../../../rm/concepts/#tier-strategies"
  *                         target="_top">tier strategy</a> for the table and
@@ -8360,6 +8457,58 @@ GPUdb.prototype.create_directory = function(directory_name, options, callback) {
 };
 
 /**
+ * Creates a new environment which can be used by <a
+ * href="../../../concepts/udf/" target="_top">user-defined functions</a>
+ * (UDF).
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_environment_request = function(request, callback) {
+    var actual_request = {
+        environment_name: request.environment_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/environment", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Creates a new environment which can be used by <a
+ * href="../../../concepts/udf/" target="_top">user-defined functions</a>
+ * (UDF).
+ *
+ * @param {String} environment_name  Name of the environment to be created.
+ * @param {Object} options  Optional parameters.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.create_environment = function(environment_name, options, callback) {
+    var actual_request = {
+        environment_name: environment_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/create/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/create/environment", actual_request);
+        return data;
+    }
+};
+
+/**
  * Creates a new graph network using given nodes, edges, weights, and
  * restrictions.
 
@@ -9115,6 +9264,10 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                          maximum number of concurrent instances of the proc
  *                          that will be executed per node. 0 allows unlimited
  *                          concurrency.  The default value is '0'.
+ *                                  <li> 'set_environment': A python
+ *                          environment to use when executing the proc. Must be
+ *                          an existing environment, else an error will be
+ *                          returned.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -12818,6 +12971,72 @@ GPUdb.prototype.drop_datasource = function(name, options, callback) {
         this.submit_request("/drop/datasource", actual_request, callback);
     } else {
         var data = this.submit_request("/drop/datasource", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Drop an existing <a href="../../../concepts/udf/" target="_top">user-defined
+ * function</a> (UDF) environment.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.drop_environment_request = function(request, callback) {
+    var actual_request = {
+        environment_name: request.environment_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/environment", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Drop an existing <a href="../../../concepts/udf/" target="_top">user-defined
+ * function</a> (UDF) environment.
+ *
+ * @param {String} environment_name  Name of the environment to be dropped.
+ *                                   Must be an existing environment.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>true</code> and if the environment specified
+ *                          in <code>environment_name</code> does not exist, no
+ *                          error is returned. If <code>false</code> and if the
+ *                          environment specified in
+ *                          <code>environment_name</code> does not exist, then
+ *                          an error is returned.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.drop_environment = function(environment_name, options, callback) {
+    var actual_request = {
+        environment_name: environment_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/drop/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/drop/environment", actual_request);
         return data;
     }
 };
@@ -22275,6 +22494,80 @@ GPUdb.prototype.show_directories = function(directory_name, options, callback) {
         this.submit_request("/show/directories", actual_request, callback);
     } else {
         var data = this.submit_request("/show/directories", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about a specified <a href="../../../concepts/udf/"
+ * target="_top">user-defined function</a> (UDF) environment or all
+ * environments.
+ * Returns detailed information about existing environments.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_environment_request = function(request, callback) {
+    var actual_request = {
+        environment_name: request.environment_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/environment", actual_request);
+        return data;
+    }
+};
+
+/**
+ * Shows information about a specified <a href="../../../concepts/udf/"
+ * target="_top">user-defined function</a> (UDF) environment or all
+ * environments.
+ * Returns detailed information about existing environments.
+ *
+ * @param {String} environment_name  Name of the environment on which to
+ *                                   retrieve information. The name must refer
+ *                                   to a currently existing environment. If
+ *                                   '*' or an empty value is specified,
+ *                                   information about all environments will be
+ *                                   returned.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'no_error_if_not_exists': If
+ *                          <code>true</code> and if the environment specified
+ *                          in <code>environment_name</code> does not exist, no
+ *                          error is returned. If <code>false</code> and if the
+ *                          environment specified in
+ *                          <code>environment_name</code> does not exist, then
+ *                          an error is returned.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
+ * @param {GPUdbCallback} callback  Callback that handles the response.  If not
+ *                                  specified, request will be synchronous.
+ * @returns {Object} Response object containing the method_codes of the
+ *                   operation.
+ */
+GPUdb.prototype.show_environment = function(environment_name, options, callback) {
+    var actual_request = {
+        environment_name: environment_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    if (callback !== undefined && callback !== null) {
+        this.submit_request("/show/environment", actual_request, callback);
+    } else {
+        var data = this.submit_request("/show/environment", actual_request);
         return data;
     }
 };

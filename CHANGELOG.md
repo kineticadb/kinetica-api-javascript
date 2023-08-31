@@ -2,6 +2,16 @@
 
 ## Version 7.1
 
+### Version 7.1.9.2 - 2023-08-31
+
+#### Fixed
+##### JavaScript API
+-   Sorting and aggregate filtering in `get_records_json`.
+
+##### Node.js API
+-   Sorting and aggregate filtering in `get_records_json`.
+
+
 ### Version 7.1.9.1 - 2023-08-20
 
 #### Added
