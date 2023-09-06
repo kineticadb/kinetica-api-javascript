@@ -918,7 +918,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.2" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.3" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1284,7 +1284,7 @@ GPUdb.prototype.get_geo_json = function(table_name, offset, limit, options, call
 
 
 /**
- * @param {string} records - Either a single JSON record or an array of JSON records
+ * @param {Object} records - Either a single JSON record or an array of JSON records, as either a JSON string or a native map/array type
  * @param {string} table_name - The name of the table to insert into
  * @param {Object} create_table_options - the same 'create_table_options' that apply to the '/insert/records/frompayload' endpoint
  * @param {Object} options - the 'options' that apply to the '/insert/records/frompayload' endpoint
@@ -1311,14 +1311,18 @@ GPUdb.prototype.insert_records_from_json = function(records, table_name, create_
         throw new Error("Records cannot be undefined or null");
     }
 
-    let json_records = null
-    try {
-        json_records = JSON.parse(records)
-    } catch (objError) {
-        let error_message = null
-        error_message = objError instanceof SyntaxError ? `Syntax error : ${objError.message}` : `Error : ${objError.message}`;
-        console.error(error_message);
-        throw new Error( error_message )
+    let json_records = records;
+
+    if (typeof json_records === 'string' || json_records instanceof String) {
+
+        try {
+            json_records = JSON.parse(json_records)
+        } catch (objError) {
+            let error_message = null
+            error_message = objError instanceof SyntaxError ? `Syntax error : ${objError.message}` : `Error : ${objError.message}`;
+            console.error(error_message);
+            throw new Error( error_message )
+        }
     }
 
     if( table_name == null ) {
@@ -1338,7 +1342,7 @@ GPUdb.prototype.insert_records_from_json = function(records, table_name, create_
 
     const params = {...options, ...create_table_options};
 
-    const queryString = `/insert/records/json?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}`;
+    const queryString = `/insert/records/json?${Object.keys(params).map((key) => `${key}=${encodeURIComponent(params[key])}`).join('&')}`;
 
     this.submit_request(queryString, json_records, (err, data) => {
         callback(err, data);
@@ -1415,8 +1419,7 @@ GPUdb.prototype.get_records_json = function(table_name, column_names, offset, li
         options["having"] = having_clause;
     }
 
-    const queryString = `/get/records/json?${Object.keys(options).map((key) => `${key}=${options[key]}`).join('&')}`;
-    console.log(queryString);
+    const queryString = `/get/records/json?${Object.keys(options).map((key) => `${key}=${encodeURIComponent(options[key])}`).join('&')}`;
 
     this.submit_request(queryString, null, (err, data) => {
         callback(err, data);

@@ -2,6 +2,21 @@
 
 ## Version 7.1
 
+### Version 7.1.9.3 - 2023-09-06
+
+#### Added
+##### JavaScript API
+-   Support for record sets as native maps/arrays in `insert_records_from_json`.
+
+##### Node.js API
+-   Support for record sets as native maps/arrays in `insert_records_from_json`.
+
+#### Fixed
+##### Node.js API
+-   URL encoding of parameter values in `insert_records_from_json` &
+    `get_records_json`.
+
+
 ### Version 7.1.9.2 - 2023-08-31
 
 #### Fixed
