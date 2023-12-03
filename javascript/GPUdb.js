@@ -723,6 +723,75 @@ GPUdb.prototype.submit_request_sync = function(endpoint, requestString) {
 
     throw error;
 };
+
+/**
+ * A generator function to iterate over the records returned by executing 
+ * an SQL statement passed as a parameter to the function.
+ * 
+ * @param {String} sql - The SQL statement to execute
+ * @param {number} batchSize - The number of records to fetch in each batch, defaults to 10,000
+ * @param {Map} sqlOptions - A Map to pass in the SQL options
+ */
+GPUdb.prototype.SqlIterator = async function* (sql, batchSize = 10000, sqlOptions = {}) {
+    const zip = (...arr) => Array.from({ length: Math.max(...arr.map(a => a.length)) }, (_, i) => arr.map(a => a[i]));
+
+    const create_uuid = () => {
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11)
+            .replace(
+                /[018]/g,
+                (c) => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+    }
+
+    const generate_random_table_name = () => {
+        return create_uuid().replace("-", "_");
+    }
+
+    const close = () => {
+        pagingTableNames.map(tableName => {
+            this.clear_table(tableName, null, {"no_error_if_not_exists":"true"}, null)
+            .catch(err => console.error(err));
+        })
+    };
+
+    let offset = 0;
+    const records = [];
+    let position = 0;
+    let totalNumberOfRecords = 0;
+    const pagingTableNames = [];
+
+    let pagingTableName = generate_random_table_name();
+    sqlOptions["paging_table"] = pagingTableName;
+    // let batchNumber = 0;
+
+    const fetchBatch = async () => {
+        const response = await this.execute_sql(sql, offset, batchSize, "", null, sqlOptions, null);
+        if (totalNumberOfRecords === 0 && response.total_number_of_records !== 0) {
+            totalNumberOfRecords = response.total_number_of_records;
+        }
+        // console.info("Fetched batch :: " + (++batchNumber));
+        const columnHeaders = response.data.column_headers;
+        const dataKeys = columnHeaders.map( x => `column_${columnHeaders.indexOf(x)+1}`);
+        const dataArrays = zip(...dataKeys.map(key => response.data[key]));
+        records.push(...dataArrays);
+        const pagingTable = response.paging_table;
+        if( pagingTable.length != 0) {
+            pagingTableNames.push(pagingTable);
+        }
+        offset += batchSize;
+    };
+
+    await fetchBatch();
+
+    while (position < totalNumberOfRecords) {
+        if (position >= records.length) {
+            await fetchBatch();
+        }
+        yield records[position++];
+    }
+
+    close();
+}
 /**
  * A list with only one exposed element at a time, but with N stored elements.
  * The elements of the list are immutable.
@@ -943,7 +1012,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.3" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.4" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -3776,6 +3845,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                          etc.
  *                          </ul>
  *                          The default value is 'value'.
+ *                                  <li> 'strategy_definition': The <a
+ *                          href="../../../rm/concepts/#tier-strategies"
+ *                          target="_top">tier strategy</a> for the table and
+ *                          its columns.
  *                                  <li> 'result_table': The name of a table
  *                          used to store the results, in
  *                          [schema_name.]table_name format, using standard <a
@@ -6399,6 +6472,13 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       tcs_per_tom value of the conf.
  *                                               <li> 'tps_per_tom': Sets the
  *                                       tps_per_tom value of the conf.
+ *                                               <li> 'ai_api_provider': AI API
+ *                                       provider type
+ *                                               <li> 'ai_api_url': AI API URL
+ *                                               <li> 'ai_api_key': AI API key
+ *                                               <li>
+ *                                       'ai_api_connection_timeout': AI API
+ *                                       connection timeout in seconds
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -8049,6 +8129,9 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  *                          Customer encryption algorithm used encrypting data
  *                                  <li> 's3_encryption_customer_key': Customer
  *                          encryption key to encrypt or decrypt data
+ *                                  <li> 's3_encryption_type': Server side
+ *                          encryption type
+ *                                  <li> 's3_kms_key_id': KMS key
  *                                  <li> 'hdfs_kerberos_keytab': Kerberos
  *                          keytab file location for the given HDFS user.  This
  *                          may be a KIFS file.
@@ -8988,6 +9071,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'strategy_definition': The <a
+ *                          href="../../../rm/concepts/#tier-strategies"
+ *                          target="_top">tier strategy</a> for the table and
+ *                          its columns.
  *                                  <li> 'ttl': Sets the <a
  *                          href="../../../concepts/ttl/" target="_top">TTL</a>
  *                          of the join table specified in
@@ -9573,6 +9660,10 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                          The default value is 'false'.
  *                                  <li> 'view_id': ID of view of which this
  *                          projection is a member.  The default value is ''.
+ *                                  <li> 'strategy_definition': The <a
+ *                          href="../../../rm/concepts/#tier-strategies"
+ *                          target="_top">tier strategy</a> for the table and
+ *                          its columns.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -10587,11 +10678,16 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  <li> 'avro': Avro file format
  *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
+ *                                  <li> 'gdb': Esri/GDB file format
  *                                  <li> 'json': Json file format
  *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
+ *                                  <li> 'gdal_configuration_options': Comma
+ *                          separated list of gdal conf options, for the
+ *                          specific requets: key=value.  The default value is
+ *                          ''.
  *                                  <li> 'ignore_existing_pk': Specifies the
  *                          record collision error-suppression policy for
  *                          inserting into a table with a <a
@@ -10660,6 +10756,8 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          Sets the subscription lifespan (in minutes).
  *                          Expired subscription will be cancelled
  *                          automatically.
+ *                                  <li> 'layer': Optional: geo files layer(s)
+ *                          name(s): comma separated.  The default value is ''.
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
  *                          from the source data file(s). This option applies
@@ -11822,6 +11920,10 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'strategy_definition': The <a
+ *                          href="../../../rm/concepts/#tier-strategies"
+ *                          target="_top">tier strategy</a> for the table and
+ *                          its columns.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -13386,6 +13488,22 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                          via {@linkcode GPUdb#show_proc_status}. If the
  *                          number of lines output exceeds the maximum, earlier
  *                          lines are discarded.  The default value is '100'.
+ *                                  <li> 'execute_at_startup': If
+ *                          <code>true</code>, an instance of the proc will run
+ *                          when the database is started instead of running
+ *                          immediately. The <code>run_id</code> can be
+ *                          retrieved using {@linkcode GPUdb#show_proc} and
+ *                          used in {@linkcode GPUdb#show_proc_status}.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'execute_at_startup_as': Sets the
+ *                          alternate user name to execute this proc instance
+ *                          as when <code>execute_at_startup</code> is
+ *                          <code>true</code>.  The default value is ''.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -13906,16 +14024,15 @@ GPUdb.prototype.export_records_to_files_request = function(request, callback) {
  *                          property separator. Different from column
  *                          delimiter.  The default value is '|'.
  *                                  <li> 'compression_type': File compression
- *                          type. Different file types support different
- *                          compresion types. text: uncompressed, gzip.
- *                          parquet: uncompressed, snappy, gzip.
+ *                          type. GZip can be applied to text and Parquet
+ *                          files.  Snappy can only be applied to Parquet
+ *                          files, and is the default compression for them.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'uncompressed'
  *                                  <li> 'snappy'
  *                                  <li> 'gzip'
  *                          </ul>
- *                          The default value is 'snappy'.
  *                                  <li> 'single_file': Save records to a
  *                          single file. This option may be ignored if file
  *                          size exceeds internal file size limits (this limit
@@ -16712,6 +16829,7 @@ GPUdb.prototype.grant_permission_request = function(request, callback) {
  * @param {String} object_type  The type of object being granted to
  *                              Supported values:
  *                              <ul>
+ *                                      <li> 'context': Context
  *                                      <li> 'credential': Credential
  *                                      <li> 'datasink': Data Sink
  *                                      <li> 'datasource': Data Source
@@ -16882,6 +17000,8 @@ GPUdb.prototype.grant_permission_datasource_request = function(request, callback
  * @param {String} permission  Permission to grant to the user or role
  *                             Supported values:
  *                             <ul>
+ *                                     <li> 'admin': Admin access on the given
+ *                             data source
  *                                     <li> 'connect': Connect access on the
  *                             given data source
  *                             </ul>
@@ -17014,6 +17134,8 @@ GPUdb.prototype.grant_permission_proc_request = function(request, callback) {
  * @param {String} permission  Permission to grant to the user or role.
  *                             Supported values:
  *                             <ul>
+ *                                     <li> 'proc_admin': Admin access to the
+ *                             proc.
  *                                     <li> 'proc_execute': Execute access to
  *                             the proc.
  *                             </ul>
@@ -17285,6 +17407,7 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  * @param {String} object_type  The type of object being checked
  *                              Supported values:
  *                              <ul>
+ *                                      <li> 'context': Context
  *                                      <li> 'credential': Credential
  *                                      <li> 'datasink': Data Sink
  *                                      <li> 'datasource': Data Source
@@ -18376,11 +18499,16 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  <li> 'avro': Avro file format
  *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
+ *                                  <li> 'gdb': Esri/GDB file format
  *                                  <li> 'json': Json file format
  *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
+ *                                  <li> 'gdal_configuration_options': Comma
+ *                          separated list of gdal conf options, for the
+ *                          specific requets: key=value.  The default value is
+ *                          ''.
  *                                  <li> 'ignore_existing_pk': Specifies the
  *                          record collision error-suppression policy for
  *                          inserting into a table with a <a
@@ -18446,6 +18574,8 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          Sets the subscription lifespan (in minutes).
  *                          Expired subscription will be cancelled
  *                          automatically.
+ *                                  <li> 'layer': Optional: geo files layer(s)
+ *                          name(s): comma separated.  The default value is ''.
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
  *                          from the source data file(s). This option applies
@@ -19074,11 +19204,16 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  <li> 'avro': Avro file format
  *                                  <li> 'delimited_text': Delimited text file
  *                          format; e.g., CSV, TSV, PSV, etc.
+ *                                  <li> 'gdb': Esri/GDB file format
  *                                  <li> 'json': Json file format
  *                                  <li> 'parquet': Apache Parquet file format
  *                                  <li> 'shapefile': ShapeFile file format
  *                          </ul>
  *                          The default value is 'delimited_text'.
+ *                                  <li> 'gdal_configuration_options': Comma
+ *                          separated list of gdal conf options, for the
+ *                          specific requets: key=value.  The default value is
+ *                          ''.
  *                                  <li> 'ignore_existing_pk': Specifies the
  *                          record collision error-suppression policy for
  *                          inserting into a table with a <a
@@ -19128,6 +19263,8 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          response.
  *                          </ul>
  *                          The default value is 'full'.
+ *                                  <li> 'layer': Optional: geo files layer(s)
+ *                          name(s): comma separated.  The default value is ''.
  *                                  <li> 'loading_mode': Scheme for
  *                          distributing the extraction and loading of data
  *                          from the source data file(s). This option applies
@@ -20174,6 +20311,19 @@ GPUdb.prototype.kill_proc_request = function(request, callback) {
  *                          instance(s) where a matching run tag was provided
  *                          to {@linkcode GPUdb#execute_proc}.  The default
  *                          value is ''.
+ *                                  <li> 'clear_execute_at_startup': If
+ *                          <code>true</code>, kill and remove the instance of
+ *                          the proc matching the auto-start run ID that was
+ *                          created to run when the database is started. The
+ *                          auto-start run ID was returned from
+ *                          {@linkcode GPUdb#execute_proc} and can be
+ *                          retrieved using {@linkcode GPUdb#show_proc}.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.  If not
  *                                  specified, request will be synchronous.
@@ -21718,6 +21868,7 @@ GPUdb.prototype.revoke_permission_request = function(request, callback) {
  * @param {String} object_type  The type of object being revoked
  *                              Supported values:
  *                              <ul>
+ *                                      <li> 'context': Context
  *                                      <li> 'credential': Credential
  *                                      <li> 'datasink': Data Sink
  *                                      <li> 'datasource': Data Source
@@ -21884,6 +22035,8 @@ GPUdb.prototype.revoke_permission_datasource_request = function(request, callbac
  * @param {String} permission  Permission to revoke from the user or role
  *                             Supported values:
  *                             <ul>
+ *                                     <li> 'admin': Admin access on the given
+ *                             data source
  *                                     <li> 'connect': Connect access on the
  *                             given data source
  *                             </ul>
@@ -22015,6 +22168,8 @@ GPUdb.prototype.revoke_permission_proc_request = function(request, callback) {
  * @param {String} permission  Permission to revoke from the user or role.
  *                             Supported values:
  *                             <ul>
+ *                                     <li> 'proc_admin': Admin access to the
+ *                             proc.
  *                                     <li> 'proc_execute': Execute access to
  *                             the proc.
  *                             </ul>
@@ -22517,7 +22672,7 @@ GPUdb.prototype.show_directories = function(directory_name, options, callback) {
  */
 GPUdb.prototype.show_environment_request = function(request, callback) {
     var actual_request = {
-        environment_name: request.environment_name,
+        environment_name: (request.environment_name !== undefined && request.environment_name !== null) ? request.environment_name : "",
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -22564,7 +22719,7 @@ GPUdb.prototype.show_environment_request = function(request, callback) {
  */
 GPUdb.prototype.show_environment = function(environment_name, options, callback) {
     var actual_request = {
-        environment_name: environment_name,
+        environment_name: (environment_name !== undefined && environment_name !== null) ? environment_name : "",
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -23736,6 +23891,18 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                          the number of records in each table, along with a
  *                          cumulative count, will be returned; blank,
  *                          otherwise.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'get_cached_sizes': If
+ *                          <code>true</code> then the number of records in
+ *                          each table, along with a cumulative count, will be
+ *                          returned; blank, otherwise. This version will
+ *                          return the sizes cached at rank 0, which may be
+ *                          stale if there is a multihead insert occuring.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'

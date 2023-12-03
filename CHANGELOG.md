@@ -2,6 +2,16 @@
 
 ## Version 7.1
 
+### Version 7.1.9.4 - 2023-12-03
+
+#### Added
+##### JavaScript API
+-   `SqlIterator` class for easily looping over the records of a SQL result set.
+
+##### Node.js API
+-   `SqlIterator` class for easily looping over the records of a SQL result set.
+
+
 ### Version 7.1.9.3 - 2023-09-06
 
 #### Added
