@@ -2,6 +2,13 @@
 
 ## Version 7.1
 
+### Version 7.1.9.5 - 2024-01-05
+
+#### Fixed
+##### Node.js API
+-   Issue with crypto library import
+
+
 ### Version 7.1.9.4 - 2023-12-03
 
 #### Added
