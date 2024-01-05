@@ -712,7 +712,7 @@ GPUdb.prototype.SqlIterator = async function* (sql, batchSize = 10000, sqlOption
         return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11)
             .replace(
                 /[018]/g,
-                (c) => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+                (c) => (c ^ require("crypto").webcrypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
             );
     }
 
@@ -766,7 +766,7 @@ GPUdb.prototype.SqlIterator = async function* (sql, batchSize = 10000, sqlOption
     close();
 }
 
-module.exports = {GPUdb};
+module.exports = GPUdb;
 
 /**
  * A list with only one exposed element at a time, but with N stored elements.
@@ -988,7 +988,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.4" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.1.9.5" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -6575,6 +6575,8 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                       database will serve for a given data
  *                                       retrieval call.  The default value is
  *                                       '20000'.
+ *                                               <li> 'max_grbc_batch_size':
+ *                                       <DEVELOPER>
  *                                               <li> 'enable_audit': Enable or
  *                                       disable auditing.
  *                                               <li> 'audit_headers': Enable
@@ -8469,6 +8471,7 @@ GPUdb.prototype.create_credential_request = function(request, callback) {
  *                               <li> 'hdfs'
  *                               <li> 'jdbc'
  *                               <li> 'kafka'
+ *                               <li> 'confluent'
  *                       </ul>
  * @param {String} identity  User of the credential to be created.
  * @param {String} secret  Password of the credential to be created.
@@ -8749,7 +8752,8 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                           'storage_provider_type://[storage_path[:storage_port]]'
  *                           format.
  *                           Supported storage provider types are
- *                           'azure','gcs','hdfs','jdbc','kafka' and 's3'.
+ *                           'azure','gcs','hdfs','jdbc','kafka', 'confluent'
+ *                           and 's3'.
  * @param {String} user_name  Name of the remote system user; may be an empty
  *                            string
  * @param {String} password  Password for the remote system user; may be an
@@ -8868,6 +8872,11 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'schema_registry_location': Location
+ *                          of Confluent Schema registry in
+ *                          '[storage_path[:storage_port]]' format.
+ *                                  <li> 'schema_registry_credential':
+ *                          Confluent Schema registry Credential object name.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -11577,6 +11586,9 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                          on this table.
  *                          </ul>
  *                          The default value is 'manual'.
+ *                                  <li> 'schema_registry_schema_id':
+ *                                  <li> 'schema_registry_schema_name':
+ *                                  <li> 'schema_registry_schema_version':
  *                                  <li> 'shard_keys': Optional: comma
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
@@ -20540,6 +20552,9 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
+ *                                  <li> 'schema_registry_schema_id':
+ *                                  <li> 'schema_registry_schema_name':
+ *                                  <li> 'schema_registry_schema_version':
  *                                  <li> 'shard_keys': Optional: comma
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
@@ -21247,6 +21262,9 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
  *                          value is ''.
+ *                                  <li> 'schema_registry_schema_id':
+ *                                  <li> 'schema_registry_schema_name':
+ *                                  <li> 'schema_registry_schema_version':
  *                                  <li> 'shard_keys': Optional: comma
  *                          separated list of column names, to set as primary
  *                          keys, when not specified in the type.  The default
@@ -28517,6 +28535,11 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
  *                                        <li> 'symbolcode'
+ *                                        <li> 'dash'
+ *                                        <li> 'pipe'
+ *                                        <li> 'plus'
+ *                                        <li> 'hollowsquarewithplus'
+ *                                        <li> 'dot'
  *                                </ul>
  *                                The default value is 'square'.
  *                                        <li> 'symbolrotations': The default
@@ -28562,6 +28585,11 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'oriented_arrow'
  *                                        <li> 'oriented_triangle'
  *                                        <li> 'symbolcode'
+ *                                        <li> 'dash'
+ *                                        <li> 'pipe'
+ *                                        <li> 'plus'
+ *                                        <li> 'hollowsquarewithplus'
+ *                                        <li> 'dot'
  *                                </ul>
  *                                The default value is 'circle'.
  *                                        <li> 'trackheadcolors': The default
@@ -28579,6 +28607,11 @@ GPUdb.prototype.visualize_image_request = function(request, callback) {
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
  *                                        <li> 'symbolcode'
+ *                                        <li> 'dash'
+ *                                        <li> 'pipe'
+ *                                        <li> 'plus'
+ *                                        <li> 'hollowsquarewithplus'
+ *                                        <li> 'dot'
  *                                </ul>
  *                                The default value is 'hollowdiamond'.
  *                                </ul>
@@ -29023,6 +29056,11 @@ GPUdb.prototype.visualize_image_classbreak_request = function(request, callback)
  *                                        <li> 'hollowsquare'
  *                                        <li> 'hollowdiamond'
  *                                        <li> 'symbolcode'
+ *                                        <li> 'dash'
+ *                                        <li> 'pipe'
+ *                                        <li> 'plus'
+ *                                        <li> 'hollowsquarewithplus'
+ *                                        <li> 'dot'
  *                                </ul>
  *                                The default value is 'none'.
  *                                        <li> 'symbolrotations': The default
