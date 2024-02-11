@@ -4,11 +4,11 @@
 <h5 align="center" style="margin:0px">
 	<a href="https://www.kinetica.com/">Website</a>
 	|
-	<a href="https://docs.kinetica.com/7.1/">Docs</a>
+	<a href="https://docs.kinetica.com/7.2/">Docs</a>
 	|
-	<a href="https://docs.kinetica.com/7.1/api/javascript/">JavaScript API Docs</a>
+	<a href="https://docs.kinetica.com/7.2/api/javascript/">JavaScript API Docs</a>
 	|
-	<a href="https://docs.kinetica.com/7.1/api/nodejs-mod/">Node.js API Docs</a>
+	<a href="https://docs.kinetica.com/7.2/api/nodejs-mod/">Node.js API Docs</a>
 	|
 	<a href="https://join.slack.com/t/kinetica-community/shared_invite/zt-1bt9x3mvr-uMKrXlSDXfy3oU~sKi84qg">Community Slack</a>   
 </h5>
@@ -40,7 +40,7 @@ At high level, the difference between the *JavaScript* and the *Node.js* APIs is
     *   If the user does not provide a callback, the API will return a promise (also
         asynchronous).
 
-The documentation can be found at https://docs.kinetica.com/7.1/.
+The documentation can be found at https://docs.kinetica.com/7.2/.
 
 For changes to the client-side API, please refer to
 [CHANGELOG.md](CHANGELOG.md).  For
@@ -66,8 +66,8 @@ browser's web console.
 
 The *JavaScript* documentation can be found at:
 
-* **Complete API**: <https://docs.kinetica.com/7.1/api/javascript/>
-* **Tutorial**: <https://docs.kinetica.com/7.1/guides/js_guide/>
+* **Complete API**: <https://docs.kinetica.com/7.2/api/javascript/>
+* **Tutorial**: <https://docs.kinetica.com/7.2/guides/js_guide/>
 
 
 ## Node.js
@@ -96,8 +96,8 @@ The following rpm packages are required for using the library:
 
 The *Node.js* module documentation can be found at:
 
-* **Complete API**: <https://docs.kinetica.com/7.1/api/nodejs-mod/>
-* **Tutorial**: <https://docs.kinetica.com/7.1/guides/nodejs_guide/>
+* **Complete API**: <https://docs.kinetica.com/7.2/api/nodejs-mod/>
+* **Tutorial**: <https://docs.kinetica.com/7.2/guides/nodejs_guide/>
 
 
 ## Support

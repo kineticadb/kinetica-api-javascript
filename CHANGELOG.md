@@ -1,5 +1,13 @@
 # GPUdb Javascript API Changelog
 
+## Version 7.2
+
+### Version 7.2.0.0 - 2024-02-11
+
+#### Notes
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
+
+
 ## Version 7.1
 
 ### Version 7.1.9.5 - 2024-01-05
@@ -109,7 +117,7 @@
     It has the following methods:
     -   ``upload``: Uploads local file objects from browsers to KiFS
     -   ``download``: Downloads files from KiFS into the local filesystem
-    
+
 
 ### Version 7.1.4.0 - 2021-07-29
 

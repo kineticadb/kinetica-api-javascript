@@ -1,7 +1,7 @@
 # JavaScript API Version Information
-# ----------------------------------
+# --------------------------------------
 
 MAJOR = 7
-MINOR = 1
-REVISION = 9
-ABI_VERSION = 5
+MINOR = 2
+REVISION = 0
+ABI_VERSION = 0
