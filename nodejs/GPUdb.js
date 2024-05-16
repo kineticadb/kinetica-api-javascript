@@ -2930,6 +2930,15 @@ GPUdb.prototype.admin_show_jobs_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'false'.
+ *                                  <li> 'show_worker_info': If
+ *                          <code>true</code>, then information is also
+ *                          returned from worker ranks. By default only status
+ *                          from the head rank is returned.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -3310,6 +3319,16 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                          while the database is offline OR set
  *                          <code>concurrent_safe</code> in
  *                          <code>options</code> to <code>true</code>
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                                  <li> 'verify_orphaned_tables_only': If
+ *                          <code>true</code>, only the presence of orphaned
+ *                          table directories will be checked, all persistence
+ *                          checks will be skipped
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'true'
@@ -5878,7 +5897,7 @@ GPUdb.prototype.alter_environment_request = function(request, callback) {
  *                         Supported values:
  *                         <ul>
  *                                 <li> 'install_package': Install a python
- *                         package
+ *                         package from PyPI, an external data source or KiFS
  *                                 <li> 'install_requirements': Install
  *                         packages from a requirements file
  *                                 <li> 'uninstall_package': Uninstall a python
@@ -5888,6 +5907,9 @@ GPUdb.prototype.alter_environment_request = function(request, callback) {
  *                                 <li> 'reset': Uninstalls all packages in the
  *                         environment and resets it to the original state at
  *                         time of creation
+ *                                 <li> 'rebuild': Recreates the environment
+ *                         and re-installs all packages, upgrades the packages
+ *                         if necessary based on dependencies
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
  *                        <code>action</code>.  For example, if
@@ -6536,7 +6558,7 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               <li> 'communicator_test':
  *                                       Invoke the communicator test and
  *                                       report timing results. Value string is
- *                                       is a semicolon separated list of
+ *                                       a semicolon separated list of
  *                                       [key]=[value] expressions.
  *                                       Expressions are:
  *                                       num_transactions=[num] where num is
@@ -6648,6 +6670,13 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               <li>
  *                                       'ai_api_connection_timeout': AI API
  *                                       connection timeout in seconds
+ *                                               <li>
+ *                                       'postgres_proxy_idle_connection_timeout':
+ *                                       Idle connection timeout in seconds
+ *                                               <li>
+ *                                       'postgres_proxy_keep_alive': Enable
+ *                                       postgres proxy keep alive.  The
+ *                                       default value is 'false'.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -6712,12 +6741,14 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * <p>
  * External tables cannot be modified except for their refresh method.
  * <p>
- * Create or delete an <a href="../../../concepts/indexes/#column-index"
- * target="_top">index</a> on a
- * particular column. This can speed up certain operations when using
- * expressions
- * containing equality or relational operators on indexed columns. This only
- * applies to tables.
+ * Create or delete a <a href="../../../concepts/indexes/#column-index"
+ * target="_top">column</a>,
+ * <a href="../../../concepts/indexes/#chunk-skip-index" target="_top">chunk
+ * skip</a>, or
+ * <a href="../../../concepts/indexes/#geospatial-index"
+ * target="_top">geospatial</a> index. This can speed up
+ * certain operations when using expressions containing equality or relational
+ * operators on indexed columns. This only applies to tables.
  * <p>
  * Create or delete a <a href="../../../concepts/tables/#foreign-key"
  * target="_top">foreign key</a>
@@ -6796,12 +6827,14 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * <p>
  * External tables cannot be modified except for their refresh method.
  * <p>
- * Create or delete an <a href="../../../concepts/indexes/#column-index"
- * target="_top">index</a> on a
- * particular column. This can speed up certain operations when using
- * expressions
- * containing equality or relational operators on indexed columns. This only
- * applies to tables.
+ * Create or delete a <a href="../../../concepts/indexes/#column-index"
+ * target="_top">column</a>,
+ * <a href="../../../concepts/indexes/#chunk-skip-index" target="_top">chunk
+ * skip</a>, or
+ * <a href="../../../concepts/indexes/#geospatial-index"
+ * target="_top">geospatial</a> index. This can speed up
+ * certain operations when using expressions containing equality or relational
+ * operators on indexed columns. This only applies to tables.
  * <p>
  * Create or delete a <a href="../../../concepts/tables/#foreign-key"
  * target="_top">foreign key</a>
@@ -6837,34 +6870,44 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * can be set to read-only, write-only, read/write, and no access.
  *
  * @param {String} table_name  Table on which the operation will be performed,
- *                             in [schema_name.]table_name format, using
- *                             standard <a
+ *                             in [schema_name.]table_name format,
+ *                             using standard <a
  *                             href="../../../concepts/tables/#table-name-resolution"
- *                             target="_top">name resolution rules</a>.  Must
- *                             be an existing table or view.
+ *                             target="_top">name resolution rules</a>.
+ *                             Must be an existing table or view.
  * @param {String} action  Modification operation to be applied
  *                         Supported values:
  *                         <ul>
  *                                 <li> 'allow_homogeneous_tables': No longer
  *                         supported; action will be ignored.
- *                                 <li> 'create_index': Creates either a <a
+ *                                 <li> 'create_index': Creates a <a
  *                         href="../../../concepts/indexes/#column-index"
- *                         target="_top">column (attribute) index</a> or <a
+ *                         target="_top">column (attribute) index</a>,
+ *                         <a
  *                         href="../../../concepts/indexes/#chunk-skip-index"
- *                         target="_top">chunk skip index</a>, depending on the
- *                         specified <code>index_type</code>, on the column
- *                         name specified in <code>value</code>. If this column
- *                         already has the specified index, an error will be
- *                         returned.
- *                                 <li> 'delete_index': Deletes either a <a
+ *                         target="_top">chunk skip index</a>, or
+ *                         <a
+ *                         href="../../../concepts/indexes/#geospatial-index"
+ *                         target="_top">geospatial index</a>
+ *                         (depending on the specified
+ *                         <code>index_type</code>), on the column name
+ *                         specified in <code>value</code>.
+ *                         If this column already has the specified index, an
+ *                         error will be returned.
+ *                                 <li> 'delete_index': Deletes a <a
  *                         href="../../../concepts/indexes/#column-index"
- *                         target="_top">column (attribute) index</a> or <a
+ *                         target="_top">column (attribute) index</a>,
+ *                         <a
  *                         href="../../../concepts/indexes/#chunk-skip-index"
- *                         target="_top">chunk skip index</a>, depending on the
- *                         specified <code>index_type</code>, on the column
- *                         name specified in <code>value</code>. If this column
- *                         does not have the specified index, an error will be
- *                         returned.
+ *                         target="_top">chunk skip index</a>, or
+ *                         <a
+ *                         href="../../../concepts/indexes/#geospatial-index"
+ *                         target="_top">geospatial index</a>
+ *                         (depending on the specified
+ *                         <code>index_type</code>), on the column name
+ *                         specified in <code>value</code>.
+ *                         If this column does not have the specified index, an
+ *                         error will be returned.
  *                                 <li> 'move_to_collection':
  *                         [DEPRECATED--please use <code>move_to_schema</code>
  *                         and use {@linkcode GPUdb#create_schema} to create
@@ -6873,11 +6916,11 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         schema provided is non-existent, it will be
  *                         automatically created.
  *                                 <li> 'move_to_schema': Moves a table or view
- *                         into a schema named <code>value</code>.  If the
- *                         schema provided is nonexistent, an error will be
- *                         thrown. If <code>value</code> is empty, then the
- *                         table or view will be placed in the user's default
- *                         schema.
+ *                         into a schema named <code>value</code>.
+ *                         If the schema provided is nonexistent, an error will
+ *                         be thrown.
+ *                         If <code>value</code> is empty, then the table or
+ *                         view will be placed in the user's default schema.
  *                                 <li> 'protected': No longer used.
  *                         Previously set whether the given
  *                         <code>table_name</code> should be protected or not.
@@ -6894,23 +6937,26 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                         table or view specified in <code>table_name</code>.
  *                                 <li> 'add_column': Adds the column specified
  *                         in <code>value</code> to the table specified in
- *                         <code>table_name</code>.  Use
- *                         <code>column_type</code> and
+ *                         <code>table_name</code>.
+ *                         Use <code>column_type</code> and
  *                         <code>column_properties</code> in
- *                         <code>options</code> to set the column's type and
- *                         properties, respectively.
+ *                         <code>options</code>
+ *                         to set the column's type and properties,
+ *                         respectively.
  *                                 <li> 'change_column': Changes type and
  *                         properties of the column specified in
- *                         <code>value</code>.  Use <code>column_type</code>
- *                         and <code>column_properties</code> in
- *                         <code>options</code> to set the column's type and
- *                         properties, respectively. Note that primary key
- *                         and/or shard key columns cannot be changed. All
- *                         unchanging column properties must be listed for the
- *                         change to take place, e.g., to add dictionary
- *                         encoding to an existing 'char4' column, both 'char4'
- *                         and 'dict' must be specified in the
- *                         <code>options</code> map.
+ *                         <code>value</code>.
+ *                         Use <code>column_type</code> and
+ *                         <code>column_properties</code> in
+ *                         <code>options</code> to set
+ *                         the column's type and properties, respectively. Note
+ *                         that primary key and/or shard key columns cannot be
+ *                         changed.
+ *                         All unchanging column properties must be listed for
+ *                         the change to take place, e.g., to add dictionary
+ *                         encoding to
+ *                         an existing 'char4' column, both 'char4' and 'dict'
+ *                         must be specified in the <code>options</code> map.
  *                                 <li> 'set_column_compression': No longer
  *                         supported; action will be ignored.
  *                                 <li> 'delete_column': Deletes the column
@@ -7021,30 +7067,32 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 <li> 'cancel_datasource_subscription':
  *                         Permanently unsubscribe a data source that is
  *                         loading continuously as a stream. The data source
- *                         can be kafka / S3 / Azure.
+ *                         can be Kafka / S3 / Azure.
  *                                 <li> 'pause_datasource_subscription':
  *                         Temporarily unsubscribe a data source that is
  *                         loading continuously as a stream. The data source
- *                         can be kafka / S3 / Azure.
+ *                         can be Kafka / S3 / Azure.
  *                                 <li> 'resume_datasource_subscription':
  *                         Resubscribe to a paused data source subscription.
- *                         The data source can be kafka / S3 / Azure.
+ *                         The data source can be Kafka / S3 / Azure.
  *                                 <li> 'change_owner': Change the owner
  *                         resource group of the table.
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
- *                        <code>action</code>.  For example, if
- *                        <code>action</code> is <code>add_column</code>, this
- *                        would be the column name; while the column's
- *                        definition would be covered by the
+ *                        <code>action</code>.
+ *                        For example, if <code>action</code> is
+ *                        <code>add_column</code>, this would be the column
+ *                        name;
+ *                        while the column's definition would be covered by the
  *                        <code>column_type</code>,
  *                        <code>column_properties</code>,
- *                        <code>column_default_value</code>, and
- *                        <code>add_column_expression</code> in
- *                        <code>options</code>.  If <code>action</code> is
- *                        <code>ttl</code>, it would be the number of minutes
- *                        for the new TTL. If <code>action</code> is
- *                        <code>refresh</code>, this field would be blank.
+ *                        <code>column_default_value</code>,
+ *                        and <code>add_column_expression</code> in
+ *                        <code>options</code>.
+ *                        If <code>action</code> is <code>ttl</code>, it would
+ *                        be the number of minutes for the new TTL.
+ *                        If <code>action</code> is <code>refresh</code>, this
+ *                        field would be blank.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                                  <li> 'action':
@@ -7115,8 +7163,9 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                          existing tier strategy in its entirety.
  *                                  <li> 'index_type': Type of index to create,
  *                          when <code>action</code> is
- *                          <code>create_index</code>, or to delete, when
- *                          <code>action</code> is <code>delete_index</code>.
+ *                          <code>create_index</code>,
+ *                          or to delete, when <code>action</code> is
+ *                          <code>delete_index</code>.
  *                          Supported values:
  *                          <ul>
  *                                  <li> 'column': Create or delete a <a
@@ -8877,6 +8926,8 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                          '[storage_path[:storage_port]]' format.
  *                                  <li> 'schema_registry_credential':
  *                          Confluent Schema registry Credential object name.
+ *                                  <li> 'schema_registry_port': Confluent
+ *                          Schema registry port (optional).
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -9396,6 +9447,16 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                          delimiter and each sub-string will be applied as a
  *                          separate label onto the specified edge.  The
  *                          default value is ''.
+ *                                  <li> 'allow_multiple_edges': Multigraph
+ *                          choice; allowing multiple edges with the same node
+ *                          pairs if set to true, otherwise, new edges with
+ *                          existing same node pairs will not be inserted.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -11897,7 +11958,7 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                          forwarded to the subscribers.
  *                          </ul>
  *                          The default value is 'insert'.
- *                                  <li> 'monitor_id': ID to to use for this
+ *                                  <li> 'monitor_id': ID to use for this
  *                          monitor instead of a randomly generated one
  *                                  <li> 'datasink_name': Name of an existing
  *                          <a href="../../../concepts/data_sinks/"
@@ -15351,8 +15412,8 @@ GPUdb.prototype.export_records_to_files = function(table_name, filepath, options
 };
 
 /**
- * Exports records from source table to  specified target table in an external
- * database
+ * Exports records from source table to the specified target table in an
+ * external database
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -15386,8 +15447,8 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
 };
 
 /**
- * Exports records from source table to  specified target table in an external
- * database
+ * Exports records from source table to the specified target table in an
+ * external database
  *
  * @param {String} table_name  Name of the table from which the data will be
  *                             exported to remote database, in
@@ -15401,6 +15462,7 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
  *                          <ul>
  *                                  <li> 'batch_size': Batch size, which
  *                          determines how many rows to export per round trip.
+ *                          The default value is '200000'.
  *                                  <li> 'datasink_name': Name of an existing
  *                          external data sink to which table name specified in
  *                          <code>table_name</code> will be exported
@@ -21819,6 +21881,15 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                                  <li> 'remote_query_partition_column': Alias
  *                          name for remote_query_filter_column.  The default
  *                          value is ''.
+ *                                  <li> 'truncate_strings': If set to
+ *                          <code>true</code>, truncate string values that are
+ *                          longer than the column's type size.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                                  <li> 'update_on_existing_pk': Specifies the
  *                          record collision policy for inserting into a table
  *                          with a <a
@@ -22545,7 +22616,7 @@ GPUdb.prototype.lock_table = function(table_name, lock_type, options, callback) 
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>,
  * and/or some
- * <a href="../../../guide-tags/graph-match/" target="_top">/match/graph
+ * <a href="../../../guide-tags/graph---match/" target="_top">/match/graph
  * examples</a>
  * before using this endpoint.
  *
@@ -22595,7 +22666,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>,
  * and/or some
- * <a href="../../../guide-tags/graph-match/" target="_top">/match/graph
+ * <a href="../../../guide-tags/graph---match/" target="_top">/match/graph
  * examples</a>
  * before using this endpoint.
  *
@@ -22670,6 +22741,8 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                       <li> 'match_clusters': Matches the
  *                               graph nodes with a cluster index using Louvain
  *                               clustering algorithm
+ *                                       <li> 'match_pattern': Matches a
+ *                               pattern in the graph
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -23028,6 +23101,16 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'force_undirected': For the
+ *                          <code>match_pattern</code> solver only. Pattern
+ *                          matching will be using both pattern and graph as
+ *                          undirected if set to true.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -23261,11 +23344,11 @@ GPUdb.prototype.merge_records = function(table_name, source_table_names, field_m
 /**
  * Update an existing graph network using given nodes, edges, weights,
  * restrictions, and options.
- * <p>
+
  * IMPORTANT: It's highly recommended that you review the
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
- * concepts documentation and
+ * concepts documentation, and
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>
  * before using this endpoint.
@@ -23307,11 +23390,11 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
 /**
  * Update an existing graph network using given nodes, edges, weights,
  * restrictions, and options.
- * <p>
+
  * IMPORTANT: It's highly recommended that you review the
  * <a href="../../../graph_solver/network_graph_solver/" target="_top">Network
  * Graphs & Solvers</a>
- * concepts documentation and
+ * concepts documentation, and
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>
  * before using this endpoint.
@@ -23523,6 +23606,21 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  *                                  <li> 'false'
  *                          </ul>
  *                          The default value is 'true'.
+ *                                  <li> 'label_delimiter': If provided the
+ *                          label string will be split according to this
+ *                          delimiter and each sub-string will be applied as a
+ *                          separate label onto the specified edge.  The
+ *                          default value is ''.
+ *                                  <li> 'allow_multiple_edges': Multigraph
+ *                          choice; allowing multiple edges with the same node
+ *                          pairs if set to true, otherwise, new edges with
+ *                          existing same node pairs will not be inserted.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'true'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -23584,7 +23682,7 @@ GPUdb.prototype.modify_graph = function(graph_name, nodes, edges, weights, restr
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>,
  * and/or some
- * <a href="../../../guide-tags/graph-query" target="_top">/match/graph
+ * <a href="../../../guide-tags/graph---query" target="_top">/match/graph
  * examples</a>
  * before using this endpoint.
  *
@@ -23650,7 +23748,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>,
  * and/or some
- * <a href="../../../guide-tags/graph-query" target="_top">/match/graph
+ * <a href="../../../guide-tags/graph---query" target="_top">/match/graph
  * examples</a>
  * before using this endpoint.
  *
@@ -23761,6 +23859,22 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                          send to the server, amongst those containing the
  *                          corresponding graph, that has the most
  *                          computational bandwidth.
+ *                                  <li> 'output_charn_length': When specified
+ *                          (>0 and <=256), limits the number of char length on
+ *                          the output tables for string based nodes. The
+ *                          default length is 64.  The default value is '64'.
+ *                                  <li> 'find_common_labels': If set to true,
+ *                          for many-to-many queries or multi-level traversals,
+ *                          it lists the common labels between the source and
+ *                          target nodes and edge labels in each path.
+ *                          Otherwise (zero rings), it'll list all labels of
+ *                          the node(s) queried.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
  *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
@@ -26125,6 +26239,17 @@ GPUdb.prototype.show_security_request = function(request, callback) {
  *                          provided, information about all users and roles
  *                          will be returned.
  * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                                  <li> 'show_current_user': If
+ *                          <code>true</code>, returns only security
+ *                          information for the current user.
+ *                          Supported values:
+ *                          <ul>
+ *                                  <li> 'true'
+ *                                  <li> 'false'
+ *                          </ul>
+ *                          The default value is 'false'.
+ *                          </ul>
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27164,7 +27289,7 @@ GPUdb.prototype.show_video = function(paths, options, callback) {
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>,
  * and/or some
- * <a href="../../../guide-tags/graph-solve" target="_top">/solve/graph
+ * <a href="../../../guide-tags/graph---solve" target="_top">/solve/graph
  * examples</a>
  * before using this endpoint.
  *
@@ -27217,7 +27342,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  * <a href="../../../guides/graph_rest_guide/" target="_top">Graph REST
  * Tutorial</a>,
  * and/or some
- * <a href="../../../guide-tags/graph-solve" target="_top">/solve/graph
+ * <a href="../../../guide-tags/graph---solve" target="_top">/solve/graph
  * examples</a>
  * before using this endpoint.
  *
