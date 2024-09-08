@@ -1,14 +1,15 @@
 var GPUdb = require("../nodejs/GPUdb.js");
 
-console.log("Establishing a connection with GPUdb...");
-var host = "localhost";
-var gpudb = new GPUdb(`http://${host}:9191`); // Single host
-var gpudbHA = new GPUdb( [`http://${host}:9191`,
-                          `http://${host}:9192`
-                         ] ); // Multiple hosts as a single list
+var url = (process.argv.length <= 2) ? "http://localhost:9191" : process.argv[2];
+var user = (process.argv.length <= 3) ? "" : process.argv[3];
+var pass = (process.argv.length <= 4) ? "" : process.argv[4];
+
+console.log("Establishing a connection with Kinetica...");
+var db = new GPUdb([url], {"username": user, "password": pass});         // Single host
+var dbHA = new GPUdb([url, url], {"username": user, "password": pass});  // Multiple hosts as a single list
 
 // Used for uploading and downloading files to and from KiFS
-var fileHandler = new GPUdb.FileHandler(gpudb);
+var fileHandler = new GPUdb.FileHandler(db);
 
 var operation_number = 0;
 
@@ -52,7 +53,7 @@ var operations = [
     // Clear the table from the database, in case it was created
     // by a previous run of the example program
     function() {
-        gpudb.clear_table( table_name, null, {"no_error_if_not_exists": "true"},
+        db.clear_table( table_name, null, {"no_error_if_not_exists": "true"},
                            build_callback() );
     },
 
@@ -63,14 +64,14 @@ var operations = [
                 new GPUdb.Type.Column("col2", "string"),
                 new GPUdb.Type.Column("group_id", "string"));
 
-        my_type.create(gpudb, build_callback( function( response ) {
+        my_type.create(db, build_callback( function( response ) {
             type_id = response;
         } ));
     },
 
     // Create the table
     function() {
-        gpudb.create_table( table_name, type_id, {}, build_callback() );
+        db.create_table( table_name, type_id, {}, build_callback() );
     },
 
     // Generate the records to be inserted and insert them
@@ -86,14 +87,14 @@ var operations = [
         }
 
 	var insert_options = { "return_record_ids" : "true" }
-        gpudb.insert_records( table_name, records, insert_options, build_callback(function(response) {
+        db.insert_records( table_name, records, insert_options, build_callback(function(response) {
             console.log("Record IDs for newly inserted records: " + response.record_ids);
         }));
     },
 
     // Fetch the records from the table
     function() {
-        gpudb.get_records( table_name, 0, -9999, {}, build_callback(function(response) {
+        db.get_records( table_name, 0, -9999, {}, build_callback(function(response) {
             console.log("Retrieved records: ");
             console.log(response.data);
         }));
@@ -103,14 +104,14 @@ var operations = [
     function() {
 	var view_name = "view_1";
 	var expression = ("col1 = 1.1");
-        gpudb.filter( table_name, view_name, expression, {}, build_callback(function(response) {
+        db.filter( table_name, view_name, expression, {}, build_callback(function(response) {
             console.log("Number of filtered records: " + response.count);
         }));
     },
 
     // Fetch the records from the view (like reading from a regular table)
     function() {
-        gpudb.get_records("view_1", 0, -9999, {}, build_callback(function(response) {
+        db.get_records("view_1", 0, -9999, {}, build_callback(function(response) {
             console.log("Filtered records: ");
             console.log(response.data);
         }));
@@ -118,19 +119,19 @@ var operations = [
 
     // Drop the view
     function() {
-        gpudb.clear_table("view_1", null, {}, build_callback());
+        db.clear_table("view_1", null, {}, build_callback());
     },
 
     // Perform a filter operation on the table on two column_names
     function() {
-        gpudb.filter( table_name, "view_1", "col1 <= 9 and group_id = 'Group 1'", {}, build_callback(function(response) {
+        db.filter( table_name, "view_1", "col1 <= 9 and group_id = 'Group 1'", {}, build_callback(function(response) {
             console.log("Number of records filtered by the second expression: " + response.count);
         }));
     },
 
     // Fetch the records from the view
     function() {
-        gpudb.get_records("view_1", 0, -9999, {}, build_callback(function(response) {
+        db.get_records("view_1", 0, -9999, {}, build_callback(function(response) {
             console.log("Second set of filtered records: ");
             console.log(response.data);
         }));
@@ -142,14 +143,14 @@ var operations = [
 	var column_values_map = {
 	    col1 : [ "1.1", "2.1", "5.1" ]
 	};
-        gpudb.filter_by_list( table_name, view_name, column_values_map, {}, build_callback(function(response) {
+        db.filter_by_list( table_name, view_name, column_values_map, {}, build_callback(function(response) {
             console.log("Number of records filtered by list: " + response.count);
         }));
     },
 
     // Fetch the records from the second view
     function() {
-        gpudb.get_records("view_2", 0, -9999, {}, build_callback(function(response) {
+        db.get_records("view_2", 0, -9999, {}, build_callback(function(response) {
             console.log("Records filtered by a list: ");
             console.log(response.data);
         }));
@@ -157,14 +158,14 @@ var operations = [
 
     // Perform a filter by range operation
     function() {
-        gpudb.filter_by_range( table_name, "view_3", "col1", 1, 5, {}, build_callback(function(response) {
+        db.filter_by_range( table_name, "view_3", "col1", 1, 5, {}, build_callback(function(response) {
             console.log("Number of records filtered by range: " + response.count);
         }));
     },
 
     // Fetch the records from the third view
     function() {
-        gpudb.get_records("view_3", 0, -9999, {}, build_callback(function(response) {
+        db.get_records("view_3", 0, -9999, {}, build_callback(function(response) {
             console.log("Records filtered by range: ");
             console.log(response.data);
         }));
@@ -172,7 +173,7 @@ var operations = [
 
     // Perform an aggregate operation (statistics: sum, mean, count)
     function() {
-        gpudb.aggregate_statistics( table_name, "col1", "sum,mean,count", {}, build_callback(function(response) {
+        db.aggregate_statistics( table_name, "col1", "sum,mean,count", {}, build_callback(function(response) {
             console.log("Statistics of values in 'col1': " + JSON.stringify(response.stats));
         }));
     },
@@ -190,12 +191,12 @@ var operations = [
             });
         }
 
-        gpudb.insert_records( table_name, records, {}, build_callback());
+        db.insert_records( table_name, records, {}, build_callback());
     },
 
     // Find all unique values of a given column
     function() {
-        gpudb.aggregate_unique( table_name, "group_id", 0, -9999, {}, build_callback(function(response) {
+        db.aggregate_unique( table_name, "group_id", 0, -9999, {}, build_callback(function(response) {
             console.log("Unique values in 'group_id': ");
             console.log(response.data);
         }));
@@ -204,7 +205,7 @@ var operations = [
     // Aggregate values of a given column by grouping by its values
     function() {
         var column_names = [ "col2" ];
-        gpudb.aggregate_group_by( table_name, column_names, 0, -9999, {}, build_callback(function(response) {
+        db.aggregate_group_by( table_name, column_names, 0, -9999, {}, build_callback(function(response) {
             console.log("Group by results: ");
             console.log(response.data);
         }));
@@ -213,7 +214,7 @@ var operations = [
     // Second group by
     function() {
         var column_names = [ "group_id", "count(*)", "sum(col1)", "avg(col1)" ];
-        gpudb.aggregate_group_by( table_name, column_names, 0, -9999, {}, build_callback(function(response) {
+        db.aggregate_group_by( table_name, column_names, 0, -9999, {}, build_callback(function(response) {
             console.log("Second group by results: ");
             console.log(response.data);
         }));
@@ -221,7 +222,7 @@ var operations = [
 
     // Third group by
     function() {
-        gpudb.aggregate_group_by( table_name,
+        db.aggregate_group_by( table_name,
                                   [ "group_id", "sum(col1*10)" ],
                                   0, -9999, {},
                                   build_callback(function(response) {
@@ -243,7 +244,7 @@ var operations = [
             });
         }
 
-        gpudb.insert_records( table_name, records, {}, build_callback());
+        db.insert_records( table_name, records, {}, build_callback());
     },
 
     // Perform a histogram calculation
@@ -251,7 +252,7 @@ var operations = [
 	var start = 1.1;
 	var end = 2;
 	var interval = 1;
-        gpudb.aggregate_histogram( table_name, "col1", start, end, interval, {}, build_callback(function(response) {
+        db.aggregate_histogram( table_name, "col1", start, end, interval, {}, build_callback(function(response) {
             console.log("Histogram results: ");
             console.log(response);
         }));
@@ -259,12 +260,12 @@ var operations = [
 
     // Drop the original table (will automatically drop all views of it)
     function() {
-        gpudb.clear_table( table_name, null, {}, build_callback());
+        db.clear_table( table_name, null, {}, build_callback());
     },
 
     // Check that no view of that table is available anymore.
     function() {
-        gpudb.show_table("view_3", {}, build_callback(function(response) {
+        db.show_table("view_3", {}, build_callback(function(response) {
             console.log("Should not get here!");
         }, function(error) {
             console.log("View 'view_3' not available as expected.");
@@ -274,7 +275,7 @@ var operations = [
     // Create a KiFS directory
     function() {
     	var options = {"no_error_if_exists": "true"};
-	    gpudb.create_directory( kifs_dir_name, options, build_callback(function(response) {
+	    db.create_directory( kifs_dir_name, options, build_callback(function(response) {
             console.log("KiFS directory '" + kifs_dir_name + "' has been created!");
         }, function(error) {
             console.error("Error during directory creation!");
@@ -283,12 +284,12 @@ var operations = [
 
     // Upload a file to KiFS
     function() {
-        console.log( "Attempting to upload file '" + upload_filename + "'" );
+        console.log( "Attempting to upload file '" + __filename.replace(`${__dirname}/`, '') + "'" );
         var kifs_home = "/";
         var options = { file_encoding: 'base64' };
 
         // Upload the file
-        fileHandler.upload( [ upload_filename ], "/nodejs_example_dir", options,
+        fileHandler.upload( [ __filename ], kifs_dir_name, options,
                             build_callback(function(response) {
                                 console.log("File has been uploaded");
                             }, function(error) {
@@ -298,7 +299,7 @@ var operations = [
 
     // Show the files
     function() {
-	    gpudb.show_files( [ kifs_dir_name ], {}, build_callback(function(response) {
+	    db.show_files( [ kifs_dir_name ], {}, build_callback(function(response) {
             console.log("Files in KiFS directory '" + kifs_dir_name + "': "
                         + JSON.stringify( response ) );
         }, function(error) {
@@ -316,10 +317,11 @@ next_operation();
 Expected Output:
 ================
 
-Establishing a connection with GPUdb...
-Record IDs for newly inserted records: 0010300000000000_0000000000000000,0010300000000000_0000000000000001,0010300000000000_0000000000000002,0010300000000000_0000000000000003,0010300000000000_0000000000000004,0010300000000000_0000000000000005,0010300000000000_0000000000000006,0010300000000000_0000000000000007,0010300000000000_0000000000000008,0010300000000000_0000000000000009
+Establishing a connection with Kinetica...
+Record IDs for newly inserted records: 0002000000000766_0000000000000000,0002000000000766_0000000000000001,0002000000000766_0000000000000002,0002000000000766_0000000000000003,0002000000000766_0000000000000004,0002000000000766_0000000000000005,0002000000000766_0000000000000006,0002000000000766_0000000000000007,0002000000000766_0000000000000008,0002000000000766_0000000000000009
 Retrieved records:
-[ { col1: 0.1, col2: 'string 0', group_id: 'Group 1' },
+[
+  { col1: 0.1, col2: 'string 0', group_id: 'Group 1' },
   { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
   { col1: 3.1, col2: 'string 3', group_id: 'Group 1' },
@@ -328,13 +330,15 @@ Retrieved records:
   { col1: 6.1, col2: 'string 6', group_id: 'Group 1' },
   { col1: 7.1, col2: 'string 7', group_id: 'Group 1' },
   { col1: 8.1, col2: 'string 8', group_id: 'Group 1' },
-  { col1: 9.1, col2: 'string 9', group_id: 'Group 1' } ]
+  { col1: 9.1, col2: 'string 9', group_id: 'Group 1' }
+]
 Number of filtered records: 1
 Filtered records:
 [ { col1: 1.1, col2: 'string 1', group_id: 'Group 1' } ]
 Number of records filtered by the second expression: 9
 Second set of filtered records:
-[ { col1: 0.1, col2: 'string 0', group_id: 'Group 1' },
+[
+  { col1: 0.1, col2: 'string 0', group_id: 'Group 1' },
   { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
   { col1: 3.1, col2: 'string 3', group_id: 'Group 1' },
@@ -342,54 +346,71 @@ Second set of filtered records:
   { col1: 5.1, col2: 'string 5', group_id: 'Group 1' },
   { col1: 6.1, col2: 'string 6', group_id: 'Group 1' },
   { col1: 7.1, col2: 'string 7', group_id: 'Group 1' },
-  { col1: 8.1, col2: 'string 8', group_id: 'Group 1' } ]
+  { col1: 8.1, col2: 'string 8', group_id: 'Group 1' }
+]
 Number of records filtered by list: 3
 Records filtered by a list:
-[ { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
+[
+  { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
-  { col1: 5.1, col2: 'string 5', group_id: 'Group 1' } ]
+  { col1: 5.1, col2: 'string 5', group_id: 'Group 1' }
+]
 Number of records filtered by range: 4
 Records filtered by range:
-[ { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
+[
+  { col1: 1.1, col2: 'string 1', group_id: 'Group 1' },
   { col1: 2.1, col2: 'string 2', group_id: 'Group 1' },
   { col1: 3.1, col2: 'string 3', group_id: 'Group 1' },
-  { col1: 4.1, col2: 'string 4', group_id: 'Group 1' } ]
+  { col1: 4.1, col2: 'string 4', group_id: 'Group 1' }
+]
 Statistics of values in 'col1': {"count":10,"mean":4.6,"sum":46}
 Inserting more records into the table...
 Unique values in 'group_id':
-{ column_1: [ 'Group 1', 'Group 2' ],
-  column_headers: [ 'group_id' ] }
+{
+  column_1: [ 'Group 1', 'Group 2' ],
+  column_headers: [ 'group_id' ],
+  column_datatypes: [ 'string' ]
+}
 Group by results:
-{ column_1:
-   [ 'string 0',
-     'string 1',
-     'string 2',
-     'string 3',
-     'string 4',
-     'string 5',
-     'string 6',
-     'string 7',
-     'string 8',
-     'string 9' ],
-  column_2: [ 1, 2, 2, 2, 2, 2, 2, 2, 1, 1 ],
-  column_headers: [ 'col2', 'count(*)' ] }
+{
+  column_1: [
+    'string 3', 'string 1',
+    'string 6', 'string 5',
+    'string 4', 'string 8',
+    'string 2', 'string 9',
+    'string 0', 'string 7'
+  ],
+  column_headers: [ 'col2' ],
+  column_datatypes: [ 'string' ]
+}
 Second group by results:
-{ column_1: [ 'Group 1', 'Group 2' ],
-  column_2: [ 10, 7 ],
-  column_3: [ 46, 98.69999999999999 ],
-  column_4: [ 4.6, 14.1 ],
-  column_headers: [ 'group_id', 'count(*)', 'sum(col1)', 'avg(col1)' ] }
+{
+  column_1: [ 'Group 2', 'Group 1' ],
+  column_2: [ 7, 10 ],
+  column_3: [ 98.69999999999999, 46 ],
+  column_4: [ 14.099999999999998, 4.6 ],
+  column_headers: [ 'group_id', 'count(*)', 'sum(col1)', 'avg(col1)' ],
+  column_datatypes: [ 'string', 'long', 'double', 'double' ]
+}
 Third group by results:
-{ column_1: [ 'Group 1', 'Group 2' ],
+{
+  column_1: [ 'Group 1', 'Group 2' ],
   column_2: [ 460, 987 ],
-  column_headers: [ 'group_id', 'sum(col1*10)' ] }
+  column_headers: [ 'group_id', 'sum(col1*10)' ],
+  column_datatypes: [ 'string', 'double' ]
+}
 Inserting more records into the table...
 Histogram results:
-{ counts: [ 1 ], start: 1.1, end: 2 }
+{
+  counts: [ 1 ],
+  start: 1.1,
+  end: 2,
+  info: {},
+  request_time_secs: 0.00116
+}
 View 'view_3' not available as expected.
 KiFS directory 'nodejs_example_dir' has been created!
-Attempting to upload file '/home/mmahmud/gisfederal/gpudb-dev/gpudb-dev-v7.1/gpudb-api-javascript/example/_data/example_data.txt'
+Attempting to upload file 'nodejs-example.js'
 File has been uploaded
-Files in KiFS directory 'nodejs_example_dir': {"file_names":["nodejs_example_dir/example_data.txt"],"sizes":[23],"users":["anonymous"],"creation_times":[1615928184],"info":{"multipart_uploads":"{\"uploads_in_progress\":[]}"},"request_time_secs":0.00003}
-
+Files in KiFS directory 'nodejs_example_dir': {"file_names":["nodejs_example_dir/nodejs-example.js"],"sizes":[14072],"users":["admin"],"creation_times":[1725813614162],"info":{"multipart_uploads":"{\"uploads_in_progress\":[]}"},"request_time_secs":0.00014}
 */

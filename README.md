@@ -85,7 +85,7 @@ To run the example, copy the project, making sure to maintain the directory
 structure (``nodejs-example.js`` references ``GPUdb.js`` by relative path), and
 run the following at the command line from within the ``example`` directory:
 
-    node nodejs-example.js
+    node nodejs-example.js [<url> [<username> [<password>]]]
 
 Processing will be logged to standard output.
 
