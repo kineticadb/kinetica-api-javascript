@@ -2,6 +2,16 @@
 
 ## Version 7.2
 
+### Version 7.2.2.1 - 2025-08-18
+
+#### Fixed
+-   Issue with `GPUdbSqlIterator` iterating over a batch size that is greater
+    than the configured `max_get_records_size` on the server
+
+#### Notes
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
+
+
 ### Version 7.2.2.0 - 2024-10-15
 
 #### Notes

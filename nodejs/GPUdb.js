@@ -768,7 +768,8 @@ GPUdb.prototype.SqlIterator = async function* (sql, batchSize = 10000, sqlOption
         if( pagingTable.length != 0) {
             pagingTableNames.push(pagingTable);
         }
-        offset += batchSize;
+        // Account for max_get_records_size limiting server result set
+        offset += dataArrays.length;
     };
 
     await fetchBatch();
@@ -1005,7 +1006,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.2.2.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.2.2.1" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1610,7 +1611,7 @@ GPUdb.prototype.admin_add_host_request = function(request, callback) {
  *                                  all GPUs on the host being added will be
  *                                  eligible.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1790,7 +1791,7 @@ GPUdb.prototype.admin_add_ranks_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1875,7 +1876,7 @@ GPUdb.prototype.admin_alter_host_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -1961,7 +1962,7 @@ GPUdb.prototype.admin_alter_jobs_request = function(request, callback) {
  *                              <li>'job_tag': Job tag returned in call to
  *                                  create the job
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2031,7 +2032,7 @@ GPUdb.prototype.admin_backup_begin_request = function(request, callback) {
  * backup mode has been completed by using {@linkcode GPUdb#admin_backup_end}.
  *
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2095,7 +2096,7 @@ GPUdb.prototype.admin_backup_end_request = function(request, callback) {
  * allowing any queries that were blocked to complete.
  *
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2120,6 +2121,80 @@ GPUdb.prototype.admin_backup_end = function(options, callback) {
     };
 
     this.submit_request("/admin/backup/end", actual_request, callback);
+};
+
+/**
+ * Pauses consumption of messages from other HA clusters to support data
+ * repair/recovery scenarios. In-flight queries may fail to replicate to other
+ * clusters in the ring when going offline.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_ha_offline_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_ha_offline_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        offline: request.offline,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/ha/offline", actual_request, callback);
+};
+
+/**
+ * Pauses consumption of messages from other HA clusters to support data
+ * repair/recovery scenarios. In-flight queries may fail to replicate to other
+ * clusters in the ring when going offline.
+ *
+ * @param {Boolean} offline  Set to true if desired state is offline.
+ *                           Supported values:
+ *                           <ul>
+ *                               <li><code>true</code>
+ *                               <li><code>false</code>
+ *                           </ul>
+ * @param {Object} options  Optional parameters. The default value is an empty
+ *                          object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_ha_offline = function(offline, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_ha_offline(offline, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        offline: offline,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/ha/offline", actual_request, callback);
 };
 
 /**
@@ -2161,7 +2236,7 @@ GPUdb.prototype.admin_ha_refresh_request = function(request, callback) {
  * while HA is restarting.
  *
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2241,7 +2316,7 @@ GPUdb.prototype.admin_offline_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2457,7 +2532,7 @@ GPUdb.prototype.admin_rebalance_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2550,7 +2625,7 @@ GPUdb.prototype.admin_remove_host_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2698,7 +2773,7 @@ GPUdb.prototype.admin_remove_ranks_request = function(request, callback) {
  *                                  Valid values are constants from 1 (lowest)
  *                                  to 10 (highest). The default value is '10'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2777,8 +2852,19 @@ GPUdb.prototype.admin_repair_table_request = function(request, callback) {
  *                                      <li>'replay_wal': Manually invokes wal
  *                                          replay on the table
  *                                  </ul>
+ *                              <li>'verify_all': If <code>false</code> only
+ *                                  table chunk data already known to be
+ *                                  corrupted will be repaired. Otherwise the
+ *                                  database will perform a full table scan to
+ *                                  check for correctness.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2804,6 +2890,86 @@ GPUdb.prototype.admin_repair_table = function(table_names, options, callback) {
     };
 
     this.submit_request("/admin/repair/table", actual_request, callback);
+};
+
+/**
+ * Sends a user generated alert to the monitoring system.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_send_alert_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_send_alert_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        message: (request.message !== undefined && request.message !== null) ? request.message : "",
+        label: (request.label !== undefined && request.label !== null) ? request.label : "",
+        log_level: request.log_level,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/admin/send/alert", actual_request, callback);
+};
+
+/**
+ * Sends a user generated alert to the monitoring system.
+ *
+ * @param {String} message  Alert message body. The default value is ''.
+ * @param {String} label  Label to add to alert message. The default value is
+ *                        ''.
+ * @param {String} log_level  Alert message logging criteria.
+ *                            Supported values:
+ *                            <ul>
+ *                                <li>'fatal'
+ *                                <li>'error'
+ *                                <li>'warn'
+ *                                <li>'info'
+ *                                <li>'debug'
+ *                            </ul>
+ * @param {Object} options  Optional parameters. The default value is an empty
+ *                          object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.admin_send_alert = function(message, label, log_level, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.admin_send_alert(message, label, log_level, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        message: (message !== undefined && message !== null) ? message : "",
+        label: (label !== undefined && label !== null) ? label : "",
+        log_level: log_level,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/admin/send/alert", actual_request, callback);
 };
 
 /**
@@ -2849,7 +3015,7 @@ GPUdb.prototype.admin_show_alerts_request = function(request, callback) {
  *                             alerts there are in the system. A value of 0
  *                             returns all stored alerts.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -2926,7 +3092,7 @@ GPUdb.prototype.admin_show_cluster_operations_request = function(request, callba
  *                                retrieve.  Use 0 for the most recent. The
  *                                default value is 0.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3011,7 +3177,7 @@ GPUdb.prototype.admin_show_jobs_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3077,7 +3243,7 @@ GPUdb.prototype.admin_show_shards_request = function(request, callback) {
  * and TOM numbers corresponding to each shard.
  *
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3145,7 +3311,7 @@ GPUdb.prototype.admin_shutdown_request = function(request, callback) {
  * @param {String} authorization  No longer used. User can pass an empty
  *                                string.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3252,7 +3418,7 @@ GPUdb.prototype.admin_switchover_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3399,7 +3565,7 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3478,7 +3644,7 @@ GPUdb.prototype.aggregate_convex_hull_request = function(request, callback) {
  *                                coordinates of the points for the operation
  *                                being performed.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -3737,11 +3903,21 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                              <li>'expression': Filter expression to apply to
  *                                  the table prior to computing the aggregate
  *                                  group by.
+ *                              <li>'chunked_expression_evaluation': evaluate
+ *                                  the filter expression during group-by chunk
+ *                                  processing.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'having': Filter expression to apply to the
  *                                  aggregated results.
- *                              <li>'sort_order': String indicating how the
- *                                  returned values should be sorted -
- *                                  ascending or descending.
+ *                              <li>'sort_order': [DEPRECATED--use order_by
+ *                                  instead] String indicating how the returned
+ *                                  values should be sorted - ascending or
+ *                                  descending.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'ascending': Indicates that the
@@ -3752,8 +3928,9 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                          descending order.
  *                                  </ul>
  *                                  The default value is 'ascending'.
- *                              <li>'sort_by': String determining how the
- *                                  results are sorted.
+ *                              <li>'sort_by': [DEPRECATED--use order_by
+ *                                  instead] String determining how the results
+ *                                  are sorted.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'key': Indicates that the returned
@@ -3886,7 +4063,7 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  original column name. The default value is
  *                                  ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4012,7 +4189,7 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  *                                  are summed).  The column must be a
  *                                  numerical type (int, double, long, float).
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4177,7 +4354,7 @@ GPUdb.prototype.aggregate_k_means_request = function(request, callback) {
  *                                  target="_top">TTL</a> of the table
  *                                  specified in <code>result_table</code>.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4256,7 +4433,7 @@ GPUdb.prototype.aggregate_min_max_request = function(request, callback) {
  *                              more column on which the min-max will be
  *                              calculated.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4332,7 +4509,7 @@ GPUdb.prototype.aggregate_min_max_geometry_request = function(request, callback)
  * @param {String} column_name  Name of a geospatial geometry column on which
  *                              the min-max will be calculated.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4539,7 +4716,7 @@ GPUdb.prototype.aggregate_statistics_request = function(request, callback) {
  *                                  as weighting attribute for the weighted
  *                                  average statistic.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4698,7 +4875,7 @@ GPUdb.prototype.aggregate_statistics_by_range_request = function(request, callba
  *                              <li>'order_column_name': Name of the column
  *                                  used for candlestick charting techniques.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -4985,7 +5162,7 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                                  table will be a member. The default value
  *                                  is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -5227,7 +5404,7 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -5419,8 +5596,9 @@ GPUdb.prototype.alter_datasink_request = function(request, callback) {
  *                                               the output data in format
  *                                               'destination_type://path[:port]'.
  *                                               Supported destination types
- *                                               are 'http', 'https' and
- *                                               'kafka'.
+ *                                               are 'azure', 'gcs', 'hdfs',
+ *                                               'http', 'https', 'jdbc',
+ *                                               'kafka', and 's3'.
  *                                           <li>'connection_timeout': Timeout
  *                                               in seconds for connecting to
  *                                               this sink
@@ -5438,31 +5616,38 @@ GPUdb.prototype.alter_datasink_request = function(request, callback) {
  *                                           <li>'s3_region': Name of the
  *                                               Amazon S3 region where the
  *                                               given bucket is located
- *                                           <li>'s3_verify_ssl': Set to false
- *                                               for testing purposes or when
- *                                               necessary to bypass TLS errors
- *                                               (e.g. self-signed
- *                                               certificates). This value is
- *                                               true by default.
+ *                                           <li>'s3_verify_ssl': Whether to
+ *                                               verify SSL connections.
  *                                               Supported values:
  *                                               <ul>
- *                                                   <li>'true'
- *                                                   <li>'false'
+ *                                                   <li>'true': Connect with
+ *                                                       SSL verification
+ *                                                   <li>'false': Connect
+ *                                                       without verifying the
+ *                                                       SSL connection; for
+ *                                                       testing purposes,
+ *                                                       bypassing TLS errors,
+ *                                                       self-signed
+ *                                                       certificates, etc.
  *                                               </ul>
  *                                               The default value is 'true'.
  *                                           <li>'s3_use_virtual_addressing':
- *                                               When true (default), the
- *                                               requests URI should be
- *                                               specified in
- *                                               virtual-hosted-style format
- *                                               where the bucket name is part
- *                                               of the domain name in the URL.
- *                                               Otherwise set to false to use
- *                                               path-style URI for requests.
+ *                                               Whether to use virtual
+ *                                               addressing when referencing
+ *                                               the Amazon S3 sink.
  *                                               Supported values:
  *                                               <ul>
- *                                                   <li>'true'
- *                                                   <li>'false'
+ *                                                   <li>'true': The requests
+ *                                                       URI should be
+ *                                                       specified in
+ *                                                       virtual-hosted-style
+ *                                                       format where the
+ *                                                       bucket name is part of
+ *                                                       the domain name in the
+ *                                                       URL.
+ *                                                   <li>'false': Use
+ *                                                       path-style URI for
+ *                                                       requests.
  *                                               </ul>
  *                                               The default value is 'true'.
  *                                           <li>'s3_aws_role_arn': Amazon IAM
@@ -5523,6 +5708,11 @@ GPUdb.prototype.alter_datasink_request = function(request, callback) {
  *                                               Google Cloud service account
  *                                               keys to use for authenticating
  *                                               the data sink
+ *                                           <li>'jdbc_driver_jar_path': JDBC
+ *                                               driver jar file location.
+ *                                               This may be a KIFS file.
+ *                                           <li>'jdbc_driver_class_name': Name
+ *                                               of the JDBC driver class
  *                                           <li>'kafka_url': The
  *                                               publicly-accessible full path
  *                                               URL to the kafka broker, e.g.,
@@ -5575,16 +5765,15 @@ GPUdb.prototype.alter_datasink_request = function(request, callback) {
  *                                               default value is '1000000'.
  *                                           <li>'json_format': The desired
  *                                               format of JSON encoded
- *                                               notifications message.   If
- *                                               <code>nested</code>, records
- *                                               are returned as an array.
- *                                               Otherwise, only a single
- *                                               record per messages is
- *                                               returned.
+ *                                               notifications message.
  *                                               Supported values:
  *                                               <ul>
- *                                                   <li>'flat'
- *                                                   <li>'nested'
+ *                                                   <li>'flat': A single
+ *                                                       record is returned per
+ *                                                       message
+ *                                                   <li>'nested': Records are
+ *                                                       returned as an array
+ *                                                       per message
  *                                               </ul>
  *                                               The default value is 'flat'.
  *                                           <li>'skip_validation': Bypass
@@ -5682,9 +5871,10 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 remote storage in
  *                                                 'storage_provider_type://[storage_path[:storage_port]]'
  *                                                 format.  Supported storage
- *                                                 provider types are
- *                                                 'azure','gcs','hdfs','kafka'
- *                                                 and 's3'.
+ *                                                 provider types are 'azure',
+ *                                                 'gcs', 'hdfs', 'jdbc',
+ *                                                 'kafka', 'confluent', and
+ *                                                 's3'.
  *                                             <li>'user_name': Name of the
  *                                                 remote system user; may be
  *                                                 an empty string
@@ -5719,16 +5909,20 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                             <li>'s3_region': Name of the
  *                                                 Amazon S3 region where the
  *                                                 given bucket is located
- *                                             <li>'s3_verify_ssl': Set to
- *                                                 false for testing purposes
- *                                                 or when necessary to bypass
- *                                                 TLS errors (e.g. self-signed
- *                                                 certificates). This value is
- *                                                 true by default.
+ *                                             <li>'s3_verify_ssl': Whether to
+ *                                                 verify SSL connections.
  *                                                 Supported values:
  *                                                 <ul>
- *                                                     <li>'true'
- *                                                     <li>'false'
+ *                                                     <li>'true': Connect with
+ *                                                         SSL verification
+ *                                                     <li>'false': Connect
+ *                                                         without verifying
+ *                                                         the SSL connection;
+ *                                                         for testing
+ *                                                         purposes, bypassing
+ *                                                         TLS errors,
+ *                                                         self-signed
+ *                                                         certificates, etc.
  *                                                 </ul>
  *                                                 The default value is 'true'.
  *                                             <li>'s3_use_virtual_addressing':
@@ -5811,6 +6005,12 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 keys to use for
  *                                                 authenticating the data
  *                                                 source
+ *                                             <li>'jdbc_driver_jar_path': JDBC
+ *                                                 driver jar file location.
+ *                                                 This may be a KIFS file.
+ *                                             <li>'jdbc_driver_class_name':
+ *                                                 Name of the JDBC driver
+ *                                                 class
  *                                             <li>'kafka_url': The
  *                                                 publicly-accessible full
  *                                                 path URL to the Kafka
@@ -5819,12 +6019,6 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                             <li>'kafka_topic_name': Name of
  *                                                 the Kafka topic to use as
  *                                                 the data source
- *                                             <li>'jdbc_driver_jar_path': JDBC
- *                                                 driver jar file location.
- *                                                 This may be a KIFS file.
- *                                             <li>'jdbc_driver_class_name':
- *                                                 Name of the JDBC driver
- *                                                 class
  *                                             <li>'anonymous': Create an
  *                                                 anonymous connection to the
  *                                                 storage
@@ -5868,16 +6062,22 @@ GPUdb.prototype.alter_datasource_request = function(request, callback) {
  *                                                 <code>schema_name</code> is
  *                                                 empty, then the user's
  *                                                 default schema will be used.
- *                                             <li>'schema_registry_location':
- *                                                 Location of Confluent Schema
- *                                                 Registry in
- *                                                 '[storage_path[:storage_port]]'
- *                                                 format.
+ *                                             <li>'schema_registry_connection_retries':
+ *                                                 Confluent Schema registry
+ *                                                 connection timeout (in Secs)
+ *                                             <li>'schema_registry_connection_timeout':
+ *                                                 Confluent Schema registry
+ *                                                 connection timeout (in Secs)
  *                                             <li>'schema_registry_credential':
  *                                                 Confluent Schema Registry <a
  *                                                 href="../../../concepts/credentials"
  *                                                 target="_top">credential</a>
  *                                                 object name.
+ *                                             <li>'schema_registry_location':
+ *                                                 Location of Confluent Schema
+ *                                                 Registry in
+ *                                                 '[storage_path[:storage_port]]'
+ *                                                 format.
  *                                             <li>'schema_registry_port':
  *                                                 Confluent Schema Registry
  *                                                 port (optional).
@@ -5960,7 +6160,7 @@ GPUdb.prototype.alter_directory_request = function(request, callback) {
  *                                                to indicate no upper limit.
  *                                        </ul>
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6067,7 +6267,7 @@ GPUdb.prototype.alter_environment_request = function(request, callback) {
  *                                  specified in <code>value</code> can be
  *                                  loaded
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6250,7 +6450,8 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                          memory usable in the given tier at
  *                                          one time for this group.
  *                                  </ul>
- *                                  The default value is an empty dict ( {} ).
+ *                                  The default value is an empty object ( {}
+ *                                  ).
  * @param {String} ranking  If the resource group ranking is to be updated,
  *                          this indicates the relative ranking among existing
  *                          resource groups where this resource group will be
@@ -6319,7 +6520,7 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'true'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6403,7 +6604,7 @@ GPUdb.prototype.alter_role_request = function(request, callback) {
  * @param {String} value  The value of the modification, depending on
  *                        <code>action</code>.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6489,7 +6690,7 @@ GPUdb.prototype.alter_schema_request = function(request, callback) {
  *                        <code>action</code> is <code>rename_schema</code>.
  *                        In this case the value is the new name of the schema.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6735,6 +6936,10 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               Enable overlapped-equi-join
  *                                               filter. The default value is
  *                                               'true'.
+ *                                           <li>'enable_one_step_compound_equi_join':
+ *                                               Enable the one_step
+ *                                               compound-equi-join algorithm.
+ *                                               The default value is 'true'.
  *                                           <li>'kafka_batch_size': Maximum
  *                                               number of records to be
  *                                               ingested in a single batch.
@@ -6796,6 +7001,25 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               The minimum allowed value is
  *                                               '2'. The maximum allowed value
  *                                               is '8192'.
+ *                                           <li>'background_worker_threads':
+ *                                               Size of the worker rank
+ *                                               background thread pool. This
+ *                                               includes background operations
+ *                                               such as watermark evictions
+ *                                               catalog table updates. The
+ *                                               minimum allowed value is '1'.
+ *                                               The maximum allowed value is
+ *                                               '8192'.
+ *                                           <li>'log_debug_job_info': Outputs
+ *                                               various job-related
+ *                                               information to the rank logs.
+ *                                               Used for troubleshooting.
+ *                                           <li>'enable_thread_hang_logging':
+ *                                               Log a stack trace for any
+ *                                               thread that runs longer than a
+ *                                               defined threshold. Used for
+ *                                               troubleshooting. The default
+ *                                               value is 'true'.
  *                                           <li>'ai_enable_rag': Enable RAG.
  *                                               The default value is 'false'.
  *                                           <li>'ai_api_provider': AI API
@@ -6817,6 +7041,11 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               Enable  postgres proxy keep
  *                                               alive. The default value is
  *                                               'false'.
+ *                                           <li>'kifs_directory_data_limit':
+ *                                               The default maximum capacity
+ *                                               to apply when creating a KiFS
+ *                                               directory (bytes). The minimum
+ *                                               allowed value is '-1'.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -6842,7 +7071,7 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'true'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -6884,6 +7113,8 @@ GPUdb.prototype.alter_system_properties = function(property_updates_map, options
  * <p>
  * Create or delete a <a href="../../../concepts/indexes/#column-index"
  * target="_top">column</a>, <a
+ * href="../../../concepts/indexes/#low-cardinality-index"
+ * target="_top">low-cardinality index</a>, <a
  * href="../../../concepts/indexes/#chunk-skip-index" target="_top">chunk
  * skip</a>, <a href="../../../concepts/indexes/#geospatial-index"
  * target="_top">geospatial</a>, <a
@@ -6962,6 +7193,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * <p>
  * Create or delete a <a href="../../../concepts/indexes/#column-index"
  * target="_top">column</a>, <a
+ * href="../../../concepts/indexes/#low-cardinality-index"
+ * target="_top">low-cardinality index</a>, <a
  * href="../../../concepts/indexes/#chunk-skip-index" target="_top">chunk
  * skip</a>, <a href="../../../concepts/indexes/#geospatial-index"
  * target="_top">geospatial</a>, <a
@@ -7010,6 +7243,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 href="../../../concepts/indexes/#column-index"
  *                                 target="_top">column (attribute) index</a>,
  *                                 <a
+ *                                 href="../../../concepts/indexes/#low-cardinality-index"
+ *                                 target="_top">low-cardinality index</a>, <a
  *                                 href="../../../concepts/indexes/#chunk-skip-index"
  *                                 target="_top">chunk skip index</a>, <a
  *                                 href="../../../concepts/indexes/#geospatial-index"
@@ -7032,6 +7267,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 href="../../../concepts/indexes/#column-index"
  *                                 target="_top">column (attribute) index</a>,
  *                                 <a
+ *                                 href="../../../concepts/indexes/#low-cardinality-index"
+ *                                 target="_top">low-cardinality index</a>, <a
  *                                 href="../../../concepts/indexes/#chunk-skip-index"
  *                                 target="_top">chunk skip index</a>, <a
  *                                 href="../../../concepts/indexes/#geospatial-index"
@@ -7233,6 +7470,22 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 S3 / Azure.
  *                             <li>'change_owner': Change the owner resource
  *                                 group of the table.
+ *                             <li>'set_load_vectors_policy': Set startup data
+ *                                 loading scheme for the table; see
+ *                                 description of 'load_vectors_policy' in
+ *                                 {@linkcode GPUdb#create_table} for possible
+ *                                 values for <code>value</code>
+ *                             <li>'set_build_pk_index_policy': Set startup
+ *                                 primary key generation scheme for the table;
+ *                                 see description of 'build_pk_index_policy'
+ *                                 in {@linkcode GPUdb#create_table} for
+ *                                 possible values for <code>value</code>
+ *                             <li>'set_build_materialized_view_policy': Set
+ *                                 startup rebuilding scheme for the
+ *                                 materialized view; see description of
+ *                                 'build_materialized_view_policy' in
+ *                                 {@linkcode GPUdb#create_materialized_view}
+ *                                 for possible values for <code>value</code>
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
  *                        <code>action</code>. For example, if
@@ -7340,6 +7593,10 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                          href="../../../concepts/indexes/#column-index"
  *                                          target="_top">column (attribute)
  *                                          index</a>.
+ *                                      <li>'low_cardinality': Create a <a
+ *                                          href="../../../concepts/indexes/#low-cardinality-index"
+ *                                          target="_top">low-cardinality
+ *                                          column (attribute) index</a>.
  *                                      <li>'chunk_skip': Create or delete a <a
  *                                          href="../../../concepts/indexes/#chunk-skip-index"
  *                                          target="_top">chunk skip index</a>.
@@ -7365,7 +7622,7 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                  value [, key: value [, ...]]". Valid
  *                                  options vary by index type.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7557,7 +7814,7 @@ GPUdb.prototype.alter_table_metadata_request = function(request, callback) {
  *                               provided map is empty, then all existing
  *                               metadata for the table(s) will be cleared.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7754,7 +8011,7 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
  *                                  is '0'. The maximum allowed value is
  *                                  '10000'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7824,8 +8081,15 @@ GPUdb.prototype.alter_user_request = function(request, callback) {
  * @param {String} action  Modification operation to be applied to the user.
  *                         Supported values:
  *                         <ul>
+ *                             <li>'set_activated': Is the user allowed to
+ *                                 login.
+ *                             <li>'true': User may login
+ *                             <li>'false': User may not login
  *                             <li>'set_comment': Sets the comment for an
  *                                 internal user.
+ *                             <li>'set_default_schema': Set the default_schema
+ *                                 for an internal user. An empty string means
+ *                                 the user will have no default schema.
  *                             <li>'set_password': Sets the password of the
  *                                 user. The user must be an internal user.
  *                             <li>'set_resource_group': Sets the resource
@@ -7833,14 +8097,11 @@ GPUdb.prototype.alter_user_request = function(request, callback) {
  *                                 group must exist, otherwise, an empty string
  *                                 assigns the user to the default resource
  *                                 group.
- *                             <li>'set_default_schema': Set the default_schema
- *                                 for an internal user. An empty string means
- *                                 the user will have no default schema.
  *                         </ul>
  * @param {String} value  The value of the modification, depending on
  *                        <code>action</code>.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -7914,7 +8175,7 @@ GPUdb.prototype.alter_video_request = function(request, callback) {
  *                                  href="../../../concepts/ttl/"
  *                                  target="_top">TTL</a> of the video.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8050,7 +8311,7 @@ GPUdb.prototype.alter_wal_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'true'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8239,6 +8500,14 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                                          target table record
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'pk_conflict_predicate_higher': The record
+ *                                  with higher value for the column resolves
+ *                                  the primary-key insert conflict. The
+ *                                  default value is ''.
+ *                              <li>'pk_conflict_predicate_lower': The record
+ *                                  with lower value for the column resolves
+ *                                  the primary-key insert conflict. The
+ *                                  default value is ''.
  *                              <li>'truncate_strings': If set to
  *                                  <code>true</code>, it allows inserting
  *                                  longer strings into smaller charN string
@@ -8251,7 +8520,7 @@ GPUdb.prototype.append_records_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8330,7 +8599,7 @@ GPUdb.prototype.clear_statistics_request = function(request, callback) {
  *                              clears statistics for all columns in the table.
  *                              The default value is ''.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8428,7 +8697,7 @@ GPUdb.prototype.clear_table_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8524,7 +8793,7 @@ GPUdb.prototype.clear_table_monitor_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8593,7 +8862,7 @@ GPUdb.prototype.clear_trigger_request = function(request, callback) {
  *
  * @param {String} trigger_id  ID for the trigger to be deactivated.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8666,7 +8935,7 @@ GPUdb.prototype.collect_statistics_request = function(request, callback) {
  *                                 <code>table_name</code> for which to collect
  *                                 statistics (cardinality, mean value, etc.).
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8809,7 +9078,7 @@ GPUdb.prototype.create_credential_request = function(request, callback) {
  * @param {String} identity  User of the credential to be created.
  * @param {String} secret  Password of the credential to be created.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -8884,8 +9153,8 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  * @param {String} destination  Destination for the output data in format
  *                              'storage_provider_type://path[:port]'.
  *                              Supported storage provider types are 'azure',
- *                              'gcs', 'hdfs', 'http', 'https', 'jdbc', 'kafka'
- *                              and 's3'.
+ *                              'gcs', 'hdfs', 'http', 'https', 'jdbc',
+ *                              'kafka', and 's3'.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'connection_timeout': Timeout in seconds
@@ -8900,26 +9169,29 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  *                                  bucket to use as the data sink
  *                              <li>'s3_region': Name of the Amazon S3 region
  *                                  where the given bucket is located
- *                              <li>'s3_verify_ssl': Set to false for testing
- *                                  purposes or when necessary to bypass TLS
- *                                  errors (e.g. self-signed certificates).
- *                                  This value is true by default.
+ *                              <li>'s3_verify_ssl': Whether to verify SSL
+ *                                  connections.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
+ *                                      <li>'true': Connect with SSL
+ *                                          verification
+ *                                      <li>'false': Connect without verifying
+ *                                          the SSL connection; for testing
+ *                                          purposes, bypassing TLS errors,
+ *                                          self-signed certificates, etc.
  *                                  </ul>
  *                                  The default value is 'true'.
- *                              <li>'s3_use_virtual_addressing': When true
- *                                  (default), the requests URI should be
- *                                  specified in virtual-hosted-style format
- *                                  where the bucket name is part of the domain
- *                                  name in the URL.   Otherwise set to false
- *                                  to use path-style URI for requests.
+ *                              <li>'s3_use_virtual_addressing': Whether to use
+ *                                  virtual addressing when referencing the
+ *                                  Amazon S3 sink.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
+ *                                      <li>'true': The requests URI should be
+ *                                          specified in virtual-hosted-style
+ *                                          format where the bucket name is
+ *                                          part of the domain name in the URL.
+ *                                      <li>'false': Use path-style URI for
+ *                                          requests.
  *                                  </ul>
  *                                  The default value is 'true'.
  *                              <li>'s3_aws_role_arn': Amazon IAM Role ARN
@@ -8980,14 +9252,13 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  *                                  of each notification message. The default
  *                                  value is '1000000'.
  *                              <li>'json_format': The desired format of JSON
- *                                  encoded notifications message.   If
- *                                  <code>nested</code>, records are returned
- *                                  as an array. Otherwise, only a single
- *                                  record per messages is returned.
+ *                                  encoded notifications message.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'flat'
- *                                      <li>'nested'
+ *                                      <li>'flat': A single record is returned
+ *                                          per message
+ *                                      <li>'nested': Records are returned as
+ *                                          an array per message
  *                                  </ul>
  *                                  The default value is 'flat'.
  *                              <li>'use_managed_credentials': When no
@@ -9017,7 +9288,7 @@ GPUdb.prototype.create_datasink_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -9092,8 +9363,8 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  * @param {String} location  Location of the remote storage in
  *                           'storage_provider_type://[storage_path[:storage_port]]'
  *                           format.  Supported storage provider types are
- *                           'azure','gcs','hdfs','jdbc','kafka', 'confluent'
- *                           and 's3'.
+ *                           'azure', 'gcs', 'hdfs', 'jdbc', 'kafka',
+ *                           'confluent', and 's3'.
  * @param {String} user_name  Name of the remote system user; may be an empty
  *                            string
  * @param {String} password  Password for the remote system user; may be an
@@ -9120,14 +9391,16 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                                  bucket to use as the data source
  *                              <li>'s3_region': Name of the Amazon S3 region
  *                                  where the given bucket is located
- *                              <li>'s3_verify_ssl': Set to false for testing
- *                                  purposes or when necessary to bypass TLS
- *                                  errors (e.g. self-signed certificates).
- *                                  This value is true by default.
+ *                              <li>'s3_verify_ssl': Whether to verify SSL
+ *                                  connections.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
+ *                                      <li>'true': Connect with SSL
+ *                                          verification
+ *                                      <li>'false': Connect without verifying
+ *                                          the SSL connection; for testing
+ *                                          purposes, bypassing TLS errors,
+ *                                          self-signed certificates, etc.
  *                                  </ul>
  *                                  The default value is 'true'.
  *                              <li>'s3_use_virtual_addressing': Whether to use
@@ -9236,8 +9509,14 @@ GPUdb.prototype.create_datasource_request = function(request, callback) {
  *                                  target="_top">credential</a> object name.
  *                              <li>'schema_registry_port': Confluent Schema
  *                                  Registry port (optional).
+ *                              <li>'schema_registry_connection_retries':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_connection_timeout':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -9376,7 +9655,7 @@ GPUdb.prototype.create_directory_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -9445,7 +9724,7 @@ GPUdb.prototype.create_environment_request = function(request, callback) {
  *
  * @param {String} environment_name  Name of the environment to be created.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -9725,7 +10004,7 @@ GPUdb.prototype.create_graph_request = function(request, callback) {
  *                                  will be appended into this table. The
  *                                  default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -9843,7 +10122,7 @@ GPUdb.prototype.create_job_request = function(request, callback) {
  *                                  cluster to retrieve response for the job.
  *                                  Tags can use letter, numbers, '_' and '-'
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -9955,7 +10234,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                a SQL statement WHERE clause. For details
  *                                see: <a href="../../../concepts/expressions/"
  *                                target="_top">expressions</a>. The default
- *                                value is an empty list ( [] ).
+ *                                value is an empty array ( [] ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'create_temp_table': If <code>true</code>,
@@ -10015,7 +10294,7 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  primary key joins rather than using
  *                                  primary-key-index
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -10121,6 +10400,23 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                                  automatically created.
  *                              <li>'execute_as': User name to use to run the
  *                                  refresh job
+ *                              <li>'build_materialized_view_policy': Sets
+ *                                  startup materialized view rebuild scheme.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'always': Rebuild as many
+ *                                          materialized views as possible
+ *                                          before accepting requests.
+ *                                      <li>'lazy': Rebuild the necessary
+ *                                          materialized views at start, and
+ *                                          load the remainder lazily.
+ *                                      <li>'on_demand': Rebuild materialized
+ *                                          views as requests use them.
+ *                                      <li>'system': Rebuild materialized
+ *                                          views using the system-configured
+ *                                          default.
+ *                                  </ul>
+ *                                  The default value is 'system'.
  *                              <li>'persist': If <code>true</code>, then the
  *                                  materialized view specified in
  *                                  <code>table_name</code> will be persisted
@@ -10183,7 +10479,7 @@ GPUdb.prototype.create_materialized_view_request = function(request, callback) {
  *                                  target="_top">TTL</a> of the table
  *                                  specified in <code>table_name</code>.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -10287,7 +10583,7 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                        Files may be loaded from existing files in KiFS.
  *                        Those file names should be prefixed with the uri
  *                        kifs:// and the values in the map should be empty.
- *                        The default value is an empty dict ( {} ).
+ *                        The default value is an empty object ( {} ).
  * @param {String} command  The command (excluding arguments) that will be
  *                          invoked when the proc is executed. It will be
  *                          invoked from the directory containing the proc
@@ -10304,7 +10600,8 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                          will be invoked. The default value is ''.
  * @param {String[]} args  An array of command-line arguments that will be
  *                         passed to <code>command</code> when the proc is
- *                         executed. The default value is an empty list ( [] ).
+ *                         executed. The default value is an empty array ( []
+ *                         ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'max_concurrency_per_node': The maximum
@@ -10317,7 +10614,7 @@ GPUdb.prototype.create_proc_request = function(request, callback) {
  *                                  existing environment, else an error will be
  *                                  returned. The default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -10660,7 +10957,7 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  joined back together. The default value is
  *                                  ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -10746,7 +11043,8 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                          memory usable in the given tier at
  *                                          one time for this group.
  *                                  </ul>
- *                                  The default value is an empty dict ( {} ).
+ *                                  The default value is an empty object ( {}
+ *                                  ).
  * @param {String} ranking  Indicates the relative ranking among existing
  *                          resource groups where this new resource group will
  *                          be placed.  When using <code>before</code> or
@@ -10787,7 +11085,7 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  allowed value is '1'. The maximum allowed
  *                                  value is '10'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -10866,7 +11164,7 @@ GPUdb.prototype.create_role_request = function(request, callback) {
  *                              <li>'resource_group': Name of an existing
  *                                  resource group to associate with this user
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -10951,7 +11249,7 @@ GPUdb.prototype.create_schema_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -11289,9 +11587,42 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  href="../../../rm/concepts/#tier-strategies"
  *                                  target="_top">tier strategy</a> for the
  *                                  table and its columns.
- *                              <li>'is_virtual_union': <DEVELOPER>
+ *                              <li>'load_vectors_policy': Set startup data
+ *                                  loading scheme for the table.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'always': Load as much vector data
+ *                                          as possible into memory before
+ *                                          accepting requests.
+ *                                      <li>'lazy': Load the necessary vector
+ *                                          data at start, and load the
+ *                                          remainder lazily.
+ *                                      <li>'on_demand': Load vector data as
+ *                                          requests use it.
+ *                                      <li>'system': Load vector data using
+ *                                          the system-configured default.
+ *                                  </ul>
+ *                                  The default value is 'system'.
+ *                              <li>'build_pk_index_policy': Set startup
+ *                                  primary-key index generation scheme for the
+ *                                  table.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'always': Generate as much primary
+ *                                          key index data as possible before
+ *                                          accepting requests.
+ *                                      <li>'lazy': Generate the necessary
+ *                                          primary key index data at start,
+ *                                          and load the remainder lazily.
+ *                                      <li>'on_demand': Generate primary key
+ *                                          index data as requests use it.
+ *                                      <li>'system': Generate primary key
+ *                                          index data using the
+ *                                          system-configured default.
+ *                                  </ul>
+ *                                  The default value is 'system'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -11420,7 +11751,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                              ends in .psv, the text delimiter will be
  *                              defaulted to a pipe character (|).
  * @param {Object} modify_columns  Not implemented yet. The default value is an
- *                                 empty dict ( {} ).
+ *                                 empty object ( {} ).
  * @param {Object} create_table_options  Options from {@linkcode
  *                                       GPUdb#create_table}, allowing the
  *                                       structure of the table to be defined
@@ -11606,7 +11937,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                               strategy</a> for the table and
  *                                               its columns.
  *                                       </ul>
- *                                       The default value is an empty dict (
+ *                                       The default value is an empty object (
  *                                       {} ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -11983,6 +12314,18 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                          GPUdb#alter_table} on this table.
  *                                  </ul>
  *                                  The default value is 'manual'.
+ *                              <li>'schema_registry_connection_retries':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_connection_timeout':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_max_consecutive_connection_failures':
+ *                                  Max records to skip due to SR connection
+ *                                  failures, before failing
+ *                              <li>'max_consecutive_invalid_schema_failure':
+ *                                  Max records to skip due to schema related
+ *                                  errors, before failing
  *                              <li>'schema_registry_schema_name': Name of the
  *                                  Avro schema in the schema registry to use
  *                                  when reading Avro records.
@@ -11991,6 +12334,9 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  specified in the type.
  *                              <li>'skip_lines': Skip number of lines from
  *                                  begining of file.
+ *                              <li>'start_offsets': Starting offsets by
+ *                                  partition to fetch from kafka. A comma
+ *                                  separated list of partition:offset pairs.
  *                              <li>'subscribe': Continuously poll the data
  *                                  source to check for new data and load it
  *                                  into the table.
@@ -12115,6 +12461,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'type_inference_max_records_read'
  *                              <li>'type_inference_mode': Optimize type
  *                                  inferencing for either speed or accuracy.
  *                                  Supported values:
@@ -12170,7 +12517,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -12331,7 +12678,7 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                                  is a datetime string with format
  *                                  'YYYY-MM-DD HH:MM:SS'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -12447,7 +12794,7 @@ GPUdb.prototype.create_trigger_by_area_request = function(request, callback) {
  *                             translates to the y-coordinates of a geospatial
  *                             region. Must be the same length as xvals.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -12552,7 +12899,7 @@ GPUdb.prototype.create_trigger_by_range_request = function(request, callback) {
  * @param {Number} min  The lower bound (inclusive) for the trigger range.
  * @param {Number} max  The upper bound (inclusive) for the trigger range.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -12895,6 +13242,11 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     entire) <a
  *                                     href="../../../concepts/tables/#primary-keys"
  *                                     target="_top">primary key</a>.
+ *                                 <li>'soft_primary_key': This property
+ *                                     indicates that this column will be part
+ *                                     of (or the entire) <a
+ *                                     href="../../../concepts/tables/#soft-primary-keys"
+ *                                     target="_top">soft primary key</a>.
  *                                 <li>'shard_key': This property indicates
  *                                     that this column will be part of (or the
  *                                     entire) <a
@@ -12937,10 +13289,14 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     replace empty strings and invalid UUID
  *                                     values with randomly-generated UUIDs
  *                                     upon insert.
+ *                                 <li>'update_with_now': For 'date', 'time',
+ *                                     'datetime', or 'timestamp' column types,
+ *                                     always update the field with 'NOW()'
+ *                                     upon any update.
  *                             </ul>
- *                             The default value is an empty dict ( {} ).
+ *                             The default value is an empty object ( {} ).
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13206,7 +13562,7 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  target="_top">tier strategy</a> for the
  *                                  table and its columns.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13283,10 +13639,13 @@ GPUdb.prototype.create_user_external_request = function(request, callback) {
  *                       Must not be the same name as an existing user.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'resource_group': Name of an existing
- *                                  resource group to associate with this user
- *                              <li>'default_schema': Default schema to
- *                                  associate with this user
+ *                              <li>'activated': Is the user allowed to login.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true': User may login
+ *                                      <li>'false': User may not login
+ *                                  </ul>
+ *                                  The default value is 'true'.
  *                              <li>'create_home_directory': When
  *                                  <code>true</code>, a home directory in KiFS
  *                                  is created for this user.
@@ -13296,14 +13655,18 @@ GPUdb.prototype.create_user_external_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'true'.
+ *                              <li>'default_schema': Default schema to
+ *                                  associate with this user
  *                              <li>'directory_data_limit': The maximum
  *                                  capacity to apply to the created directory
  *                                  if <code>create_home_directory</code> is
  *                                  <code>true</code>. Set to -1 to indicate no
  *                                  upper limit. If empty, the system default
  *                                  limit is applied.
+ *                              <li>'resource_group': Name of an existing
+ *                                  resource group to associate with this user
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13377,10 +13740,13 @@ GPUdb.prototype.create_user_internal_request = function(request, callback) {
  *                           an empty string for no password.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'resource_group': Name of an existing
- *                                  resource group to associate with this user
- *                              <li>'default_schema': Default schema to
- *                                  associate with this user
+ *                              <li>'activated': Is the user allowed to login.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true': User may login
+ *                                      <li>'false': User may not login
+ *                                  </ul>
+ *                                  The default value is 'true'.
  *                              <li>'create_home_directory': When
  *                                  <code>true</code>, a home directory in KiFS
  *                                  is created for this user.
@@ -13390,14 +13756,18 @@ GPUdb.prototype.create_user_internal_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'true'.
+ *                              <li>'default_schema': Default schema to
+ *                                  associate with this user
  *                              <li>'directory_data_limit': The maximum
  *                                  capacity to apply to the created directory
  *                                  if <code>create_home_directory</code> is
  *                                  <code>true</code>. Set to -1 to indicate no
  *                                  upper limit. If empty, the system default
  *                                  limit is applied.
+ *                              <li>'resource_group': Name of an existing
+ *                                  resource group to associate with this user
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13541,7 +13911,7 @@ GPUdb.prototype.create_video_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13638,7 +14008,7 @@ GPUdb.prototype.delete_directory_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13722,7 +14092,7 @@ GPUdb.prototype.delete_files_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13806,7 +14176,7 @@ GPUdb.prototype.delete_graph_request = function(request, callback) {
  *                                  is to send to get information about all the
  *                                  servers.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13872,7 +14242,7 @@ GPUdb.prototype.delete_proc_request = function(request, callback) {
  * @param {String} proc_name  Name of the proc to be deleted. Must be the name
  *                            of a currently existing proc.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13994,7 +14364,7 @@ GPUdb.prototype.delete_records_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14072,7 +14442,7 @@ GPUdb.prototype.delete_resource_group_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14142,7 +14512,7 @@ GPUdb.prototype.delete_role_request = function(request, callback) {
  * @param {String} name  Name of the role to be deleted. Must be an existing
  *                       role.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14212,7 +14582,7 @@ GPUdb.prototype.delete_user_request = function(request, callback) {
  * @param {String} name  Name of the user to be deleted. Must be an existing
  *                       user.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14316,7 +14686,7 @@ GPUdb.prototype.download_files_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'none'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14430,7 +14800,7 @@ GPUdb.prototype.drop_credential_request = function(request, callback) {
  * @param {String} credential_name  Name of the credential to be dropped. Must
  *                                  be an existing credential.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14521,7 +14891,7 @@ GPUdb.prototype.drop_datasink_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14591,7 +14961,7 @@ GPUdb.prototype.drop_datasource_request = function(request, callback) {
  * @param {String} name  Name of the data source to be dropped. Must be an
  *                       existing data source.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14674,7 +15044,7 @@ GPUdb.prototype.drop_environment_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14811,7 +15181,7 @@ GPUdb.prototype.drop_schema_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -14954,11 +15324,11 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  * @param {Object} params  A map containing named parameters to pass to the
  *                         proc. Each key/value pair specifies the name of a
  *                         parameter and its value. The default value is an
- *                         empty dict ( {} ).
+ *                         empty object ( {} ).
  * @param {Object} bin_params  A map containing named binary parameters to pass
  *                             to the proc. Each key/value pair specifies the
  *                             name of a parameter and its value. The default
- *                             value is an empty dict ( {} ).
+ *                             value is an empty object ( {} ).
  * @param {String[]} input_table_names  Names of the tables containing data to
  *                                      be passed to the proc. Each name
  *                                      specified must be the name of a
@@ -14972,7 +15342,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                      the proc.  This parameter is ignored if
  *                                      the proc has a non-distributed
  *                                      execution mode. The default value is an
- *                                      empty list ( [] ).
+ *                                      empty array ( [] ).
  * @param {Object} input_column_names  Map of table names from
  *                                     <code>input_table_names</code> to lists
  *                                     of names of columns from those tables
@@ -14985,7 +15355,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                     table will be passed to the proc.  This
  *                                     parameter is ignored if the proc has a
  *                                     non-distributed execution mode. The
- *                                     default value is an empty dict ( {} ).
+ *                                     default value is an empty object ( {} ).
  * @param {String[]} output_table_names  Names of the tables to which output
  *                                       data from the proc will be written,
  *                                       each in [schema_name.]table_name
@@ -15008,7 +15378,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                       data can be returned from the proc.
  *                                       This parameter is ignored if the proc
  *                                       has a non-distributed execution mode.
- *                                       The default value is an empty list (
+ *                                       The default value is an empty array (
  *                                       [] ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -15072,7 +15442,7 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                  when <code>execute_at_startup</code> is
  *                                  <code>true</code>. The default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -15185,8 +15555,8 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  * @param {String[]} data  An array of binary-encoded data for the records to
  *                         be binded to the SQL query.  Or use
  *                         <code>query_parameters</code> to pass the data in
- *                         JSON format. The default value is an empty list ( []
- *                         ).
+ *                         JSON format. The default value is an empty array (
+ *                         [] ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'cost_based_optimization': If
@@ -15401,7 +15771,7 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                  target="_top">default schema</a> when
  *                                  processing this SQL command.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -15497,7 +15867,7 @@ GPUdb.prototype.export_query_metrics_request = function(request, callback) {
  *                              <li>'limit': Record limit per file for multi
  *                                  query export
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -15758,7 +16128,7 @@ GPUdb.prototype.export_records_to_files_request = function(request, callback) {
  *                                  <code>file_type</code> only. The default
  *                                  value is '\N'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -15872,7 +16242,7 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16006,7 +16376,7 @@ GPUdb.prototype.filter_request = function(request, callback) {
  *                                  target="_top">TTL</a> of the view specified
  *                                  in <code>view_name</code>.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16136,7 +16506,7 @@ GPUdb.prototype.filter_by_area_request = function(request, callback) {
  *                                  schema provided is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16268,7 +16638,7 @@ GPUdb.prototype.filter_by_area_geometry_request = function(request, callback) {
  *                                  non-existent, it will be automatically
  *                                  created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16409,7 +16779,7 @@ GPUdb.prototype.filter_by_box_request = function(request, callback) {
  *                                  schema is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16551,7 +16921,7 @@ GPUdb.prototype.filter_by_box_geometry_request = function(request, callback) {
  *                                  schema provided is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16696,7 +17066,7 @@ GPUdb.prototype.filter_by_geometry_request = function(request, callback) {
  *                                  schema provided is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16847,7 +17217,7 @@ GPUdb.prototype.filter_by_list_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'in_list'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -16996,7 +17366,7 @@ GPUdb.prototype.filter_by_radius_request = function(request, callback) {
  *                                  non-existent, it will be automatically
  *                                  created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -17137,7 +17507,7 @@ GPUdb.prototype.filter_by_radius_geometry_request = function(request, callback) 
  *                                  schema provided is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -17273,7 +17643,7 @@ GPUdb.prototype.filter_by_range_request = function(request, callback) {
  *                                  schema is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -17444,7 +17814,7 @@ GPUdb.prototype.filter_by_series_request = function(request, callback) {
  *                                      <li>'great_circle'
  *                                  </ul>
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -17604,7 +17974,7 @@ GPUdb.prototype.filter_by_string_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'true'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -17799,7 +18169,7 @@ GPUdb.prototype.filter_by_table_request = function(request, callback) {
  *                                  <code>spatial</code> mode. The default
  *                                  value is 'y'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -17936,7 +18306,7 @@ GPUdb.prototype.filter_by_value_request = function(request, callback) {
  *                                  schema is non-existent, it will be
  *                                  automatically created.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18015,7 +18385,7 @@ GPUdb.prototype.get_job_request = function(request, callback) {
  *                              <li>'job_tag': Job tag returned in call to
  *                                  create the job
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18161,7 +18531,7 @@ GPUdb.prototype.get_records_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'ascending'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18366,8 +18736,11 @@ GPUdb.prototype.get_records_by_column_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'route_to_tom': For multihead record
+ *                                  retrieval without shard key expression -
+ *                                  specifies from which tom to retrieve data.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18507,7 +18880,7 @@ GPUdb.prototype.get_records_by_series_request = function(request, callback) {
  *                        to indicate that the max number of results should be
  *                        returned. The default value is 250.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18648,7 +19021,7 @@ GPUdb.prototype.get_records_from_collection_request = function(request, callback
  *                                  apply to the table. The default value is
  *                                  ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18817,6 +19190,8 @@ GPUdb.prototype.grant_permission_request = function(request, callback) {
  *                                 <li>'insert': Insert access to tables.
  *                                 <li>'read': Ability to read, list and use
  *                                     the object.
+ *                                 <li>'send_alert': Ability to send system
+ *                                     alerts.
  *                                 <li>'update': Update access to the table.
  *                                 <li>'user_admin': Access to administer users
  *                                     and roles that do not have system_admin
@@ -18833,8 +19208,17 @@ GPUdb.prototype.grant_permission_request = function(request, callback) {
  *                                  expression to apply to this grant.  Only
  *                                  rows that match the filter will be
  *                                  affected. The default value is ''.
+ *                              <li>'with_grant_option': Allow the recipient to
+ *                                  grant the same permission (or subset) to
+ *                                  others.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -18921,7 +19305,7 @@ GPUdb.prototype.grant_permission_credential_request = function(request, callback
  *                                  existing credential, or an empty string to
  *                                  grant access on all credentials.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19005,7 +19389,7 @@ GPUdb.prototype.grant_permission_datasource_request = function(request, callback
  *                                  existing data source, or an empty string to
  *                                  grant permission on all data sources.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19092,7 +19476,7 @@ GPUdb.prototype.grant_permission_directory_request = function(request, callback)
  *                                 permission grants access. An empty directory
  *                                 name grants access to all KiFS directories
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19172,7 +19556,7 @@ GPUdb.prototype.grant_permission_proc_request = function(request, callback) {
  *                            access. Must be an existing proc, or an empty
  *                            string to grant access to all procs.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19252,9 +19636,10 @@ GPUdb.prototype.grant_permission_system_request = function(request, callback) {
  *                                     all tables.
  *                                 <li>'system_read': Read-only access to all
  *                                     tables.
+ *                                 <li>'system_send_alert': Send system alerts.
  *                             </ul>
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19353,7 +19738,7 @@ GPUdb.prototype.grant_permission_table_request = function(request, callback) {
  *                              <li>'columns': Apply security to these columns,
  *                                  comma-separated. The default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19426,7 +19811,7 @@ GPUdb.prototype.grant_role_request = function(request, callback) {
  *                         membership in <code>role</code>. Must be an existing
  *                         user or role.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19533,6 +19918,8 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  *                                 <li>'insert': Insert access to tables.
  *                                 <li>'read': Ability to read, list and use
  *                                     the object.
+ *                                 <li>'send_alert': Ability to send system
+ *                                     alerts.
  *                                 <li>'update': Update access to the table.
  *                                 <li>'user_admin': Access to administer users
  *                                     and roles that do not have system_admin
@@ -19555,7 +19942,7 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19623,7 +20010,7 @@ GPUdb.prototype.has_proc_request = function(request, callback) {
  *
  * @param {String} proc_name  Name of the proc to check for existence.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19719,7 +20106,7 @@ GPUdb.prototype.has_role_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19788,7 +20175,7 @@ GPUdb.prototype.has_schema_request = function(request, callback) {
  *                              href="../../../concepts/tables/#table-name-resolution"
  *                              target="_top">name resolution rules</a>.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19857,7 +20244,7 @@ GPUdb.prototype.has_table_request = function(request, callback) {
  *                             href="../../../concepts/tables/#table-name-resolution"
  *                             target="_top">name resolution rules</a>.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -19923,7 +20310,7 @@ GPUdb.prototype.has_type_request = function(request, callback) {
  * @param {String} type_id  Id of the type returned in response to {@linkcode
  *                          GPUdb#create_type} request.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -20148,6 +20535,14 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                          records
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'pk_conflict_predicate_higher': The record
+ *                                  with higher value for the column resolves
+ *                                  the primary-key insert conflict. The
+ *                                  default value is ''.
+ *                              <li>'pk_conflict_predicate_lower': The record
+ *                                  with lower value for the column resolves
+ *                                  the primary-key insert conflict. The
+ *                                  default value is ''.
  *                              <li>'return_record_ids': If <code>true</code>
  *                                  then return the internal record id along
  *                                  for each inserted record.
@@ -20204,7 +20599,7 @@ GPUdb.prototype.insert_records_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -20366,7 +20761,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                              ends in .psv, the text delimiter will be
  *                              defaulted to a pipe character (|).
  * @param {Object} modify_columns  Not implemented yet. The default value is an
- *                                 empty dict ( {} ).
+ *                                 empty object ( {} ).
  * @param {Object} create_table_options  Options from {@linkcode
  *                                       GPUdb#create_table}, allowing the
  *                                       structure of the table to be defined
@@ -20553,7 +20948,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                               strategy</a> for the table and
  *                                               its columns.
  *                                       </ul>
- *                                       The default value is an empty dict (
+ *                                       The default value is an empty object (
  *                                       {} ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -20897,6 +21292,18 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                              <li>'primary_keys': Comma separated list of
  *                                  column names to set as primary keys, when
  *                                  not specified in the type.
+ *                              <li>'schema_registry_connection_retries':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_connection_timeout':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_max_consecutive_connection_failures':
+ *                                  Max records to skip due to SR connection
+ *                                  failures, before failing
+ *                              <li>'max_consecutive_invalid_schema_failure':
+ *                                  Max records to skip due to schema related
+ *                                  errors, before failing
  *                              <li>'schema_registry_schema_name': Name of the
  *                                  Avro schema in the schema registry to use
  *                                  when reading Avro records.
@@ -20905,6 +21312,9 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  specified in the type.
  *                              <li>'skip_lines': Skip number of lines from
  *                                  begining of file.
+ *                              <li>'start_offsets': Starting offsets by
+ *                                  partition to fetch from kafka. A comma
+ *                                  separated list of partition:offset pairs.
  *                              <li>'subscribe': Continuously poll the data
  *                                  source to check for new data and load it
  *                                  into the table.
@@ -21029,6 +21439,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'type_inference_max_records_read'
  *                              <li>'type_inference_mode': Optimize type
  *                                  inferencing for either speed or accuracy.
  *                                  Supported values:
@@ -21071,7 +21482,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -21163,7 +21574,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  * @param {String} data_text  Records formatted as delimited text
  * @param {String} data_bytes  Records formatted as binary data
  * @param {Object} modify_columns  Not implemented yet. The default value is an
- *                                 empty dict ( {} ).
+ *                                 empty object ( {} ).
  * @param {Object} create_table_options  Options used when creating the target
  *                                       table. Includes type to use. The other
  *                                       options match those in {@linkcode
@@ -21350,7 +21761,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                               strategy</a> for the table and
  *                                               its columns.
  *                                       </ul>
- *                                       The default value is an empty dict (
+ *                                       The default value is an empty object (
  *                                       {} ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -21671,6 +22082,18 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  list of column names, to set as primary
  *                                  keys, when not specified in the type. The
  *                                  default value is ''.
+ *                              <li>'schema_registry_connection_retries':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_connection_timeout':
+ *                                  Confluent Schema registry connection
+ *                                  timeout (in Secs)
+ *                              <li>'schema_registry_max_consecutive_connection_failures':
+ *                                  Max records to skip due to SR connection
+ *                                  failures, before failing
+ *                              <li>'max_consecutive_invalid_schema_failure':
+ *                                  Max records to skip due to schema related
+ *                                  errors, before failing
  *                              <li>'schema_registry_schema_id'
  *                              <li>'schema_registry_schema_name'
  *                              <li>'schema_registry_schema_version'
@@ -21800,6 +22223,8 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'type_inference_max_records_read': The
+ *                                  default value is ''.
  *                              <li>'type_inference_mode': optimize type
  *                                  inference for:
  *                                  Supported values:
@@ -21842,7 +22267,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -21928,7 +22353,7 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  * @param {String} remote_query  Query for which result data needs to be
  *                               imported
  * @param {Object} modify_columns  Not implemented yet. The default value is an
- *                                 empty dict ( {} ).
+ *                                 empty object ( {} ).
  * @param {Object} create_table_options  Options used when creating the target
  *                                       table.
  *                                       <ul>
@@ -22104,7 +22529,7 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                                               strategy</a> for the table and
  *                                               its columns.
  *                                       </ul>
- *                                       The default value is an empty dict (
+ *                                       The default value is an empty object (
  *                                       {} ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -22293,7 +22718,7 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -22632,7 +23057,7 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                                          allowed value is 500.
  *                                  </ul>
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -22743,7 +23168,7 @@ GPUdb.prototype.insert_symbol_request = function(request, callback) {
  *                                  then '00FF00' (i.e. green) is used by
  *                                  default.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -22840,7 +23265,7 @@ GPUdb.prototype.kill_proc_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -22984,7 +23409,7 @@ GPUdb.prototype.lock_table_request = function(request, callback) {
  *                            </ul>
  *                            The default value is 'status'.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -23142,6 +23567,8 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                       the graph
  *                                   <li>'match_embedding': Creates vector node
  *                                       embeddings
+ *                                   <li>'match_isochrone': Solves for
+ *                                       isochrones for a set of input sources
  *                               </ul>
  *                               The default value is 'markov_chain'.
  * @param {String} solution_table  The name of the table used to store the
@@ -23611,8 +24038,13 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  which is the proportionality constant in
  *                                  fornt of the gradient term in successive
  *                                  iterations. The default value is '0.3'.
+ *                              <li>'max_radius': For the
+ *                                  <code>match_isochrone</code> solver only.
+ *                                  Sets the maximal reachability limmit for
+ *                                  computing isochrones. Zero means no limit.
+ *                                  The default value is '0.0'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -23817,7 +24249,7 @@ GPUdb.prototype.merge_records_request = function(request, callback) {
  *                              <li>'view_id': view this result table is part
  *                                  of. The default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24139,7 +24571,7 @@ GPUdb.prototype.modify_graph_request = function(request, callback) {
  *                                  will be appended into this table. The
  *                                  default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24282,7 +24714,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                 values in an identifier combination, the
  *                                 number of values specified must match across
  *                                 the combination. The default value is an
- *                                 empty list ( [] ).
+ *                                 empty array ( [] ).
  * @param {String} adjacency_table  Name of the table to store the resulting
  *                                  adjacencies, in [schema_name.]table_name
  *                                  format, using standard <a
@@ -24384,7 +24816,7 @@ GPUdb.prototype.query_graph_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24489,7 +24921,7 @@ GPUdb.prototype.repartition_graph_request = function(request, callback) {
  *                              <li>'sql_request_avro_json': The default value
  *                                  is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24644,6 +25076,8 @@ GPUdb.prototype.revoke_permission_request = function(request, callback) {
  *                                 <li>'insert': Insert access to tables.
  *                                 <li>'read': Ability to read, list and use
  *                                     the object.
+ *                                 <li>'send_alert': Ability to send system
+ *                                     alerts.
  *                                 <li>'update': Update access to the table.
  *                                 <li>'user_admin': Access to administer users
  *                                     and roles that do not have system_admin
@@ -24657,7 +25091,7 @@ GPUdb.prototype.revoke_permission_request = function(request, callback) {
  *                                  columns, comma-separated. The default value
  *                                  is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24744,7 +25178,7 @@ GPUdb.prototype.revoke_permission_credential_request = function(request, callbac
  *                                  existing credential, or an empty string to
  *                                  revoke access on all credentials.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24828,7 +25262,7 @@ GPUdb.prototype.revoke_permission_datasource_request = function(request, callbac
  *                                  existing data source, or an empty string to
  *                                  revoke permission from all data sources.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24914,7 +25348,7 @@ GPUdb.prototype.revoke_permission_directory_request = function(request, callback
  * @param {String} directory_name  Name of the KiFS directory to which the
  *                                 permission revokes access
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -24995,7 +25429,7 @@ GPUdb.prototype.revoke_permission_proc_request = function(request, callback) {
  *                            string if the permission grants access to all
  *                            procs.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25075,9 +25509,10 @@ GPUdb.prototype.revoke_permission_system_request = function(request, callback) {
  *                                     all tables.
  *                                 <li>'system_read': Read-only access to all
  *                                     tables.
+ *                                 <li>'system_send_alert': Send system alerts.
  *                             </ul>
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25169,7 +25604,7 @@ GPUdb.prototype.revoke_permission_table_request = function(request, callback) {
  *                              <li>'columns': Apply security to these columns,
  *                                  comma-separated. The default value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25241,7 +25676,7 @@ GPUdb.prototype.revoke_role_request = function(request, callback) {
  *                         membership in <code>role</code>. Must be an existing
  *                         user or role.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25357,7 +25792,7 @@ GPUdb.prototype.show_credential_request = function(request, callback) {
  *                                  specified, information about all
  *                                  credentials will be returned.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25427,7 +25862,7 @@ GPUdb.prototype.show_datasink_request = function(request, callback) {
  *                       existing data sink. If '*' is specified, information
  *                       about all data sinks will be returned.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25499,7 +25934,7 @@ GPUdb.prototype.show_datasource_request = function(request, callback) {
  *                       existing data source. If '*' is specified, information
  *                       about all data sources will be returned.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25570,7 +26005,7 @@ GPUdb.prototype.show_directories_request = function(request, callback) {
  *                                 shows all directories. The default value is
  *                                 ''.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25658,8 +26093,17 @@ GPUdb.prototype.show_environment_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'show_names_only': If <code>true</code>
+ *                                  only return the names of the installed
+ *                                  environments and omit package listing.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25734,7 +26178,7 @@ GPUdb.prototype.show_files_request = function(request, callback) {
  *                          of zero or more characters, and question mark (?)
  *                          to indicate a single character.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -25864,7 +26308,7 @@ GPUdb.prototype.show_graph_request = function(request, callback) {
  *                                  is to send to get information about all the
  *                                  servers.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26032,7 +26476,7 @@ GPUdb.prototype.show_proc_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26131,7 +26575,7 @@ GPUdb.prototype.show_proc_status_request = function(request, callback) {
  *                                  {@linkcode GPUdb#execute_proc}. The default
  *                                  value is ''.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26242,7 +26686,7 @@ GPUdb.prototype.show_resource_objects_request = function(request, callback) {
  *                                  tables to restrict the results to. Use '*'
  *                                  to show all tables.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26306,7 +26750,7 @@ GPUdb.prototype.show_resource_statistics_request = function(request, callback) {
  * Returns statistics on a per-rank basis.
  *
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26404,7 +26848,7 @@ GPUdb.prototype.show_resource_groups_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26489,7 +26933,7 @@ GPUdb.prototype.show_schema_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26572,7 +27016,7 @@ GPUdb.prototype.show_security_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26656,7 +27100,7 @@ GPUdb.prototype.show_sql_proc_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26742,7 +27186,7 @@ GPUdb.prototype.show_statistics_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26812,7 +27256,7 @@ GPUdb.prototype.show_system_properties_request = function(request, callback) {
  *                                  names of properties requested. If not
  *                                  specified, all properties will be returned.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26876,7 +27320,7 @@ GPUdb.prototype.show_system_status_request = function(request, callback) {
  * admin tool uses it to present server related information to the user.
  *
  * @param {Object} options  Optional parameters, currently unused. The default
- *                          value is an empty dict ( {} ).
+ *                          value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -26942,7 +27386,7 @@ GPUdb.prototype.show_system_timing_request = function(request, callback) {
  * information to the user.
  *
  * @param {Object} options  Optional parameters, currently unused. The default
- *                          value is an empty dict ( {} ).
+ *                          value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27055,6 +27499,14 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                             and views.
  * @param {Object} options  Optional parameters.
  *                          <ul>
+ *                              <li>'dependencies': Include view dependencies
+ *                                  in the output.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'force_synchronous': If <code>true</code>
  *                                  then the table sizes will wait for read
  *                                  lock before returning.
@@ -27064,6 +27516,19 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'true'.
+ *                              <li>'get_cached_sizes': If <code>true</code>
+ *                                  then the number of records in each table,
+ *                                  along with a cumulative count, will be
+ *                                  returned; blank, otherwise. This version
+ *                                  will return the sizes cached at rank 0,
+ *                                  which may be stale if there is a multihead
+ *                                  insert occuring.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'get_sizes': If <code>true</code> then the
  *                                  number of records in each table, along with
  *                                  a cumulative count, will be returned;
@@ -27074,13 +27539,11 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
- *                              <li>'get_cached_sizes': If <code>true</code>
- *                                  then the number of records in each table,
- *                                  along with a cumulative count, will be
- *                                  returned; blank, otherwise. This version
- *                                  will return the sizes cached at rank 0,
- *                                  which may be stale if there is a multihead
- *                                  insert occuring.
+ *                              <li>'no_error_if_not_exists': If
+ *                                  <code>false</code> will return an error if
+ *                                  the provided <code>table_name</code> does
+ *                                  not exist. If <code>true</code> then it
+ *                                  will return an empty result.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -27104,17 +27567,6 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'true'.
- *                              <li>'no_error_if_not_exists': If
- *                                  <code>false</code> will return an error if
- *                                  the provided <code>table_name</code> does
- *                                  not exist. If <code>true</code> then it
- *                                  will return an empty result.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
- *                                  The default value is 'false'.
  *                              <li>'get_column_info': If <code>true</code>
  *                                  then column info (memory usage, etc) will
  *                                  be returned.
@@ -27125,7 +27577,7 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27196,7 +27648,7 @@ GPUdb.prototype.show_table_metadata_request = function(request, callback) {
  *                                provided tables must exist, or an error is
  *                                returned.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27267,7 +27719,7 @@ GPUdb.prototype.show_table_monitors_request = function(request, callback) {
  *                                or a single entry with an empty string
  *                                returns all table monitors.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27345,7 +27797,7 @@ GPUdb.prototype.show_tables_by_type_request = function(request, callback) {
  *                        instead of the type_id to retrieve all tables with
  *                        the given label.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27416,7 +27868,7 @@ GPUdb.prototype.show_triggers_request = function(request, callback) {
  *                                information will be retrieved on all active
  *                                triggers.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27499,7 +27951,7 @@ GPUdb.prototype.show_types_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27567,7 +28019,7 @@ GPUdb.prototype.show_video_request = function(request, callback) {
  *                          target="_top">KiFS</a> paths for the videos to
  *                          show. If empty, shows all videos.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27646,7 +28098,7 @@ GPUdb.prototype.show_wal_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'true'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -27757,7 +28209,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                     an identifier combination, the number of
  *                                     values specified must match across the
  *                                     combination. The default value is an
- *                                     empty list ( [] ).
+ *                                     empty array ( [] ).
  * @param {String[]} restrictions  Additional restrictions to apply to the
  *                                 nodes/edges of an existing graph.
  *                                 Restrictions must be specified using <a
@@ -27783,7 +28235,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                 'RESTRICTIONS_VALUECOMPARED') to or replaced
  *                                 (in the case of
  *                                 'RESTRICTIONS_ONOFFCOMPARED'). The default
- *                                 value is an empty list ( [] ).
+ *                                 value is an empty array ( [] ).
  * @param {String} solver_type  The type of solver to use for the graph.
  *                              Supported values:
  *                              <ul>
@@ -27843,13 +28295,13 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                 e.g: 'NODE_WKTPOINT' for source nodes. For
  *                                 <code>BACKHAUL_ROUTING</code>, this list
  *                                 depicts the fixed assets. The default value
- *                                 is an empty list ( [] ).
+ *                                 is an empty array ( [] ).
  * @param {String[]} destination_nodes  It can be one of the nodal identifiers
  *                                      - e.g: 'NODE_WKTPOINT' for destination
  *                                      (target) nodes. For
  *                                      <code>BACKHAUL_ROUTING</code>, this
  *                                      list depicts the remote assets. The
- *                                      default value is an empty list ( [] ).
+ *                                      default value is an empty array ( [] ).
  * @param {String} solution_table  Name of the table to store the solution, in
  *                                 [schema_name.]table_name format, using
  *                                 standard <a
@@ -28022,7 +28474,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                  as it moves towards the target location.
  *                                  The default value is '70'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -28168,7 +28620,7 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  * @param {Object[]} data  An optional list of JSON encoded objects to insert,
  *                         one for each update, to be added if the particular
  *                         update did not match any objects. The default value
- *                         is an empty list ( [] ).
+ *                         is an empty array ( [] ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'global_expression': An optional global
@@ -28317,7 +28769,7 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                  GPUdb#insert_records} or {@linkcode
  *                                  GPUdb#get_records_from_collection}).
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -28410,9 +28862,9 @@ GPUdb.prototype.update_records_by_series_request = function(request, callback) {
  *                            href="../../../concepts/tables/#table-name-resolution"
  *                            target="_top">name resolution rules</a>. The
  *                            default value is ''.
- * @param {String[]} reserved  The default value is an empty list ( [] ).
+ * @param {String[]} reserved  The default value is an empty array ( [] ).
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -28644,7 +29096,7 @@ GPUdb.prototype.upload_files_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -28744,7 +29196,7 @@ GPUdb.prototype.upload_files_fromurl_request = function(request, callback) {
  * @param {String[]} urls  List of URLs to upload, for each respective file in
  *                         <code>file_names</code>.
  * @param {Object} options  Optional parameters. The default value is an empty
- *                          dict ( {} ).
+ *                          object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -29132,7 +29584,7 @@ GPUdb.prototype.visualize_image_chart_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'none'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -29571,7 +30023,7 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                     multiplied with (in the case of
  *                                     'WEIGHTS_FACTORSPECIFIED') the existing
  *                                     weight(s). The default value is an empty
- *                                     list ( [] ).
+ *                                     array ( [] ).
  * @param {String[]} restrictions  Additional restrictions to apply to the
  *                                 nodes/edges of an existing graph.
  *                                 Restrictions must be specified using <a
@@ -29594,7 +30046,7 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                 'RESTRICTIONS_VALUECOMPARED') to or replaced
  *                                 (in the case of
  *                                 'RESTRICTIONS_ONOFFCOMPARED'). The default
- *                                 value is an empty list ( [] ).
+ *                                 value is an empty array ( [] ).
  * @param {Number} num_levels  Number of equally-separated isochrones to
  *                             compute. The default value is 1.
  * @param {Boolean} generate_image  If set to <code>true</code>, generates a
@@ -29762,7 +30214,7 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                        <code>weights_on_edges</code> will
  *                                        override this value.
  *                                </ul>
- *                                The default value is an empty dict ( {} ).
+ *                                The default value is an empty object ( {} ).
  * @param {Object} contour_options  Solver specific parameters.
  *                                  <ul>
  *                                      <li>'projection': Spatial Reference
@@ -29872,7 +30324,8 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                          use when adding labels. The default
  *                                          value is '60'.
  *                                  </ul>
- *                                  The default value is an empty dict ( {} ).
+ *                                  The default value is an empty object ( {}
+ *                                  ).
  * @param {Object} options  Additional parameters.
  *                          <ul>
  *                              <li>'solve_table': Name of the table to host
@@ -29943,7 +30396,7 @@ GPUdb.prototype.visualize_isochrone_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'from_source'.
  *                          </ul>
- *                          The default value is an empty dict ( {} ).
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
