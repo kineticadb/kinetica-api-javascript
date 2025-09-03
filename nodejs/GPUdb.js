@@ -1006,7 +1006,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.2.2.1" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.2.3.0" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -2849,8 +2849,9 @@ GPUdb.prototype.admin_repair_table_request = function(request, callback) {
  *                                          corrupted chunks
  *                                      <li>'shrink_columns': Shrinks corrupted
  *                                          chunks to the shortest column
- *                                      <li>'replay_wal': Manually invokes wal
- *                                          replay on the table
+ *                                      <li>'replay_wal': Manually invokes
+ *                                          write-ahead log (WAL) replay on the
+ *                                          table
  *                                  </ul>
  *                              <li>'verify_all': If <code>false</code> only
  *                                  table chunk data already known to be
@@ -3541,11 +3542,8 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                                  <code>true</code>, orphaned table
  *                                  directories found on workers for which
  *                                  there is no corresponding metadata will be
- *                                  deleted. Must set
- *                                  <code>verify_persist</code> in
- *                                  <code>options</code> to <code>true</code>.
- *                                  It is recommended to run this while the
- *                                  database is offline OR set
+ *                                  deleted. It is recommended to run this
+ *                                  while the database is offline OR set
  *                                  <code>concurrent_safe</code> in
  *                                  <code>options</code> to <code>true</code>.
  *                                  Supported values:
@@ -3557,13 +3555,24 @@ GPUdb.prototype.admin_verify_db_request = function(request, callback) {
  *                              <li>'verify_orphaned_tables_only': If
  *                                  <code>true</code>, only the presence of
  *                                  orphaned table directories will be checked,
- *                                  all persistence checks will be skipped.
+ *                                  all persistence and table consistency
+ *                                  checks will be skipped.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'table_includes': Comma-separated list of
+ *                                  table names to include when verifying table
+ *                                  consistency on wokers. Cannot be used
+ *                                  simultaneously with
+ *                                  <code>table_excludes</code>.
+ *                              <li>'table_excludes': Comma-separated list of
+ *                                  table names to exclude when verifying table
+ *                                  consistency on wokers. Cannot be used
+ *                                  simultaneously with
+ *                                  <code>table_includes</code>.
  *                          </ul>
  *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -3903,9 +3912,9 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                              <li>'expression': Filter expression to apply to
  *                                  the table prior to computing the aggregate
  *                                  group by.
- *                              <li>'chunked_expression_evaluation': evaluate
- *                                  the filter expression during group-by chunk
- *                                  processing.
+ *                              <li>'pipelined_expression_evaluation': evaluate
+ *                                  the group-by during last JoinedSet filter
+ *                                  plan step.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -3959,6 +3968,10 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                  href="../../../rm/concepts/#tier-strategies"
  *                                  target="_top">tier strategy</a> for the
  *                                  table and its columns.
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for the
+ *                                  result table's columns.
  *                              <li>'result_table': The name of a table used to
  *                                  store the results, in
  *                                  [schema_name.]table_name format, using
@@ -4012,6 +4025,17 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'result_table_generate_soft_pk': If
+ *                                  <code>true</code> then set a soft primary
+ *                                  key for the result table. Must be used in
+ *                                  combination with the
+ *                                  <code>result_table</code> option.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'ttl': Sets the <a
  *                                  href="../../../concepts/ttl/"
  *                                  target="_top">TTL</a> of the table
@@ -4045,11 +4069,11 @@ GPUdb.prototype.aggregate_group_by_request = function(request, callback) {
  *                              <li>'grouping_sets': Customize the grouping
  *                                  attribute sets to compute the aggregates.
  *                                  These sets can include ROLLUP or CUBE
- *                                  operartors. The attribute sets should be
- *                                  enclosed in paranthesis and can include
+ *                                  operators. The attribute sets should be
+ *                                  enclosed in parentheses and can include
  *                                  composite attributes. All attributes
  *                                  specified in the grouping sets must present
- *                                  in the groupby attributes.
+ *                                  in the group-by attributes.
  *                              <li>'rollup': This option is used to specify
  *                                  the multilevel aggregates.
  *                              <li>'cube': This option is used to specify the
@@ -5158,6 +5182,10 @@ GPUdb.prototype.aggregate_unique_request = function(request, callback) {
  *                                  chunk to be used for the result table. Must
  *                                  be used in combination with the
  *                                  <code>result_table</code> option.
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for the
+ *                                  result table's columns.
  *                              <li>'view_id': ID of view of which the result
  *                                  table will be a member. The default value
  *                                  is ''.
@@ -5377,6 +5405,10 @@ GPUdb.prototype.aggregate_unpivot_request = function(request, callback) {
  *                                  chunk to be used for the result table. Must
  *                                  be used in combination with the
  *                                  <code>result_table</code> option.
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for the
+ *                                  result table's columns.
  *                              <li>'limit': The number of records to keep. The
  *                                  default value is ''.
  *                              <li>'ttl': Sets the <a
@@ -5444,6 +5476,105 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
 
         callback(err, data);
     });
+};
+
+/**
+ * Alters an existing database backup containing a current snapshot of existing
+ * objects.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_backup_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_backup_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: request.backup_name,
+        action: request.action,
+        value: request.value,
+        datasink_name: request.datasink_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/alter/backup", actual_request, callback);
+};
+
+/**
+ * Alters an existing database backup containing a current snapshot of existing
+ * objects.
+ *
+ * @param {String} backup_name  Name of the backup object to be altered
+ * @param {String} action  Operation to be applied.
+ *                         Supported values:
+ *                         <ul>
+ *                             <li>'checksum': Calculate checksum for backup
+ *                                 files
+ *                             <li>'ddl_only': Only save the DDL, do not backup
+ *                                 table data
+ *                             <li>'max_incremental_backups_to_keep': Maximum
+ *                                 number of incremental backups to keep
+ *                             <li>'merge': Merges all backup instances and
+ *                                 creates a single full backup
+ *                             <li>'purge': Purges backup instances
+ *                         </ul>
+ * @param {String} value  Action specific argument.
+ * @param {String} datasink_name  Datasink where backup will be stored.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'comment': Comments to store with the new
+ *                                  backup instance
+ *                              <li>'dry_run': Dry run of backup changes.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.alter_backup = function(backup_name, action, value, datasink_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.alter_backup(backup_name, action, value, datasink_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: backup_name,
+        action: action,
+        value: value,
+        datasink_name: datasink_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/alter/backup", actual_request, callback);
 };
 
 /**
@@ -6394,7 +6525,7 @@ GPUdb.prototype.alter_model = function(model_name, action, value, options, callb
 };
 
 /**
- * Alters the properties of an exisiting resource group to facilitate resource
+ * Alters the properties of an existing resource group to facilitate resource
  * management.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -6430,43 +6561,50 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
 };
 
 /**
- * Alters the properties of an exisiting resource group to facilitate resource
+ * Alters the properties of an existing resource group to facilitate resource
  * management.
  *
  * @param {String} name  Name of the group to be altered. Must be an existing
- *                       resource group name or an empty string when used
- *                       inconjunction with the is_default_group option.
+ *                       resource group name or an empty string when used in
+ *                       conjunction with <code>is_default_group</code>.
  * @param {Object} tier_attributes  Optional map containing tier names and
  *                                  their respective attribute group limits.
  *                                  The only valid attribute limit that can be
  *                                  set is max_memory (in bytes) for the VRAM &
  *                                  RAM tiers.  For instance, to set max VRAM
- *                                  capacity to 1GB and max RAM capacity to
- *                                  10GB, use:
+ *                                  capacity to 1GB per rank per GPU and max
+ *                                  RAM capacity to 10GB per rank, use:
  *                                  {'VRAM':{'max_memory':'1000000000'},
  *                                  'RAM':{'max_memory':'10000000000'}}.
  *                                  <ul>
  *                                      <li>'max_memory': Maximum amount of
- *                                          memory usable in the given tier at
- *                                          one time for this group.
+ *                                          memory usable at one time, per
+ *                                          rank, per GPU, for the VRAM tier;
+ *                                          or maximum amount of memory usable
+ *                                          at one time, per rank, for the RAM
+ *                                          tier.
  *                                  </ul>
  *                                  The default value is an empty object ( {}
  *                                  ).
  * @param {String} ranking  If the resource group ranking is to be updated,
  *                          this indicates the relative ranking among existing
  *                          resource groups where this resource group will be
- *                          moved; leave blank if not changing the ranking.
- *                          When using <code>before</code> or
- *                          <code>after</code>, specify which resource group
- *                          this one will be inserted before or after in
- *                          <code>adjoining_resource_group</code>.
+ *                          placed.
  *                          Supported values:
  *                          <ul>
- *                              <li>''
- *                              <li>'first'
- *                              <li>'last'
- *                              <li>'before'
- *                              <li>'after'
+ *                              <li>'': Don't change the ranking
+ *                              <li>'first': Make this resource group the new
+ *                                  first one in the ordering
+ *                              <li>'last': Make this resource group the new
+ *                                  last one in the ordering
+ *                              <li>'before': Place this resource group before
+ *                                  the one specified by
+ *                                  <code>adjoining_resource_group</code> in
+ *                                  the ordering
+ *                              <li>'after': Place this resource group after
+ *                                  the one specified by
+ *                                  <code>adjoining_resource_group</code> in
+ *                                  the ordering
  *                          </ul>
  *                          The default value is ''.
  * @param {String} adjoining_resource_group  If <code>ranking</code> is
@@ -6481,12 +6619,13 @@ GPUdb.prototype.alter_resource_group_request = function(request, callback) {
  *                          <ul>
  *                              <li>'max_cpu_concurrency': Maximum number of
  *                                  simultaneous threads that will be used to
- *                                  execute a request for this group. The
- *                                  minimum allowed value is '4'.
- *                              <li>'max_data': Maximum amount of cumulative
- *                                  ram usage regardless of tier status for
- *                                  this group. The minimum allowed value is
- *                                  '-1'.
+ *                                  execute a request, per rank, for this
+ *                                  group. The minimum allowed value is '4'.
+ *                              <li>'max_data': Maximum amount of data, per
+ *                                  rank, in bytes, that can be used by all
+ *                                  database objects within this group.  Set to
+ *                                  -1 to indicate no upper limit. The minimum
+ *                                  allowed value is '-1'.
  *                              <li>'max_scheduling_priority': Maximum priority
  *                                  of a scheduled task for this group. The
  *                                  minimum allowed value is '1'. The maximum
@@ -6784,7 +6923,7 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               simultaneous threads allocated
  *                                               to a given request, on each
  *                                               rank. Note that thread
- *                                               allocation may also be limted
+ *                                               allocation may also be limited
  *                                               by resource group limits
  *                                               and/or system load.
  *                                           <li>'chunk_size': Sets the number
@@ -6799,18 +6938,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               the target maximum data size
  *                                               for all columns in a chunk to
  *                                               be used for all new tables.
- *                                           <li>'evict_columns': Attempts to
- *                                               evict columns from memory to
- *                                               the persistent store.  Value
- *                                               string is a semicolon
- *                                               separated list of entries,
- *                                               each entry being a table name
- *                                               optionally followed by a comma
- *                                               and a comma separated list of
- *                                               column names to attempt to
- *                                               evict.  An empty value string
- *                                               will attempt to evict all
- *                                               tables and columns.
  *                                           <li>'execution_mode': Sets the
  *                                               execution_mode for kernel
  *                                               executions to the specified
@@ -6824,59 +6951,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               where external table data
  *                                               files are accessed from.  Path
  *                                               must exist on the head node
- *                                           <li>'flush_to_disk': Flushes any
- *                                               changes to any tables to the
- *                                               persistent store.  These
- *                                               changes include updates to the
- *                                               vector store, object store,
- *                                               and text search store.  Value
- *                                               string can be 'true', 'false'
- *                                               or 'text_search' to flush the
- *                                               text search store only.
- *                                           <li>'clear_cache': Clears cached
- *                                               results.  Useful to allow
- *                                               repeated timing of endpoints.
- *                                               Value string is the name of
- *                                               the table for which to clear
- *                                               the cached results, or an
- *                                               empty string to clear the
- *                                               cached results for all tables.
- *                                           <li>'communicator_test': Invoke
- *                                               the communicator test and
- *                                               report timing results. Value
- *                                               string is a semicolon
- *                                               separated list of
- *                                               [key]=[value] expressions.
- *                                               Expressions are:
- *                                               num_transactions=[num] where
- *                                               num is the number of request
- *                                               reply transactions to invoke
- *                                               per test; message_size=[bytes]
- *                                               where bytes is the size in
- *                                               bytes of the messages to send;
- *                                               check_values=[enabled] where
- *                                               if enabled is true the value
- *                                               of the messages received are
- *                                               verified.
- *                                           <li>'network_speed': Invoke the
- *                                               network speed test and report
- *                                               timing results. Value string
- *                                               is a semicolon-separated list
- *                                               of [key]=[value] expressions.
- *                                               Valid expressions are:
- *                                               seconds=[time] where time is
- *                                               the time in seconds to run the
- *                                               test; data_size=[bytes] where
- *                                               bytes is the size in bytes of
- *                                               the block to be transferred;
- *                                               threads=[number of threads];
- *                                               to_ranks=[space-separated list
- *                                               of ranks] where the list of
- *                                               ranks is the ranks that rank 0
- *                                               will send data to and get data
- *                                               from. If to_ranks is
- *                                               unspecified then all worker
- *                                               ranks are used.
  *                                           <li>'request_timeout': Number of
  *                                               minutes after which filtering
  *                                               (e.g., {@linkcode
@@ -6896,8 +6970,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               minimum allowed value is '0'.
  *                                               The maximum allowed value is
  *                                               '1000000'.
- *                                           <li>'max_grbc_batch_size':
- *                                               <DEVELOPER>
  *                                           <li>'enable_audit': Enable or
  *                                               disable auditing.
  *                                           <li>'audit_headers': Enable or
@@ -6926,12 +6998,6 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               allowed value is '0'. The
  *                                               maximum allowed value is
  *                                               '2147483647'.
- *                                           <li>'synchronous_compression':
- *                                               compress vector on
- *                                               set_compression (instead of
- *                                               waiting for background
- *                                               thread). The default value is
- *                                               'false'.
  *                                           <li>'enable_overlapped_equi_join':
  *                                               Enable overlapped-equi-join
  *                                               filter. The default value is
@@ -6991,13 +7057,22 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               system_metadata.retention_period
  *                                               value of the conf. The minimum
  *                                               allowed value is '1'.
- *                                           <li>'tcs_per_tom': Sets the
- *                                               tcs_per_tom value of the conf.
- *                                               The minimum allowed value is
- *                                               '2'. The maximum allowed value
- *                                               is '8192'.
- *                                           <li>'tps_per_tom': Sets the
- *                                               tps_per_tom value of the conf.
+ *                                           <li>'tcs_per_tom': Size of the
+ *                                               worker rank data calculation
+ *                                               thread pool.  This is
+ *                                               primarily used for
+ *                                               computation-based operations
+ *                                               such as aggregates and record
+ *                                               retrieval. The minimum allowed
+ *                                               value is '2'. The maximum
+ *                                               allowed value is '8192'.
+ *                                           <li>'tps_per_tom': Size of the
+ *                                               worker rank data processing
+ *                                               thread pool.  This includes
+ *                                               operations such as inserts,
+ *                                               updates, & deletes on table
+ *                                               data.  Multi-head inserts are
+ *                                               not affected by this limit.
  *                                               The minimum allowed value is
  *                                               '2'. The maximum allowed value
  *                                               is '8192'.
@@ -7046,6 +7121,28 @@ GPUdb.prototype.alter_system_properties_request = function(request, callback) {
  *                                               to apply when creating a KiFS
  *                                               directory (bytes). The minimum
  *                                               allowed value is '-1'.
+ *                                           <li>'compression_codec': The
+ *                                               default <a
+ *                                               href="../../../concepts/column_compression/"
+ *                                               target="_top">compression
+ *                                               algorithm</a> applied to any
+ *                                               column without a column-level
+ *                                               or table-level default
+ *                                               compression specified at the
+ *                                               time it was created
+ *                                           <li>'disk_auto_optimize_timeout':
+ *                                               Time interval in seconds after
+ *                                               which the database will apply
+ *                                               optimizations/transformations
+ *                                               to persisted data, such as
+ *                                               compression. The minimum
+ *                                               allowed value is '0'.
+ *                                           <li>'ha_consumer_replay_offset':
+ *                                               Initializes HA replay from the
+ *                                               given timestamp (as
+ *                                               milliseconds since unix
+ *                                               epoch). The minimum allowed
+ *                                               value is '-1'.
  *                                       </ul>
  * @param {Object} options  Optional parameters.
  *                          <ul>
@@ -7237,8 +7334,6 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  * @param {String} action  Modification operation to be applied.
  *                         Supported values:
  *                         <ul>
- *                             <li>'allow_homogeneous_tables': No longer
- *                                 supported; action will be ignored.
  *                             <li>'create_index': Creates a <a
  *                                 href="../../../concepts/indexes/#column-index"
  *                                 target="_top">column (attribute) index</a>,
@@ -7337,8 +7432,6 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 existing 'char4' column, both 'char4' and
  *                                 'dict' must be specified in the
  *                                 <code>options</code> map.
- *                             <li>'set_column_compression': No longer
- *                                 supported; action will be ignored.
  *                             <li>'delete_column': Deletes the column
  *                                 specified in <code>value</code> from the
  *                                 table specified in <code>table_name</code>.
@@ -7513,22 +7606,11 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                              <li>'column_properties': When adding or
  *                                  changing a column, set the column
  *                                  properties (strings, separated by a comma:
- *                                  data, store_only, text_search, char8, int8
- *                                  etc).
+ *                                  data, text_search, char8, int8 etc).
  *                              <li>'column_type': When adding or changing a
  *                                  column, set the column type (strings,
  *                                  separated by a comma: int, double, string,
  *                                  null etc).
- *                              <li>'compression_type': No longer supported;
- *                                  option will be ignored.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'none'
- *                                      <li>'snappy'
- *                                      <li>'lz4'
- *                                      <li>'lz4hc'
- *                                  </ul>
- *                                  The default value is 'snappy'.
  *                              <li>'copy_values_from_column':
  *                                  [DEPRECATED--please use
  *                                  <code>add_column_expression</code>
@@ -7926,7 +8008,7 @@ GPUdb.prototype.alter_table_monitor = function(topic_id, monitor_updates_map, op
 };
 
 /**
- * Alters properties of an exisiting <a
+ * Alters properties of an existing <a
  * href="../../../rm/concepts/#storage-tiers" target="_top">tier</a> to
  * facilitate <a href="../../../rm/concepts/" target="_top">resource
  * management</a>.
@@ -7965,7 +8047,7 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
 };
 
 /**
- * Alters properties of an exisiting <a
+ * Alters properties of an existing <a
  * href="../../../rm/concepts/#storage-tiers" target="_top">tier</a> to
  * facilitate <a href="../../../rm/concepts/" target="_top">resource
  * management</a>.
@@ -7975,11 +8057,12 @@ GPUdb.prototype.alter_tier_request = function(request, callback) {
  * <code>high_watermark</code> and <code>low_watermark</code> to 100.
  *
  * @param {String} name  Name of the tier to be altered. Must be an existing
- *                       tier group name.
+ *                       tier group name:  vram, ram, disk[n], persist,
+ *                       cold[n].
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'capacity': Maximum size in bytes this tier
- *                                  may hold at once.
+ *                                  may hold at once, per rank.
  *                              <li>'high_watermark': Threshold of usage of
  *                                  this tier's resource that once exceeded,
  *                                  will trigger watermark-based eviction from
@@ -8204,8 +8287,8 @@ GPUdb.prototype.alter_video = function(path, options, callback) {
 };
 
 /**
- * Alters table wal settings. Returns information about the requested table wal
- * modifications.
+ * Alters table write-ahead log (WAL) settings. Returns information about the
+ * requested table WAL modifications.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -8237,8 +8320,8 @@ GPUdb.prototype.alter_wal_request = function(request, callback) {
 };
 
 /**
- * Alters table wal settings. Returns information about the requested table wal
- * modifications.
+ * Alters table write-ahead log (WAL) settings. Returns information about the
+ * requested table WAL modifications.
  *
  * @param {String[]} table_names  List of tables to modify. An asterisk changes
  *                                the system settings.
@@ -8247,14 +8330,14 @@ GPUdb.prototype.alter_wal_request = function(request, callback) {
  *                              <li>'max_segment_size': Maximum size of an
  *                                  individual segment file
  *                              <li>'segment_count': Approximate number of
- *                                  segment files to split the wal across. Must
+ *                                  segment files to split the WAL across. Must
  *                                  be at least two.
  *                              <li>'sync_policy': Maximum size of an
  *                                  individual segment file.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'none': Disables the wal
- *                                      <li>'background': Wal entries are
+ *                                      <li>'none': Disables the WAL
+ *                                      <li>'background': WAL entries are
  *                                          periodically written instead of
  *                                          immediately after each operation
  *                                      <li>'flush': Protects entries in the
@@ -8263,7 +8346,7 @@ GPUdb.prototype.alter_wal_request = function(request, callback) {
  *                                          event of an OS crash
  *                                  </ul>
  *                              <li>'flush_frequency': Specifies how frequently
- *                                  wal entries are written with background
+ *                                  WAL entries are written with background
  *                                  sync. This is a global setting and can only
  *                                  be used with the system
  *                                  {options.table_names} specifier '*'.
@@ -8277,7 +8360,7 @@ GPUdb.prototype.alter_wal_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'true'.
  *                              <li>'override_non_default': If
- *                                  <code>true</code> tables with unique wal
+ *                                  <code>true</code> tables with unique WAL
  *                                  settings will be overridden when applying a
  *                                  system level change.
  *                                  Supported values:
@@ -8287,7 +8370,7 @@ GPUdb.prototype.alter_wal_request = function(request, callback) {
  *                                  </ul>
  *                                  The default value is 'false'.
  *                              <li>'restore_system_settings': If
- *                                  <code>true</code> tables with unique wal
+ *                                  <code>true</code> tables with unique WAL
  *                                  settings will be reverted to the current
  *                                  global settings. Cannot be used in
  *                                  conjunction with any other option.
@@ -8822,6 +8905,101 @@ GPUdb.prototype.clear_table_monitor = function(topic_id, options, callback) {
 };
 
 /**
+ * Clears (drops) tables in the database cluster. The operation is synchronous
+ * meaning that the tables will be cleared before the function returns. The
+ * response payload returns the status of the operation for each table
+ * requested.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.clear_tables_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_tables_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        table_names: (request.table_names !== undefined && request.table_names !== null) ? request.table_names : [],
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/clear/tables", actual_request, callback);
+};
+
+/**
+ * Clears (drops) tables in the database cluster. The operation is synchronous
+ * meaning that the tables will be cleared before the function returns. The
+ * response payload returns the status of the operation for each table
+ * requested.
+ *
+ * @param {String[]} table_names  Names of the tables to be cleared, in
+ *                                [schema_name.]table_name format, using
+ *                                standard <a
+ *                                href="../../../concepts/tables/#table-name-resolution"
+ *                                target="_top">name resolution rules</a>. Must
+ *                                be existing tables. Empty list clears all
+ *                                available tables, though this behavior is be
+ *                                prevented by default via gpudb.conf parameter
+ *                                'disable_clear_all'. The default value is an
+ *                                empty array ( [] ).
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'no_error_if_not_exists': If
+ *                                  <code>true</code> and if a table specified
+ *                                  in <code>table_names</code> does not exist
+ *                                  no error is returned. If <code>false</code>
+ *                                  and if a table specified in
+ *                                  <code>table_names</code> does not exist
+ *                                  then an error is returned.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.clear_tables = function(table_names, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.clear_tables(table_names, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        table_names: (table_names !== undefined && table_names !== null) ? table_names : [],
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/clear/tables", actual_request, callback);
+};
+
+/**
  * Clears or cancels the trigger identified by the specified handle. The output
  * returns the handle of the trigger cleared as well as indicating success or
  * failure of the trigger deactivation.
@@ -8962,6 +9140,173 @@ GPUdb.prototype.collect_statistics = function(table_name, column_names, options,
     };
 
     this.submit_request("/collect/statistics", actual_request, callback);
+};
+
+/**
+ * Creates a database backup containing a current snapshot of existing objects.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_backup_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_backup_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: request.backup_name,
+        backup_type: request.backup_type,
+        backup_objects_map: request.backup_objects_map,
+        datasink_name: request.datasink_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/create/backup", actual_request, callback);
+};
+
+/**
+ * Creates a database backup containing a current snapshot of existing objects.
+ *
+ * @param {String} backup_name  Name for this backup object. If the backup
+ *                              object already exists, only an incremental or
+ *                              differential backup can be made, unless
+ *                              recreate is specified
+ * @param {String} backup_type  Type of backup to create.
+ *                              Supported values:
+ *                              <ul>
+ *                                  <li>'incremental'
+ *                                  <li>'differential'
+ *                                  <li>'full'
+ *                              </ul>
+ * @param {Object} backup_objects_map  Map of objects to be captured in the
+ *                                     backup. Error if empty and creating full
+ *                                     backup. Error if non-empty when creating
+ *                                     an incremental or differential backup.
+ *                                     <ul>
+ *                                         <li>'all': All object types in a
+ *                                             schema (excludes permissions,
+ *                                             system configuration, host
+ *                                             secret key, KiFS directories and
+ *                                             user defined functions)
+ *                                         <li>'table': Database Table
+ *                                         <li>'credential': Credential
+ *                                         <li>'context': Context
+ *                                         <li>'datasink': Data Sink
+ *                                         <li>'datasource': Data Source
+ *                                         <li>'stored_procedure': SQL
+ *                                             Procedure
+ *                                         <li>'monitor': Table Monitor
+ *                                             (Stream)
+ *                                         <li>'user': User (internal and
+ *                                             external) and associated
+ *                                             permissions
+ *                                         <li>'role': Role, role members
+ *                                             (roles or users, recursively)
+ *                                             and associated permissions
+ *                                         <li>'configuration': If
+ *                                             <code>true</code>, backup the
+ *                                             database configuration file.
+ *                                             Supported values:
+ *                                             <ul>
+ *                                                 <li>'false'
+ *                                                 <li>'true'
+ *                                             </ul>
+ *                                             The default value is 'false'.
+ *                                     </ul>
+ * @param {String} datasink_name  Datasink where backup will be stored.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'comment': Comments to store with this
+ *                                  backup
+ *                              <li>'checksum': Calculate checksum for backup
+ *                                  files.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'true'.
+ *                              <li>'ddl_only': Only save the DDL, do not
+ *                                  backup table data.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'max_incremental_backups_to_keep': Maximum
+ *                                  number of incremental backups to keep. The
+ *                                  default value is '-1'.
+ *                              <li>'delete_intermediate_backups': When the
+ *                                  backup type is differential, delete any
+ *                                  intermediate incremental or differential
+ *                                  backups. This overrides
+ *                                  <code>max_incremental_backups_to_keep</code>.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'recreate': Replace the existing backup
+ *                                  object with a new full backup if it already
+ *                                  exists.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'dry_run': Dry run of backup.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.create_backup = function(backup_name, backup_type, backup_objects_map, datasink_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.create_backup(backup_name, backup_type, backup_objects_map, datasink_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: backup_name,
+        backup_type: backup_type,
+        backup_objects_map: backup_objects_map,
+        datasink_name: datasink_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/create/backup", actual_request, callback);
 };
 
 GPUdb.prototype.create_container_registry_request = function(request, callback) {
@@ -10111,12 +10456,6 @@ GPUdb.prototype.create_job_request = function(request, callback) {
  *                           <code>json</code>.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'remove_job_on_complete':
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
  *                              <li>'job_tag': Tag to use for submitted job.
  *                                  The same tag could be used on backup
  *                                  cluster to retrieve response for the job.
@@ -10290,6 +10629,29 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  with accumulated size less than chunk_size
  *                                  into a single chunk. The default value is
  *                                  'false'.
+ *                              <li>'max_virtual_chunk_size': Maximum number of
+ *                                  records per virtual-chunk. When set,
+ *                                  enables virtual chunking. Defaults to
+ *                                  chunk_size if virtual chunking otherwise
+ *                                  enabled.
+ *                              <li>'min_virtual_chunk_size': Minimum number of
+ *                                  records per virtual-chunk. When set,
+ *                                  enables virtual chunking. Defaults to
+ *                                  chunk_size if virtual chunking otherwise
+ *                                  enabled.
+ *                              <li>'enable_equi_join_lazy_result_store': Allow
+ *                                  using the lazy result store to cache
+ *                                  computation of one side of a multichunk
+ *                                  equi-join.  Reduces computation but also
+ *                                  reduces parallelism to the number of chunks
+ *                                  on the other side of the equi-join
+ *                              <li>'enable_predicate_equi_join_lazy_result_store':
+ *                                  Allow using the lazy result store to cache
+ *                                  computation of one side of a multichunk
+ *                                  predicate-equi-join. Reduces computation
+ *                                  but also reduces parallelism to the number
+ *                                  of chunks on the other side of the
+ *                                  equi-join
  *                              <li>'enable_pk_equi_join': Use equi-join to do
  *                                  primary key joins rather than using
  *                                  primary-key-index
@@ -10943,6 +11305,10 @@ GPUdb.prototype.create_projection_request = function(request, callback) {
  *                                  href="../../../rm/concepts/#tier-strategies"
  *                                  target="_top">tier strategy</a> for the
  *                                  table and its columns.
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for the
+ *                                  projection's columns.
  *                              <li>'join_window_functions': If set, window
  *                                  functions which require a reshard will be
  *                                  computed separately and joined back
@@ -11034,29 +11400,37 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                                  The only valid attribute limit that can be
  *                                  set is max_memory (in bytes) for the VRAM &
  *                                  RAM tiers.  For instance, to set max VRAM
- *                                  capacity to 1GB and max RAM capacity to
- *                                  10GB, use:
+ *                                  capacity to 1GB per rank per GPU and max
+ *                                  RAM capacity to 10GB per rank, use:
  *                                  {'VRAM':{'max_memory':'1000000000'},
  *                                  'RAM':{'max_memory':'10000000000'}}.
  *                                  <ul>
  *                                      <li>'max_memory': Maximum amount of
- *                                          memory usable in the given tier at
- *                                          one time for this group.
+ *                                          memory usable at one time, per
+ *                                          rank, per GPU, for the VRAM tier;
+ *                                          or maximum amount of memory usable
+ *                                          at one time, per rank, for the RAM
+ *                                          tier.
  *                                  </ul>
  *                                  The default value is an empty object ( {}
  *                                  ).
  * @param {String} ranking  Indicates the relative ranking among existing
  *                          resource groups where this new resource group will
- *                          be placed.  When using <code>before</code> or
- *                          <code>after</code>, specify which resource group
- *                          this one will be inserted before or after in
- *                          <code>adjoining_resource_group</code>.
+ *                          be placed.
  *                          Supported values:
  *                          <ul>
- *                              <li>'first'
- *                              <li>'last'
- *                              <li>'before'
- *                              <li>'after'
+ *                              <li>'first': Make this resource group the new
+ *                                  first one in the ordering
+ *                              <li>'last': Make this resource group the new
+ *                                  last one in the ordering
+ *                              <li>'before': Place this resource group before
+ *                                  the one specified by
+ *                                  <code>adjoining_resource_group</code> in
+ *                                  the ordering
+ *                              <li>'after': Place this resource group after
+ *                                  the one specified by
+ *                                  <code>adjoining_resource_group</code> in
+ *                                  the ordering
  *                          </ul>
  * @param {String} adjoining_resource_group  If <code>ranking</code> is
  *                                           <code>before</code> or
@@ -11070,12 +11444,13 @@ GPUdb.prototype.create_resource_group_request = function(request, callback) {
  *                          <ul>
  *                              <li>'max_cpu_concurrency': Maximum number of
  *                                  simultaneous threads that will be used to
- *                                  execute a request for this group. The
- *                                  minimum allowed value is '4'.
- *                              <li>'max_data': Maximum amount of cumulative
- *                                  ram usage regardless of tier status for
- *                                  this group. The minimum allowed value is
- *                                  '-1'.
+ *                                  execute a request, per rank, for this
+ *                                  group. The minimum allowed value is '4'.
+ *                              <li>'max_data': Maximum amount of data, per
+ *                                  rank, in bytes, that can be used by all
+ *                                  database objects within this group.  Set to
+ *                                  -1 to indicate no upper limit. The minimum
+ *                                  allowed value is '-1'.
  *                              <li>'max_scheduling_priority': Maximum priority
  *                                  of a scheduled task for this group. The
  *                                  minimum allowed value is '1'. The maximum
@@ -11326,9 +11701,36 @@ GPUdb.prototype.create_state_table = function(table_name, input_table_name, init
 };
 
 /**
- * Creates a new table. If a new table is being created, the type of the table
- * is given by <code>type_id</code>, which must be the ID of a currently
- * registered type (i.e. one created via {@linkcode GPUdb#create_type}).
+ * Creates a new table with the given type (definition of columns).  The type
+ * is specified in <code>type_id</code> as either a numerical type ID (as
+ * returned by {@linkcode GPUdb#create_type}) or as a list of columns, each
+ * specified as a list of the column name, data type, and any column
+ * attributes.
+ * <p>
+ * Example of a type definition with some parameters:
+ * <pre>
+ *
+ *     [
+ *         ["id", "int8", "primary_key"],
+ *         ["dept_id", "int8", "primary_key", "shard_key"],
+ *         ["manager_id", "int8", "nullable"],
+ *         ["first_name", "char32"],
+ *         ["last_name", "char64"],
+ *         ["salary", "decimal"],
+ *         ["hire_date", "date"]
+ *     ]
+ * </pre>
+ * Each column definition consists of the column name (which should meet the
+ * standard <a href="../../../concepts/tables/#table-naming-criteria"
+ * target="_top">column naming criteria</a>), the column's <a
+ * href="../../../concepts/types/#types-chart" target="_top">specific type</a>
+ * (int, long, float, double, string, bytes, or any of the properties map
+ * values from {@linkcode GPUdb#create_type}), and any <a
+ * href="../../../concepts/types/#types-data-handling" target="_top">data
+ * handling</a>, <a href="../../../concepts/types/#types-data-keys"
+ * target="_top">data key</a>, or <a
+ * href="../../../concepts/types/#types-data-replace" target="_top">data
+ * replacement</a> properties.
  * <p>
  * A table may optionally be designated to use a <a
  * href="../../../concepts/tables/#replication" target="_top">replicated</a>
@@ -11370,9 +11772,36 @@ GPUdb.prototype.create_table_request = function(request, callback) {
 };
 
 /**
- * Creates a new table. If a new table is being created, the type of the table
- * is given by <code>type_id</code>, which must be the ID of a currently
- * registered type (i.e. one created via {@linkcode GPUdb#create_type}).
+ * Creates a new table with the given type (definition of columns).  The type
+ * is specified in <code>type_id</code> as either a numerical type ID (as
+ * returned by {@linkcode GPUdb#create_type}) or as a list of columns, each
+ * specified as a list of the column name, data type, and any column
+ * attributes.
+ * <p>
+ * Example of a type definition with some parameters:
+ * <pre>
+ *
+ *     [
+ *         ["id", "int8", "primary_key"],
+ *         ["dept_id", "int8", "primary_key", "shard_key"],
+ *         ["manager_id", "int8", "nullable"],
+ *         ["first_name", "char32"],
+ *         ["last_name", "char64"],
+ *         ["salary", "decimal"],
+ *         ["hire_date", "date"]
+ *     ]
+ * </pre>
+ * Each column definition consists of the column name (which should meet the
+ * standard <a href="../../../concepts/tables/#table-naming-criteria"
+ * target="_top">column naming criteria</a>), the column's <a
+ * href="../../../concepts/types/#types-chart" target="_top">specific type</a>
+ * (int, long, float, double, string, bytes, or any of the properties map
+ * values from {@linkcode GPUdb#create_type}), and any <a
+ * href="../../../concepts/types/#types-data-handling" target="_top">data
+ * handling</a>, <a href="../../../concepts/types/#types-data-keys"
+ * target="_top">data key</a>, or <a
+ * href="../../../concepts/types/#types-data-replace" target="_top">data
+ * replacement</a> properties.
  * <p>
  * A table may optionally be designated to use a <a
  * href="../../../concepts/tables/#replication" target="_top">replicated</a>
@@ -11394,9 +11823,10 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                             for requests with existing table of the same
  *                             name and type ID may be suppressed by using the
  *                             <code>no_error_if_exists</code> option.
- * @param {String} type_id  ID of a currently registered type. All objects
- *                          added to the newly created table will be of this
- *                          type.
+ * @param {String} type_id  The type for the table, specified as either an
+ *                          existing table's numerical type ID (as returned by
+ *                          {@linkcode GPUdb#create_type}) or a type definition
+ *                          (as described above).
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'no_error_if_exists': If <code>true</code>,
@@ -11439,14 +11869,6 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  {@linkcode GPUdb#create_schema} to create a
  *                                  schema instead]  Indicates whether to
  *                                  create a schema instead of a table.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
- *                                  The default value is 'false'.
- *                              <li>'disallow_homogeneous_tables': No longer
- *                                  supported; value will be ignored.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -11569,12 +11991,9 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  href="../../../concepts/tables_memory_only/"
  *                                  target="_top">memory-only table</a>. A
  *                                  result table cannot contain columns with
- *                                  store_only or text_search <a
+ *                                  text_search <a
  *                                  href="../../../concepts/types/#data-handling"
- *                                  target="_top">data-handling</a> or that are
- *                                  <a
- *                                  href="../../../concepts/types/#primitive-types"
- *                                  target="_top">non-charN strings</a>, and it
+ *                                  target="_top">data-handling</a>, and it
  *                                  will not be retained if the server is
  *                                  restarted.
  *                                  Supported values:
@@ -11587,6 +12006,10 @@ GPUdb.prototype.create_table_request = function(request, callback) {
  *                                  href="../../../rm/concepts/#tier-strategies"
  *                                  target="_top">tier strategy</a> for the
  *                                  table and its columns.
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for
+ *                                  this table's columns.
  *                              <li>'load_vectors_policy': Set startup data
  *                                  loading scheme for the table.
  *                                  Supported values:
@@ -11722,7 +12145,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  * @param {String[]} filepaths  A list of file paths from which data will be
  *                              sourced;  For paths in <a
  *                              href="../../../tools/kifs/"
- *                              target="_top">KiFS</a>, use the uri prefix of
+ *                              target="_top">KiFS</a>, use the URI prefix of
  *                              kifs:// followed by the path to a file or
  *                              directory. File matching by prefix is
  *                              supported, e.g. kifs://dir/file would match
@@ -11936,6 +12359,12 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                               target="_top">tier
  *                                               strategy</a> for the table and
  *                                               its columns.
+ *                                           <li>'compression_codec': The
+ *                                               default <a
+ *                                               href="../../../concepts/column_compression/"
+ *                                               target="_top">compression
+ *                                               codec</a> for this table's
+ *                                               columns.
  *                                       </ul>
  *                                       The default value is an empty object (
  *                                       {} ).
@@ -12130,7 +12559,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  The default value is 'false'.
  *                              <li>'gdal_configuration_options': Comma
  *                                  separated list of gdal conf options, for
- *                                  the specific requets: key=value
+ *                                  the specific requests: key=value
  *                              <li>'ignore_existing_pk': Specifies the record
  *                                  collision error-suppression policy for
  *                                  inserting into a table with a <a
@@ -12332,8 +12761,8 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                              <li>'shard_keys': Comma separated list of
  *                                  column names to set as shard keys, when not
  *                                  specified in the type.
- *                              <li>'skip_lines': Skip number of lines from
- *                                  begining of file.
+ *                              <li>'skip_lines': Skip a number of lines from
+ *                                  the beginning of the file.
  *                              <li>'start_offsets': Starting offsets by
  *                                  partition to fetch from kafka. A comma
  *                                  separated list of partition:offset pairs.
@@ -12430,7 +12859,7 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  value is '"'.
  *                              <li>'text_search_columns': Add 'text_search'
  *                                  property to internally inferenced string
- *                                  columns. Comma seperated list of column
+ *                                  columns. Comma separated list of column
  *                                  names or '*' for all columns. To add
  *                                  'text_search' property only to string
  *                                  columns greater than or equal to a minimum
@@ -12655,6 +13084,31 @@ GPUdb.prototype.create_table_monitor_request = function(request, callback) {
  *                                  (e.g., TIMESTAMP).
  *                              <li>'expression': Filter expression to limit
  *                                  records for notification
+ *                              <li>'join_table_names': A comma-separated list
+ *                                  of tables (optionally with aliases) to
+ *                                  include in the join. The monitored table
+ *                                  <code>table_name</code> must be included,
+ *                                  representing only the newly inserted rows
+ *                                  (deltas) since the last notification. Other
+ *                                  tables can be any existing tables or views.
+ *                                  Aliases can be used with the 'table_name as
+ *                                  alias' syntax.
+ *                              <li>'join_column_names': A comma-separated list
+ *                                  of columns or expressions to include from
+ *                                  the joined tables. Column references can
+ *                                  use table names or aliases defined in
+ *                                  'join_table_names'. Each column can
+ *                                  optionally be aliased using 'as'. The
+ *                                  selected columns will also appear in the
+ *                                  notification output.
+ *                              <li>'join_expressions': Optional filter or join
+ *                                  expressions to apply when combining the
+ *                                  tables. Expressions are standard SQL-style
+ *                                  conditions and can reference any table or
+ *                                  alias listed in 'join_table_names'. This
+ *                                  corresponds to the WHERE clause of the
+ *                                  underlying join, and can include conditions
+ *                                  to filter the delta rows.
  *                              <li>'refresh_method': Method controlling when
  *                                  the table monitor reports changes to the
  *                                  <code>table_name</code>.
@@ -12932,15 +13386,38 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
 };
 
 /**
- * Creates a new type describing the layout of a table. The type definition is
- * a JSON string describing the fields (i.e. columns) of the type. Each field
- * consists of a name and a data type. Supported data types are: double, float,
- * int, long, string, and bytes. In addition, one or more properties can be
- * specified for each column which customize the memory usage and query
- * availability of that column.  Note that some properties are mutually
- * exclusive--i.e. they cannot be specified for any given column
- * simultaneously.  One example of mutually exclusive properties are
- * <code>data</code> and <code>store_only</code>.
+ * Creates a new type describing the columns of a table. The type definition is
+ * specified as a list of columns, each specified as a list of the column name,
+ * data type, and any column attributes.
+ * <p>
+ * Example of a type definition with some parameters:
+ * <pre>
+ *
+ *     [
+ *         ["id", "int8", "primary_key"],
+ *         ["dept_id", "int8", "primary_key", "shard_key"],
+ *         ["manager_id", "int8", "nullable"],
+ *         ["first_name", "char32"],
+ *         ["last_name", "char64"],
+ *         ["salary", "decimal"],
+ *         ["hire_date", "date"]
+ *     ]
+ * </pre>
+ * Each column definition consists of the column name (which should meet the
+ * standard <a href="../../../concepts/tables/#table-naming-criteria"
+ * target="_top">column naming criteria</a>), the column's <a
+ * href="../../../concepts/types/#types-chart" target="_top">specific type</a>
+ * (int, long, float, double, string, bytes, or any of the possible values for
+ * <code>properties</code>), and any <a
+ * href="../../../concepts/types/#types-data-handling" target="_top">data
+ * handling</a>, <a href="../../../concepts/types/#types-data-keys"
+ * target="_top">data key</a>, or <a
+ * href="../../../concepts/types/#types-data-replace" target="_top">data
+ * replacement</a> properties.
+ * <p>
+ * Note that some properties are mutually exclusive--i.e. they cannot be
+ * specified for any given column simultaneously.  One example of mutually
+ * exclusive properties are <code>primary_key</code> and <code>nullable</code>.
  * <p>
  * A single <a href="../../../concepts/tables/#primary-keys"
  * target="_top">primary key</a> and/or single <a
@@ -12953,28 +13430,6 @@ GPUdb.prototype.create_trigger_by_range = function(request_id, table_names, colu
  * parameters in the request, incoming objects with primary key values that
  * match existing objects will either overwrite (i.e. update) the existing
  * object or will be skipped and not added into the set.
- * <p>
- * Example of a type definition with some of the parameters:
- * <pre>
- *
- *     {"type":"record",
- *     "name":"point",
- *     "fields":[{"name":"msg_id","type":"string"},
- *             {"name":"x","type":"double"},
- *             {"name":"y","type":"double"},
- *             {"name":"TIMESTAMP","type":"double"},
- *             {"name":"source","type":"string"},
- *             {"name":"group_id","type":"string"},
- *             {"name":"OBJECT_ID","type":"string"}]
- *     }
- * </pre>
- * Properties:
- * <pre>
- *
- *     {"group_id":["store_only"],
- *     "msg_id":["store_only","text_search"]
- *     }
- * </pre>
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -13008,15 +13463,38 @@ GPUdb.prototype.create_type_request = function(request, callback) {
 };
 
 /**
- * Creates a new type describing the layout of a table. The type definition is
- * a JSON string describing the fields (i.e. columns) of the type. Each field
- * consists of a name and a data type. Supported data types are: double, float,
- * int, long, string, and bytes. In addition, one or more properties can be
- * specified for each column which customize the memory usage and query
- * availability of that column.  Note that some properties are mutually
- * exclusive--i.e. they cannot be specified for any given column
- * simultaneously.  One example of mutually exclusive properties are
- * <code>data</code> and <code>store_only</code>.
+ * Creates a new type describing the columns of a table. The type definition is
+ * specified as a list of columns, each specified as a list of the column name,
+ * data type, and any column attributes.
+ * <p>
+ * Example of a type definition with some parameters:
+ * <pre>
+ *
+ *     [
+ *         ["id", "int8", "primary_key"],
+ *         ["dept_id", "int8", "primary_key", "shard_key"],
+ *         ["manager_id", "int8", "nullable"],
+ *         ["first_name", "char32"],
+ *         ["last_name", "char64"],
+ *         ["salary", "decimal"],
+ *         ["hire_date", "date"]
+ *     ]
+ * </pre>
+ * Each column definition consists of the column name (which should meet the
+ * standard <a href="../../../concepts/tables/#table-naming-criteria"
+ * target="_top">column naming criteria</a>), the column's <a
+ * href="../../../concepts/types/#types-chart" target="_top">specific type</a>
+ * (int, long, float, double, string, bytes, or any of the possible values for
+ * <code>properties</code>), and any <a
+ * href="../../../concepts/types/#types-data-handling" target="_top">data
+ * handling</a>, <a href="../../../concepts/types/#types-data-keys"
+ * target="_top">data key</a>, or <a
+ * href="../../../concepts/types/#types-data-replace" target="_top">data
+ * replacement</a> properties.
+ * <p>
+ * Note that some properties are mutually exclusive--i.e. they cannot be
+ * specified for any given column simultaneously.  One example of mutually
+ * exclusive properties are <code>primary_key</code> and <code>nullable</code>.
  * <p>
  * A single <a href="../../../concepts/tables/#primary-keys"
  * target="_top">primary key</a> and/or single <a
@@ -13029,41 +13507,21 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  * parameters in the request, incoming objects with primary key values that
  * match existing objects will either overwrite (i.e. update) the existing
  * object or will be skipped and not added into the set.
- * <p>
- * Example of a type definition with some of the parameters:
- * <pre>
- *
- *     {"type":"record",
- *     "name":"point",
- *     "fields":[{"name":"msg_id","type":"string"},
- *             {"name":"x","type":"double"},
- *             {"name":"y","type":"double"},
- *             {"name":"TIMESTAMP","type":"double"},
- *             {"name":"source","type":"string"},
- *             {"name":"group_id","type":"string"},
- *             {"name":"OBJECT_ID","type":"string"}]
- *     }
- * </pre>
- * Properties:
- * <pre>
- *
- *     {"group_id":["store_only"],
- *     "msg_id":["store_only","text_search"]
- *     }
- * </pre>
  *
  * @param {String} type_definition  a JSON string describing the columns of the
- *                                  type to be registered.
+ *                                  type to be registered, as described above.
  * @param {String} label  A user-defined description string which can be used
  *                        to differentiate between tables and types with
  *                        otherwise identical schemas.
- * @param {Object} properties  Each key-value pair specifies the properties to
- *                             use for a given column where the key is the
- *                             column name.  All keys used must be relevant
- *                             column names for the given table.  Specifying
- *                             any property overrides the default properties
- *                             for that column (which is based on the column's
- *                             data type).
+ * @param {Object} properties  [DEPRECATED--please use these property values in
+ *                             the <code>type_definition</code> directly, as
+ *                             described at the top, instead]  Each key-value
+ *                             pair specifies the properties to use for a given
+ *                             column where the key is the column name.  All
+ *                             keys used must be relevant column names for the
+ *                             given table.  Specifying any property overrides
+ *                             the default properties for that column (which is
+ *                             based on the column's data type).
  *                             Valid values are:
  *                             <ul>
  *                                 <li>'data': Default property for all numeric
@@ -13075,29 +13533,7 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     href="../../../concepts/full_text_search/"
  *                                     target="_top">Full Text Search</a> for
  *                                     details and applicable string column
- *                                     types. Can be set independently of
- *                                     <code>data</code> and
- *                                     <code>store_only</code>.
- *                                 <li>'store_only': Persist the column value
- *                                     but do not make it available to queries
- *                                     (e.g. {@linkcode GPUdb#filter})-i.e. it
- *                                     is mutually exclusive to the
- *                                     <code>data</code> property. Any 'bytes'
- *                                     type column must have a
- *                                     <code>store_only</code> property. This
- *                                     property reduces system memory usage.
- *                                 <li>'disk_optimized': Works in conjunction
- *                                     with the <code>data</code> property for
- *                                     string columns. This property reduces
- *                                     system disk usage by disabling reverse
- *                                     string lookups. Queries like {@linkcode
- *                                     GPUdb#filter}, {@linkcode
- *                                     GPUdb#filter_by_list}, and {@linkcode
- *                                     GPUdb#filter_by_value} work as usual but
- *                                     {@linkcode GPUdb#aggregate_unique} and
- *                                     {@linkcode GPUdb#aggregate_group_by} are
- *                                     not allowed on columns with this
- *                                     property.
+ *                                     types.
  *                                 <li>'timestamp': Valid only for 'long'
  *                                     columns. Indicates that this field
  *                                     represents a timestamp and will be
@@ -13258,18 +13694,28 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     for making the column nullable.  The
  *                                     user must declare the type of the column
  *                                     as a union between its regular type and
- *                                     'null' in the avro schema for the record
+ *                                     'null' in the Avro schema for the record
  *                                     type in <code>type_definition</code>.
  *                                     For example, if a column is of type
  *                                     integer and is nullable, then the entry
- *                                     for the column in the avro schema must
+ *                                     for the column in the Avro schema must
  *                                     be: ['int', 'null'].  The C++, C#, Java,
  *                                     and Python APIs have built-in
  *                                     convenience for bypassing setting the
- *                                     avro schema by hand.  For those
+ *                                     Avro schema by hand.  For those
  *                                     languages, one can use this property as
  *                                     usual and not have to worry about the
- *                                     avro schema for the record.
+ *                                     Avro schema for the record.
+ *                                 <li>'compress': This property indicates that
+ *                                     this column should be <a
+ *                                     href="../../../concepts/column_compression/"
+ *                                     target="_top">compressed</a> with the
+ *                                     given codec and optional level; e.g.,
+ *                                     'compress(snappy)' for Snappy
+ *                                     compression and 'compress(zstd(7))' for
+ *                                     zstd level 7 compression.  This property
+ *                                     is primarily used in order to save disk
+ *                                     space.
  *                                 <li>'dict': This property indicates that
  *                                     this column should be <a
  *                                     href="../../../concepts/dictionary_encoding/"
@@ -13295,8 +13741,14 @@ GPUdb.prototype.create_type_request = function(request, callback) {
  *                                     upon any update.
  *                             </ul>
  *                             The default value is an empty object ( {} ).
- * @param {Object} options  Optional parameters. The default value is an empty
- *                          object ( {} ).
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for
+ *                                  this type's columns.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
  *
  * @returns {Promise} A promise that will be fulfilled with the response
@@ -13464,10 +13916,8 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  the output table. If the schema provided is
  *                                  non-existent, it will be automatically
  *                                  created. The default value is ''.
- *                              <li>'mode': If <code>merge_views</code>, then
- *                                  this operation will merge the provided
- *                                  views. All <code>table_names</code> must be
- *                                  views from the same underlying base table.
+ *                              <li>'mode': The mode describes what rows of the
+ *                                  tables being unioned will be retained.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'union_all': Retains all rows from
@@ -13495,23 +13945,12 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                          rows(including duplicates) that
  *                                          appear in both of the specified
  *                                          tables (only works on 2 tables).
- *                                      <li>'merge_views': Merge two or more
- *                                          views (or views of views) of the
- *                                          same base data set into a new view.
- *                                          If this mode is selected
- *                                          <code>input_column_names</code> AND
- *                                          <code>output_column_names</code>
- *                                          must be empty. The resulting view
- *                                          would match the results of a SQL OR
- *                                          operation, e.g., if filter 1
- *                                          creates a view using the expression
- *                                          'x = 20' and filter 2 creates a
- *                                          view using the expression 'x <=
- *                                          10', then the merge views operation
- *                                          creates a new view using the
- *                                          expression 'x = 20 OR x <= 10'.
  *                                  </ul>
  *                                  The default value is 'union_all'.
+ *                              <li>'long_hash': When true use 128 bit hash for
+ *                                  union-distinct, except, except_all,
+ *                                  intersect and intersect_all modes.
+ *                                  Otherwise use 64 bit hash.
  *                              <li>'chunk_size': Indicates the number of
  *                                  records per chunk to be used for this
  *                                  output table.
@@ -13561,6 +14000,15 @@ GPUdb.prototype.create_union_request = function(request, callback) {
  *                                  href="../../../rm/concepts/#tier-strategies"
  *                                  target="_top">tier strategy</a> for the
  *                                  table and its columns.
+ *                              <li>'compression_codec': The default <a
+ *                                  href="../../../concepts/column_compression/"
+ *                                  target="_top">compression codec</a> for
+ *                                  this table's columns.
+ *                              <li>'no_count': Return a count of 0 for the
+ *                                  union table response to avoid the cost of
+ *                                  counting; optimization needed for many
+ *                                  chunk virtual_union's. The default value is
+ *                                  'false'.
  *                          </ul>
  *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -14075,7 +14523,7 @@ GPUdb.prototype.delete_files_request = function(request, callback) {
  *
  * @param {String[]} file_names  An array of names of files to be deleted. File
  *                               paths may contain wildcard characters after
- *                               the KiFS directory delimeter.  Accepted
+ *                               the KiFS directory delimiter.  Accepted
  *                               wildcard characters are asterisk (*) to
  *                               represent any string of zero or more
  *                               characters, and question mark (?) to indicate
@@ -14651,7 +15099,7 @@ GPUdb.prototype.download_files_request = function(request, callback) {
  *
  * @param {String[]} file_names  An array of the file names to download from
  *                               KiFS. File paths may contain wildcard
- *                               characters after the KiFS directory delimeter.
+ *                               characters after the KiFS directory delimiter.
  *                               Accepted wildcard characters are asterisk (*)
  *                               to represent any string of zero or more
  *                               characters, and question mark (?) to indicate
@@ -15382,36 +15830,11 @@ GPUdb.prototype.execute_proc_request = function(request, callback) {
  *                                       [] ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'cache_input': A comma-delimited list of
- *                                  table names from
- *                                  <code>input_table_names</code> from which
- *                                  input data will be cached for use in
- *                                  subsequent calls to {@linkcode
- *                                  GPUdb#execute_proc} with the
- *                                  <code>use_cached_input</code> option.
- *                                  Cached input data will be retained until
- *                                  the proc status is cleared with the
- *                                  [clear_complete]{@linkcode
- *                                  GPUdb#show_proc_status} option of
- *                                  {@linkcode GPUdb#show_proc_status} and all
- *                                  proc instances using the cached data have
- *                                  completed. The default value is ''.
- *                              <li>'use_cached_input': A comma-delimited list
- *                                  of run IDs (as returned from prior calls to
- *                                  {@linkcode GPUdb#execute_proc}) of running
- *                                  or completed proc instances from which
- *                                  input data cached using the
- *                                  <code>cache_input</code> option will be
- *                                  used. Cached input data will not be used
- *                                  for any tables specified in
- *                                  <code>input_table_names</code>, but data
- *                                  from all other tables cached for the
- *                                  specified run IDs will be passed to the
- *                                  proc. If the same table was cached for
- *                                  multiple specified run IDs, the cached data
- *                                  from the first run ID specified in the list
- *                                  that includes that table will be used. The
- *                                  default value is ''.
+ *                              <li>'cache_input': No longer supported; option
+ *                                  will be ignored. The default value is ''.
+ *                              <li>'use_cached_input': No longer supported;
+ *                                  option will be ignored. The default value
+ *                                  is ''.
  *                              <li>'run_tag': A string that, if not empty, can
  *                                  be used in subsequent calls to {@linkcode
  *                                  GPUdb#show_proc_status} or {@linkcode
@@ -16214,7 +16637,7 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
  *                                  specified in <code>table_name</code> will
  *                                  be exported
  *                              <li>'jdbc_session_init_statement': Executes the
- *                                  statement per each jdbc session before
+ *                                  statement per each JDBC session before
  *                                  doing actual load. The default value is ''.
  *                              <li>'jdbc_connection_init_statement': Executes
  *                                  the statement once before doing actual
@@ -16223,9 +16646,10 @@ GPUdb.prototype.export_records_to_table_request = function(request, callback) {
  *                                  which source table is exported. When this
  *                                  option is specified remote_query cannot be
  *                                  specified. The default value is ''.
- *                              <li>'use_st_geomfrom_casts': Wraps parametrized
- *                                  variables with st_geomfromtext or
- *                                  st_geomfromwkb based on source column type.
+ *                              <li>'use_st_geomfrom_casts': Wraps
+ *                                  parameterized variables with
+ *                                  st_geomfromtext or st_geomfromwkb based on
+ *                                  source column type.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -20074,7 +20498,7 @@ GPUdb.prototype.has_role_request = function(request, callback) {
 /**
  * Checks if the specified user has the specified role.
  *
- * @param {String} principal  Name of the user for which role membersih is
+ * @param {String} principal  Name of the user for which role membership is
  *                            being checked. Must be an existing user. If
  *                            blank, will use the current user. The default
  *                            value is ''.
@@ -20732,7 +21156,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  * @param {String[]} filepaths  A list of file paths from which data will be
  *                              sourced;  For paths in <a
  *                              href="../../../tools/kifs/"
- *                              target="_top">KiFS</a>, use the uri prefix of
+ *                              target="_top">KiFS</a>, use the URI prefix of
  *                              kifs:// followed by the path to a file or
  *                              directory. File matching by prefix is
  *                              supported, e.g. kifs://dir/file would match
@@ -20947,6 +21371,12 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                               target="_top">tier
  *                                               strategy</a> for the table and
  *                                               its columns.
+ *                                           <li>'compression_codec': The
+ *                                               default <a
+ *                                               href="../../../concepts/column_compression/"
+ *                                               target="_top">compression
+ *                                               codec</a> for this table's
+ *                                               columns.
  *                                       </ul>
  *                                       The default value is an empty object (
  *                                       {} ).
@@ -21126,7 +21556,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  The default value is 'false'.
  *                              <li>'gdal_configuration_options': Comma
  *                                  separated list of gdal conf options, for
- *                                  the specific requets: key=value
+ *                                  the specific requests: key=value
  *                              <li>'ignore_existing_pk': Specifies the record
  *                                  collision error-suppression policy for
  *                                  inserting into a table with a <a
@@ -21310,8 +21740,8 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                              <li>'shard_keys': Comma separated list of
  *                                  column names to set as shard keys, when not
  *                                  specified in the type.
- *                              <li>'skip_lines': Skip number of lines from
- *                                  begining of file.
+ *                              <li>'skip_lines': Skip a number of lines from
+ *                                  the beginning of the file.
  *                              <li>'start_offsets': Starting offsets by
  *                                  partition to fetch from kafka. A comma
  *                                  separated list of partition:offset pairs.
@@ -21408,7 +21838,7 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  value is '"'.
  *                              <li>'text_search_columns': Add 'text_search'
  *                                  property to internally inferenced string
- *                                  columns. Comma seperated list of column
+ *                                  columns. Comma separated list of column
  *                                  names or '*' for all columns. To add
  *                                  'text_search' property only to string
  *                                  columns greater than or equal to a minimum
@@ -21760,28 +22190,17 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                               target="_top">tier
  *                                               strategy</a> for the table and
  *                                               its columns.
+ *                                           <li>'compression_codec': The
+ *                                               default <a
+ *                                               href="../../../concepts/column_compression/"
+ *                                               target="_top">compression
+ *                                               codec</a> for this table's
+ *                                               columns.
  *                                       </ul>
  *                                       The default value is an empty object (
  *                                       {} ).
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'avro_header_bytes': Optional number of
- *                                  bytes to skip when reading an avro record.
- *                              <li>'avro_num_records': Optional number of avro
- *                                  records, if data includes only records.
- *                              <li>'avro_schema': Optional string representing
- *                                  avro schema, for insert records in avro
- *                                  format, that does not include is schema.
- *                              <li>'avro_schemaless': When user provides
- *                                  'avro_schema', avro data is assumed to be
- *                                  schemaless, unless specified. Default is
- *                                  'true' when given avro_schema. Igonred when
- *                                  avro_schema is not given.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
  *                              <li>'bad_record_table_name': Optional name of a
  *                                  table to which records that were rejected
  *                                  are written.  The bad-record-table has the
@@ -21949,7 +22368,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  The default value is 'false'.
  *                              <li>'gdal_configuration_options': Comma
  *                                  separated list of gdal conf options, for
- *                                  the specific requets: key=value. The
+ *                                  the specific requests: key=value. The
  *                                  default value is ''.
  *                              <li>'ignore_existing_pk': Specifies the record
  *                                  collision error-suppression policy for
@@ -22094,15 +22513,15 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                              <li>'max_consecutive_invalid_schema_failure':
  *                                  Max records to skip due to schema related
  *                                  errors, before failing
- *                              <li>'schema_registry_schema_id'
- *                              <li>'schema_registry_schema_name'
- *                              <li>'schema_registry_schema_version'
+ *                              <li>'schema_registry_schema_name': Name of the
+ *                                  Avro schema in the schema registry to use
+ *                                  when reading Avro records.
  *                              <li>'shard_keys': Optional: comma separated
  *                                  list of column names, to set as primary
  *                                  keys, when not specified in the type. The
  *                                  default value is ''.
- *                              <li>'skip_lines': Skip number of lines from
- *                                  begining of file.
+ *                              <li>'skip_lines': Skip a number of lines from
+ *                                  the beginning of the file.
  *                              <li>'subscribe': Continuously poll the data
  *                                  source to check for new data and load it
  *                                  into the table.
@@ -22195,7 +22614,7 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                                  value is '"'.
  *                              <li>'text_search_columns': Add 'text_search'
  *                                  property to internally inferenced string
- *                                  columns. Comma seperated list of column
+ *                                  columns. Comma separated list of column
  *                                  names or '*' for all columns. To add
  *                                  text_search property only to string columns
  *                                  of minimum size, set also the option
@@ -22528,6 +22947,12 @@ GPUdb.prototype.insert_records_from_query_request = function(request, callback) 
  *                                               target="_top">tier
  *                                               strategy</a> for the table and
  *                                               its columns.
+ *                                           <li>'compression_codec': The
+ *                                               default <a
+ *                                               href="../../../concepts/column_compression/"
+ *                                               target="_top">compression
+ *                                               codec</a> for this table's
+ *                                               columns.
  *                                       </ul>
  *                                       The default value is an empty object (
  *                                       {} ).
@@ -22903,18 +23328,18 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                                          randomly generated between min and
  *                                          max and decimated down to the
  *                                          interval. If no max is provided the
- *                                          data is linerally generated
- *                                          starting at the minimum value
- *                                          (instead of generating random
- *                                          data). For non-decimated
- *                                          string-type columns the interval
- *                                          value is ignored. Instead the
- *                                          values are generated following the
- *                                          pattern: 'attrname_creationIndex#',
- *                                          i.e. the column name suffixed with
- *                                          an underscore and a running counter
+ *                                          data is linearly generated starting
+ *                                          at the minimum value (instead of
+ *                                          generating random data). For
+ *                                          non-decimated string-type columns
+ *                                          the interval value is ignored.
+ *                                          Instead the values are generated
+ *                                          following the pattern:
+ *                                          'attrname_creationIndex#', i.e. the
+ *                                          column name suffixed with an
+ *                                          underscore and a running counter
  *                                          (starting at 0). For string types
- *                                          with limited size (eg char4) the
+ *                                          with limited size (e.g. char4) the
  *                                          prefix is dropped. No nulls will be
  *                                          generated for nullable columns.
  *                                      <li>'null_percentage': If specified,
@@ -23001,18 +23426,18 @@ GPUdb.prototype.insert_records_random_request = function(request, callback) {
  *                                          randomly generated between min and
  *                                          max and decimated down to the
  *                                          interval. If no max is provided the
- *                                          data is linerally generated
- *                                          starting at the minimum value
- *                                          (instead of generating random
- *                                          data). For non-decimated
- *                                          string-type columns the interval
- *                                          value is ignored. Instead the
- *                                          values are generated following the
- *                                          pattern: 'attrname_creationIndex#',
- *                                          i.e. the column name suffixed with
- *                                          an underscore and a running counter
+ *                                          data is linearly generated starting
+ *                                          at the minimum value (instead of
+ *                                          generating random data). For
+ *                                          non-decimated string-type columns
+ *                                          the interval value is ignored.
+ *                                          Instead the values are generated
+ *                                          following the pattern:
+ *                                          'attrname_creationIndex#', i.e. the
+ *                                          column name suffixed with an
+ *                                          underscore and a running counter
  *                                          (starting at 0). For string types
- *                                          with limited size (eg char4) the
+ *                                          with limited size (e.g. char4) the
  *                                          prefix is dropped. No nulls will be
  *                                          generated for nullable columns.
  *                                      <li>'null_percentage': If specified and
@@ -23654,25 +24079,25 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  supply locations if/when 'permute_supplies'
  *                                  is true. The default value is '10000'.
  *                              <li>'left_turn_penalty': This will add an
- *                                  additonal weight over the edges labelled as
+ *                                  additional weight over the edges labeled as
  *                                  'left turn' if the 'add_turn' option
  *                                  parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
  *                                  creation. The default value is '0.0'.
  *                              <li>'right_turn_penalty': This will add an
- *                                  additonal weight over the edges labelled
+ *                                  additional weight over the edges labeled
  *                                  as' right turn' if the 'add_turn' option
  *                                  parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
  *                                  creation. The default value is '0.0'.
  *                              <li>'intersection_penalty': This will add an
- *                                  additonal weight over the edges labelled as
+ *                                  additional weight over the edges labeled as
  *                                  'intersection' if the 'add_turn' option
  *                                  parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
  *                                  creation. The default value is '0.0'.
  *                              <li>'sharp_turn_penalty': This will add an
- *                                  additonal weight over the edges labelled as
+ *                                  additional weight over the edges labeled as
  *                                  'sharp turn' or 'u-turn' if the 'add_turn'
  *                                  option parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
@@ -23703,7 +24128,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  <code>match_pickup_dropoff</code> solvers
  *                                  only. If this constraint is greater than
  *                                  zero (default) then the trucks/rides will
- *                                  skip travelling from one demand/pick
+ *                                  skip traveling from one demand/pick
  *                                  location to another if the cost between
  *                                  them is greater than this number (distance
  *                                  or time). Zero (default) value means no
@@ -23715,7 +24140,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  combination is checked for folding over
  *                                  patterns and can significantly increase the
  *                                  execution time depending on the chain width
- *                                  and the number of gps samples.
+ *                                  and the number of GPS samples.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true': Filter out the folded
@@ -23787,7 +24212,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  <code>match_supply_demand</code> solver
  *                                  only. If specified (true), supply side
  *                                  actors are permuted for the demand
- *                                  combinations during msdo optimization -
+ *                                  combinations during MSDO optimization -
  *                                  note that this option increases
  *                                  optimization time significantly - use of
  *                                  'max_combinations' option is recommended to
@@ -23813,10 +24238,10 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true': Sets only one visit per
- *                                          demand location by a salesman (tsm
+ *                                          demand location by a salesman (TSM
  *                                          mode)
  *                                      <li>'false': No preset limit (usual
- *                                          msdo mode)
+ *                                          MSDO mode)
  *                                  </ul>
  *                                  The default value is 'false'.
  *                              <li>'round_trip': For the
@@ -23992,7 +24417,7 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                              <li>'optimize_embedding_weights': For the
  *                                  <code>match_embedding</code> solvers only.
  *                                  Solves to find the optimal weights per sub
- *                                  feature in vector emdeddings.
+ *                                  feature in vector embeddings.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -24036,11 +24461,11 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  <code>match_embedding</code> solver only.
  *                                  It is otherwise known as the learning rate,
  *                                  which is the proportionality constant in
- *                                  fornt of the gradient term in successive
+ *                                  front of the gradient term in successive
  *                                  iterations. The default value is '0.3'.
  *                              <li>'max_radius': For the
  *                                  <code>match_isochrone</code> solver only.
- *                                  Sets the maximal reachability limmit for
+ *                                  Sets the maximal reachability limit for
  *                                  computing isochrones. Zero means no limit.
  *                                  The default value is '0.0'.
  *                          </ul>
@@ -24073,210 +24498,6 @@ GPUdb.prototype.match_graph = function(graph_name, sample_points, solve_method, 
     };
 
     this.submit_request("/match/graph", actual_request, callback);
-};
-
-/**
- * Create a new empty result table (specified by <code>table_name</code>), and
- * insert all records from source tables (specified by
- * <code>source_table_names</code>) based on the field mapping information
- * (specified by <code>field_maps</code>).
- * <p>
- * For merge records details and examples, see <a
- * href="../../../concepts/merge_records/" target="_top">Merge Records</a>.
- * For limitations, see <a
- * href="../../../concepts/merge_records/#limitations-and-cautions"
- * target="_top">Merge Records Limitations and Cautions</a>.
- * <p>
- * The field map (specified by <code>field_maps</code>) holds the
- * user-specified maps of target table column names to source table columns.
- * The array of <code>field_maps</code> must match one-to-one with the
- * <code>source_table_names</code>, e.g., there's a map present in
- * <code>field_maps</code> for each table listed in
- * <code>source_table_names</code>.
- *
- * @param {Object} request  Request object containing the parameters for the
- *                          operation.
- * @param {GPUdbCallback} callback  Callback that handles the response.
- *
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.merge_records_request = function(request, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.merge_records_request(request, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-    var actual_request = {
-        table_name: request.table_name,
-        source_table_names: request.source_table_names,
-        field_maps: request.field_maps,
-        options: (request.options !== undefined && request.options !== null) ? request.options : {}
-    };
-
-    this.submit_request("/merge/records", actual_request, callback);
-};
-
-/**
- * Create a new empty result table (specified by <code>table_name</code>), and
- * insert all records from source tables (specified by
- * <code>source_table_names</code>) based on the field mapping information
- * (specified by <code>field_maps</code>).
- * <p>
- * For merge records details and examples, see <a
- * href="../../../concepts/merge_records/" target="_top">Merge Records</a>.
- * For limitations, see <a
- * href="../../../concepts/merge_records/#limitations-and-cautions"
- * target="_top">Merge Records Limitations and Cautions</a>.
- * <p>
- * The field map (specified by <code>field_maps</code>) holds the
- * user-specified maps of target table column names to source table columns.
- * The array of <code>field_maps</code> must match one-to-one with the
- * <code>source_table_names</code>, e.g., there's a map present in
- * <code>field_maps</code> for each table listed in
- * <code>source_table_names</code>.
- *
- * @param {String} table_name  The name of the new result table for the records
- *                             to be merged into, in [schema_name.]table_name
- *                             format, using standard <a
- *                             href="../../../concepts/tables/#table-name-resolution"
- *                             target="_top">name resolution rules</a> and
- *                             meeting <a
- *                             href="../../../concepts/tables/#table-naming-criteria"
- *                             target="_top">table naming criteria</a>.  Must
- *                             NOT be an existing table.
- * @param {String[]} source_table_names  The list of names of source tables to
- *                                       get the records from, each in
- *                                       [schema_name.]table_name format, using
- *                                       standard <a
- *                                       href="../../../concepts/tables/#table-name-resolution"
- *                                       target="_top">name resolution
- *                                       rules</a>.  Must be existing table
- *                                       names.
- * @param {Object[]} field_maps  Contains a list of source/target column
- *                               mappings, one mapping for each source table
- *                               listed in <code>source_table_names</code>
- *                               being merged into the target table specified
- *                               by <code>table_name</code>.  Each mapping
- *                               contains the target column names (as keys)
- *                               that the data in the mapped source columns or
- *                               column <a
- *                               href="../../../concepts/expressions/"
- *                               target="_top">expressions</a> (as values) will
- *                               be merged into.  All of the source columns
- *                               being merged into a given target column must
- *                               match in type, as that type will determine the
- *                               type of the new target column.
- * @param {Object} options  Optional parameters.
- *                          <ul>
- *                              <li>'create_temp_table': If <code>true</code>,
- *                                  a unique temporary table name will be
- *                                  generated in the sys_temp schema and used
- *                                  in place of <code>table_name</code>. If
- *                                  <code>persist</code> is <code>false</code>,
- *                                  then this is always allowed even if the
- *                                  caller does not have permission to create
- *                                  tables. The generated name is returned in
- *                                  <code>qualified_table_name</code>.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
- *                                  The default value is 'false'.
- *                              <li>'collection_name': [DEPRECATED--please
- *                                  specify the containing schema for the
- *                                  merged table as part of
- *                                  <code>table_name</code> and use {@linkcode
- *                                  GPUdb#create_schema} to create the schema
- *                                  if non-existent]  Name of a schema for the
- *                                  newly created merged table specified by
- *                                  <code>table_name</code>.
- *                              <li>'is_replicated': Indicates the <a
- *                                  href="../../../concepts/tables/#distribution"
- *                                  target="_top">distribution scheme</a> for
- *                                  the data of the merged table specified in
- *                                  <code>table_name</code>.  If true, the
- *                                  table will be <a
- *                                  href="../../../concepts/tables/#replication"
- *                                  target="_top">replicated</a>.  If false,
- *                                  the table will be <a
- *                                  href="../../../concepts/tables/#random-sharding"
- *                                  target="_top">randomly sharded</a>.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
- *                                  The default value is 'false'.
- *                              <li>'ttl': Sets the <a
- *                                  href="../../../concepts/ttl/"
- *                                  target="_top">TTL</a> of the merged table
- *                                  specified in <code>table_name</code>.
- *                              <li>'persist': If <code>true</code>, then the
- *                                  table specified in <code>table_name</code>
- *                                  will be persisted and will not expire
- *                                  unless a <code>ttl</code> is specified.
- *                                  If <code>false</code>, then the table will
- *                                  be an in-memory table and will expire
- *                                  unless a <code>ttl</code> is specified
- *                                  otherwise.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
- *                                  The default value is 'true'.
- *                              <li>'chunk_size': Indicates the number of
- *                                  records per chunk to be used for the merged
- *                                  table specified in <code>table_name</code>.
- *                              <li>'chunk_column_max_memory': Indicates the
- *                                  target maximum data size for each column in
- *                                  a chunk to be used for the merged table
- *                                  specified in <code>table_name</code>.
- *                              <li>'chunk_max_memory': Indicates the target
- *                                  maximum data size for all columns in a
- *                                  chunk to be used for the merged table
- *                                  specified in <code>table_name</code>.
- *                              <li>'view_id': view this result table is part
- *                                  of. The default value is ''.
- *                          </ul>
- *                          The default value is an empty object ( {} ).
- * @param {GPUdbCallback} callback  Callback that handles the response.
- *
- * @returns {Promise} A promise that will be fulfilled with the response
- *                    object, if no callback function is provided.
- */
-GPUdb.prototype.merge_records = function(table_name, source_table_names, field_maps, options, callback) {
-    if (callback === undefined || callback === null) {
-        var self = this;
-
-        return new Promise( function( resolve, reject) {
-            self.merge_records(table_name, source_table_names, field_maps, options, function(err, response) {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    resolve( response );
-                }
-            });
-        });
-    }
-    var actual_request = {
-        table_name: table_name,
-        source_table_names: source_table_names,
-        field_maps: field_maps,
-        options: (options !== undefined && options !== null) ? options : {}
-    };
-
-    this.submit_request("/merge/records", actual_request, callback);
 };
 
 /**
@@ -24902,7 +25123,7 @@ GPUdb.prototype.repartition_graph_request = function(request, callback) {
  *                          <ul>
  *                              <li>'new_graph_name': If a non-empty value is
  *                                  specified, the original graph will be kept
- *                                  (non-default behaviour) and a new balanced
+ *                                  (non-default behavior) and a new balanced
  *                                  graph will be created under this given
  *                                  name.  When the value is empty (default),
  *                                  the generated 'balanced' graph will replace
@@ -24911,15 +25132,13 @@ GPUdb.prototype.repartition_graph_request = function(request, callback) {
  *                              <li>'source_node': The distributed shortest
  *                                  path solve is run from this source node to
  *                                  all the nodes in the graph to create
- *                                  balaced partitions using the iso-distance
+ *                                  balanced partitions using the iso-distance
  *                                  levels of the solution.  The source node is
  *                                  selected by the rebalance algorithm
  *                                  automatically (default case when the value
  *                                  is an empty string). Otherwise, the user
  *                                  specified node is used as the source. The
  *                                  default value is ''.
- *                              <li>'sql_request_avro_json': The default value
- *                                  is ''.
  *                          </ul>
  *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -24999,6 +25218,173 @@ GPUdb.prototype.reserve_resource = function(component, name, action, bytes_reque
     };
 
     this.submit_request("/reserve/resource", actual_request, callback);
+};
+
+/**
+ * Restores objects from a backup instance. Response from a backup restoration
+ * operation.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.restore_backup_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.restore_backup_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: (request.backup_name !== undefined && request.backup_name !== null) ? request.backup_name : "",
+        restore_objects_map: request.restore_objects_map,
+        datasource_name: request.datasource_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/restore/backup", actual_request, callback);
+};
+
+/**
+ * Restores objects from a backup instance. Response from a backup restoration
+ * operation.
+ *
+ * @param {String} backup_name  Name of the backup object, which must refer to
+ *                              a currently existing backup. The default value
+ *                              is ''.
+ * @param {Object} restore_objects_map  Map of objects to be restored from the
+ *                                      backup. Error if empty.
+ *                                      <ul>
+ *                                          <li>'all': All object types in a
+ *                                              schema (excludes permissions,
+ *                                              system configuration, host
+ *                                              secret key, KiFS directories
+ *                                              and user defined functions)
+ *                                          <li>'table': Database Table
+ *                                          <li>'credential': Credential
+ *                                          <li>'context': Context
+ *                                          <li>'datasink': Data Sink
+ *                                          <li>'datasource': Data Source
+ *                                          <li>'stored_procedure': SQL
+ *                                              Procedure
+ *                                          <li>'monitor': Table Monitor
+ *                                              (Stream)
+ *                                          <li>'user': User (internal and
+ *                                              external) and associated
+ *                                              permissions
+ *                                          <li>'role': Role, role members
+ *                                              (roles or users, recursively)
+ *                                              and associated permissions
+ *                                          <li>'configuration': If
+ *                                              <code>true</code>, restore the
+ *                                              database configuration file.
+ *                                              Supported values:
+ *                                              <ul>
+ *                                                  <li>'false'
+ *                                                  <li>'true'
+ *                                              </ul>
+ *                                              The default value is 'false'.
+ *                                      </ul>
+ * @param {String} datasource_name  Datasource where backup is located.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'backup_id': Backup instance ID to restore.
+ *                                  Leave empty to restore the most recent
+ *                                  backup instance. The default value is ''.
+ *                              <li>'restore_policy': Behavior to apply when
+ *                                  restoring objects that already exist.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'none': If an object to be restored
+ *                                          currently exists with the same
+ *                                          name, abort and return error
+ *                                      <li>'replace': If an object to be
+ *                                          restored currently exists with the
+ *                                          same name, replace it with the
+ *                                          backup version
+ *                                      <li>'rename': If an object to be
+ *                                          restored currently exists with the
+ *                                          same name, rename the original
+ *                                          version
+ *                                  </ul>
+ *                                  The default value is 'none'.
+ *                              <li>'renamed_objects_schema': If the restore
+ *                                  policy is rename, optionally use this
+ *                                  schema for renamed objects instead of a
+ *                                  default generated one. The default value is
+ *                                  ''.
+ *                              <li>'create_schema_if_not_exist': Create the
+ *                                  schema for an object to be restored if it
+ *                                  does not currently exist. Error otherwise.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'true'.
+ *                              <li>'ddl_only': Only recreates the objects from
+ *                                  their DDL, do not restore table data.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'checksum': Verify checksum for backup
+ *                                  files.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'false'
+ *                                      <li>'true'
+ *                                  </ul>
+ *                                  The default value is 'true'.
+ *                              <li>'dry_run': Does a dry-run restoration
+ *                                  operation.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.restore_backup = function(backup_name, restore_objects_map, datasource_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.restore_backup(backup_name, restore_objects_map, datasource_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: (backup_name !== undefined && backup_name !== null) ? backup_name : "",
+        restore_objects_map: restore_objects_map,
+        datasource_name: datasource_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/restore/backup", actual_request, callback);
 };
 
 /**
@@ -25339,11 +25725,11 @@ GPUdb.prototype.revoke_permission_directory_request = function(request, callback
  *                                 <li>'directory_read': For files in the
  *                                     directory, access to list files,
  *                                     download files, or use files in server
- *                                     side functions
+ *                                     side functions.
  *                                 <li>'directory_write': Access to upload
  *                                     files to, or delete files from, the
  *                                     directory. A user or role with write
- *                                     access automatically has read acceess
+ *                                     access automatically has read access.
  *                             </ul>
  * @param {String} directory_name  Name of the KiFS directory to which the
  *                                 permission revokes access
@@ -25703,6 +26089,105 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
     };
 
     this.submit_request("/revoke/role", actual_request, callback);
+};
+
+/**
+ * Shows information about a backup Returns detailed information about one or
+ * more backup instances.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_backup_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_backup_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: (request.backup_name !== undefined && request.backup_name !== null) ? request.backup_name : "",
+        datasource_name: request.datasource_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/show/backup", actual_request, callback);
+};
+
+/**
+ * Shows information about a backup Returns detailed information about one or
+ * more backup instances.
+ *
+ * @param {String} backup_name  Name of the backup object. An empty string or
+ *                              '*' will return all existing backups. The
+ *                              default value is ''.
+ * @param {String} datasource_name  Datasource where backup is located.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'backup_id': Backup instance ID to show.
+ *                                  Leave empty to show information from the
+ *                                  most recent backup instance in the
+ *                                  container. The default value is ''.
+ *                              <li>'show_contents': Shows the contents of the
+ *                                  specified backup_id.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'none': No backup contents
+ *                                      <li>'object_names': Object names only
+ *                                      <li>'object_files': Object names and
+ *                                          files
+ *                                  </ul>
+ *                                  The default value is 'none'.
+ *                              <li>'no_error_if_not_exists': If
+ *                                  <code>false</code> will return an error if
+ *                                  the provided <code>backup_name</code> does
+ *                                  not exist. If <code>true</code> then it
+ *                                  will return an empty result.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.show_backup = function(backup_name, datasource_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.show_backup(backup_name, datasource_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: (backup_name !== undefined && backup_name !== null) ? backup_name : "",
+        datasource_name: datasource_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/show/backup", actual_request, callback);
 };
 
 GPUdb.prototype.show_container_registry_request = function(request, callback) {
@@ -26173,7 +26658,7 @@ GPUdb.prototype.show_files_request = function(request, callback) {
  * @param {String[]} paths  File paths to show. Each path can be a KiFS
  *                          directory name, or a full path to a KiFS file. File
  *                          paths may contain wildcard characters after the
- *                          KiFS directory delimeter.  Accepted wildcard
+ *                          KiFS directory delimiter.  Accepted wildcard
  *                          characters are asterisk (*) to represent any string
  *                          of zero or more characters, and question mark (?)
  *                          to indicate a single character.
@@ -27349,7 +27834,7 @@ GPUdb.prototype.show_system_status = function(options, callback) {
 
 /**
  * Returns the last 100 database requests along with the request timing and
- * internal job id. The admin tool uses it to present request timing
+ * internal job ID. The admin tool uses it to present request timing
  * information to the user.
  *
  * @param {Object} request  Request object containing the parameters for the
@@ -27382,7 +27867,7 @@ GPUdb.prototype.show_system_timing_request = function(request, callback) {
 
 /**
  * Returns the last 100 database requests along with the request timing and
- * internal job id. The admin tool uses it to present request timing
+ * internal job ID. The admin tool uses it to present request timing
  * information to the user.
  *
  * @param {Object} options  Optional parameters, currently unused. The default
@@ -27516,13 +28001,22 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'true'.
+ *                              <li>'get_access_data': If <code>true</code>
+ *                                  then data about the last read, write, alter
+ *                                  and create will be returned.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'get_cached_sizes': If <code>true</code>
  *                                  then the number of records in each table,
  *                                  along with a cumulative count, will be
  *                                  returned; blank, otherwise. This version
  *                                  will return the sizes cached at rank 0,
  *                                  which may be stale if there is a multihead
- *                                  insert occuring.
+ *                                  insert occurring.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -27539,11 +28033,31 @@ GPUdb.prototype.show_table_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
+ *                              <li>'skip_additional_info': If
+ *                                  <code>true</code> then the response will
+ *                                  not populate the additional_info field.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'no_error_if_not_exists': If
  *                                  <code>false</code> will return an error if
  *                                  the provided <code>table_name</code> does
  *                                  not exist. If <code>true</code> then it
  *                                  will return an empty result.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'skip_temp_schemas': If <code>true</code>
+ *                                  then the table list will not include tables
+ *                                  from SYS_TEMP and other system temporary
+ *                                  schemas.  This is the default behavior for
+ *                                  non-admin users.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -28048,8 +28562,8 @@ GPUdb.prototype.show_video = function(paths, options, callback) {
 };
 
 /**
- * Requests table wal properties. Returns information about the requested table
- * wal entries.
+ * Requests table write-ahead log (WAL) properties. Returns information about
+ * the requested table WAL entries.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -28081,15 +28595,15 @@ GPUdb.prototype.show_wal_request = function(request, callback) {
 };
 
 /**
- * Requests table wal properties. Returns information about the requested table
- * wal entries.
+ * Requests table write-ahead log (WAL) properties. Returns information about
+ * the requested table WAL entries.
  *
  * @param {String[]} table_names  List of tables to query. An asterisk returns
  *                                all tables.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'show_settings': If <code>true</code>
- *                                  include a map of the wal settings for the
+ *                                  include a map of the WAL settings for the
  *                                  requested tables.
  *                                  Supported values:
  *                                  <ul>
@@ -28128,7 +28642,7 @@ GPUdb.prototype.show_wal = function(table_names, options, callback) {
 
 /**
  * Solves an existing graph for a type of problem (e.g., shortest path, page
- * rank, travelling salesman, etc.) using source nodes, destination nodes, and
+ * rank, traveling salesman, etc.) using source nodes, destination nodes, and
  * additional, optional weights and restrictions.
  * <p>
  * IMPORTANT: It's highly recommended that you review the <a
@@ -28175,7 +28689,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
 
 /**
  * Solves an existing graph for a type of problem (e.g., shortest path, page
- * rank, travelling salesman, etc.) using source nodes, destination nodes, and
+ * rank, traveling salesman, etc.) using source nodes, destination nodes, and
  * additional, optional weights and restrictions.
  * <p>
  * IMPORTANT: It's highly recommended that you review the <a
@@ -28265,8 +28779,8 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                      round-trip starting from the given
  *                                      source and visiting each given
  *                                      destination node once then returning to
- *                                      the source. Also known as the
- *                                      travelling salesman problem.
+ *                                      the source. Also known as the traveling
+ *                                      salesman problem.
  *                                  <li>'INVERSE_SHORTEST_PATH': Solves for
  *                                      finding the optimal path cost for each
  *                                      destination node to route to the source
@@ -28279,7 +28793,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                      give costs between max and min solution
  *                                      radia - Make sure to limit by the
  *                                      'max_solution_targets' option. Min cost
- *                                      shoudl be >= shortest_path cost.
+ *                                      should be >= shortest_path cost.
  *                                  <li>'STATS_ALL': Solves for graph
  *                                      statistics such as graph diameter,
  *                                      longest pairs, vertex valences,
@@ -28352,25 +28866,25 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                  <code>weights_on_edges</code> will override
  *                                  this value.
  *                              <li>'left_turn_penalty': This will add an
- *                                  additonal weight over the edges labelled as
+ *                                  additional weight over the edges labeled as
  *                                  'left turn' if the 'add_turn' option
  *                                  parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
  *                                  creation. The default value is '0.0'.
  *                              <li>'right_turn_penalty': This will add an
- *                                  additonal weight over the edges labelled
+ *                                  additional weight over the edges labeled
  *                                  as' right turn' if the 'add_turn' option
  *                                  parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
  *                                  creation. The default value is '0.0'.
  *                              <li>'intersection_penalty': This will add an
- *                                  additonal weight over the edges labelled as
+ *                                  additional weight over the edges labeled as
  *                                  'intersection' if the 'add_turn' option
  *                                  parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
  *                                  creation. The default value is '0.0'.
  *                              <li>'sharp_turn_penalty': This will add an
- *                                  additonal weight over the edges labelled as
+ *                                  additional weight over the edges labeled as
  *                                  'sharp turn' or 'u-turn' if the 'add_turn'
  *                                  option parameter of the {@linkcode
  *                                  GPUdb#create_graph} was invoked at graph
@@ -28392,7 +28906,7 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                                  it can potentially speed up the solver. The
  *                                  default value is '2000000'.
  *                              <li>'output_edge_path': If true then
- *                                  concatenated edge ids will be added as the
+ *                                  concatenated edge IDs will be added as the
  *                                  EDGE path column of the solution table for
  *                                  each source and target pair in shortest
  *                                  path solves.
@@ -28424,13 +28938,13 @@ GPUdb.prototype.solve_graph_request = function(request, callback) {
  *                              <li>'convergence_limit': For
  *                                  <code>PAGE_RANK</code> solvers only;
  *                                  Maximum percent relative threshold on the
- *                                  pagerank scores of each node between
+ *                                  page rank scores of each node between
  *                                  consecutive iterations to satisfy
  *                                  convergence. Default value is 1 (one)
  *                                  percent. The default value is '1.0'.
  *                              <li>'max_iterations': For
  *                                  <code>PAGE_RANK</code> solvers only;
- *                                  Maximum number of pagerank iterations for
+ *                                  Maximum number of page rank iterations for
  *                                  satisfying convergence. Default value is
  *                                  100. The default value is '100'.
  *                              <li>'max_runs': For all <code>CENTRALITY</code>
@@ -28673,10 +29187,11 @@ GPUdb.prototype.update_records_request = function(request, callback) {
  *                                  place; "insert collisions" will result in
  *                                  the collided-into record being updated with
  *                                  the values in
- *                                  <code>records_to_insert</code>/<code>records_to_insert_str</code>
- *                                  (if given).  If set to <code>false</code>,
- *                                  the existing collided-into record will
- *                                  remain unchanged, while the update will be
+ *                                  <code>records_to_insert</code> /
+ *                                  <code>records_to_insert_str</code> (if
+ *                                  given).  If set to <code>false</code>, the
+ *                                  existing collided-into record will remain
+ *                                  unchanged, while the update will be
  *                                  rejected and the error handled as
  *                                  determined by
  *                                  <code>ignore_existing_pk</code>.  If the
@@ -28898,7 +29413,7 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
 /**
  * Uploads one or more files to <a href="../../../tools/kifs/"
  * target="_top">KiFS</a>. There are two methods for uploading files: load
- * files in their entirety, or load files in parts. The latter is recommeded
+ * files in their entirety, or load files in parts. The latter is recommended
  * for files of approximately 60 MB or larger.
  * <p>
  * To upload files in their entirety, populate <code>file_names</code> with the
@@ -28940,7 +29455,7 @@ GPUdb.prototype.update_records_by_series = function(table_name, world_table_name
  * Each file path must reside in a top-level KiFS directory, i.e. one of the
  * directories listed in {@linkcode GPUdb#show_directories}. The user must have
  * write permission on the directory. Nested directories are permitted in file
- * name paths. Directories are deliniated with the directory separator of '/'.
+ * name paths. Directories are delineated with the directory separator of '/'.
  * For example, given the file path '/a/b/c/d.txt', 'a' must be a KiFS
  * directory.
  * <p>
@@ -28981,7 +29496,7 @@ GPUdb.prototype.upload_files_request = function(request, callback) {
 /**
  * Uploads one or more files to <a href="../../../tools/kifs/"
  * target="_top">KiFS</a>. There are two methods for uploading files: load
- * files in their entirety, or load files in parts. The latter is recommeded
+ * files in their entirety, or load files in parts. The latter is recommended
  * for files of approximately 60 MB or larger.
  * <p>
  * To upload files in their entirety, populate <code>file_names</code> with the
@@ -29023,7 +29538,7 @@ GPUdb.prototype.upload_files_request = function(request, callback) {
  * Each file path must reside in a top-level KiFS directory, i.e. one of the
  * directories listed in {@linkcode GPUdb#show_directories}. The user must have
  * write permission on the directory. Nested directories are permitted in file
- * name paths. Directories are deliniated with the directory separator of '/'.
+ * name paths. Directories are delineated with the directory separator of '/'.
  * For example, given the file path '/a/b/c/d.txt', 'a' must be a KiFS
  * directory.
  * <p>
@@ -29132,7 +29647,7 @@ GPUdb.prototype.upload_files = function(file_names, file_data, options, callback
  * Each file path must reside in a top-level KiFS directory, i.e. one of the
  * directories listed in {@linkcode GPUdb#show_directories}. The user must have
  * write permission on the directory. Nested directories are permitted in file
- * name paths. Directories are deliniated with the directory separator of '/'.
+ * name paths. Directories are delineated with the directory separator of '/'.
  * For example, given the file path '/a/b/c/d.txt', 'a' must be a KiFS
  * directory.
  * <p>
@@ -29177,7 +29692,7 @@ GPUdb.prototype.upload_files_fromurl_request = function(request, callback) {
  * Each file path must reside in a top-level KiFS directory, i.e. one of the
  * directories listed in {@linkcode GPUdb#show_directories}. The user must have
  * write permission on the directory. Nested directories are permitted in file
- * name paths. Directories are deliniated with the directory separator of '/'.
+ * name paths. Directories are delineated with the directory separator of '/'.
  * For example, given the file path '/a/b/c/d.txt', 'a' must be a KiFS
  * directory.
  * <p>
