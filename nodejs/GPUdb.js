@@ -298,6 +298,32 @@ function GPUdb(url, options) {
 
 } // end GPUdb
 
+/**
+ * Encodes a JSON object, or array of JSON objects, into JSON string(s) to be
+ * passed to GPUdb.
+ *
+ * @param {Object | Object[]} o The JSON object(s) to encode.
+ * @returns {String | String[]} The encoded JSON string(s).
+ */
+GPUdb.encode = function(o) {
+    if (Array.isArray(o)) {
+        var result = [];
+
+        for (var i = 0; i < o.length; i++) {
+            result.push(GPUdb.encode(o[i]));
+        }
+        return result;
+    } else {
+       return JSON.stringify(o, function(key, value) {
+            // Convert numbers (including floats and doubles) to strings
+            if (typeof value === 'number') {
+                return String(value);
+            }
+            return value;
+        });
+
+    }
+};
 
 /**
  * Adds an HTTP header to the map of additional HTTP headers to send to
@@ -547,14 +573,14 @@ GPUdb.prototype.submit_request = function(endpoint, request, callback) {
                 }
 
                 if (response.status === "OK") {
-                    // 'response.data_str' will be available for all calls except 'insert_records_from_json', which
-                    // has a different response object. So, in case, the first 'try' block fails to parse the
-                    // response, the second one in the 'catch' block will be invoked.
                     try {
+                        // 'response.data_str' will be available for all calls  where the request is of 'POST' type
+                        // which is the case for most of the endpoints like '/insert/records', '/get/records', etc.
                         var data = JSON.parse( response.data_str );
                     } catch (e) {
-                        // The following try-catch block handles the special case where the response is
-                        // in the form of a JSON which has the 'data' map.
+                        // The catch block handles the special case where the request is of 'GET'
+                        // type and the response is in the form of a JSON which has the 'data' map.
+                        // An example of such a call is '/insert/records/json'.
                         try {
                             var data = response.data;
                         } catch( e) {
@@ -1006,7 +1032,7 @@ GPUdb.Type.prototype.generate_schema = function() {
  * @readonly
  * @static
  */
-Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.2.3.0" });
+Object.defineProperty(GPUdb, "api_version", { enumerable: true, value: "7.2.3.1" });
 
 /**
  * Constant used with certain requests to indicate that the maximum allowed
@@ -1110,28 +1136,6 @@ GPUdb.decode_no_inf_nan = function(o) {
             else if (v === "NaN") return null;
             else return v;
         } );
-    }
-};
-
-
-/**
- * Encodes a JSON object, or array of JSON objects, into JSON string(s) to be
- * passed to GPUdb.
- *
- * @param {Object | Object[]} o The JSON object(s) to encode.
- * @returns {String | String[]} The encoded JSON string(s).
- */
-GPUdb.encode = function(o) {
-    if (Array.isArray(o)) {
-        var result = [];
-
-        for (var i = 0; i < o.length; i++) {
-            result.push(GPUdb.encode(o[i]));
-        }
-
-        return result;
-    } else {
-        return JSON.stringify(o);
     }
 };
 /**
@@ -2828,6 +2832,7 @@ GPUdb.prototype.admin_repair_table_request = function(request, callback) {
     }
     var actual_request = {
         table_names: request.table_names,
+        table_types: request.table_types,
         options: (request.options !== undefined && request.options !== null) ? request.options : {}
     };
 
@@ -2840,6 +2845,7 @@ GPUdb.prototype.admin_repair_table_request = function(request, callback) {
  *
  * @param {String[]} table_names  List of tables to query. An asterisk returns
  *                                all tables.
+ * @param {Object} table_types  internal: type_id per table.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'repair_policy': Corrective action to take.
@@ -2852,6 +2858,9 @@ GPUdb.prototype.admin_repair_table_request = function(request, callback) {
  *                                      <li>'replay_wal': Manually invokes
  *                                          write-ahead log (WAL) replay on the
  *                                          table
+ *                                      <li>'alter_table': Reset columns
+ *                                          modification after incomplete alter
+ *                                          column.
  *                                  </ul>
  *                              <li>'verify_all': If <code>false</code> only
  *                                  table chunk data already known to be
@@ -2871,12 +2880,12 @@ GPUdb.prototype.admin_repair_table_request = function(request, callback) {
  * @returns {Promise} A promise that will be fulfilled with the response
  *                    object, if no callback function is provided.
  */
-GPUdb.prototype.admin_repair_table = function(table_names, options, callback) {
+GPUdb.prototype.admin_repair_table = function(table_names, table_types, options, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
 
         return new Promise( function( resolve, reject) {
-            self.admin_repair_table(table_names, options, function(err, response) {
+            self.admin_repair_table(table_names, table_types, options, function(err, response) {
                 if (err !== null) {
                     reject(err);
                 } else {
@@ -2887,6 +2896,7 @@ GPUdb.prototype.admin_repair_table = function(table_names, options, callback) {
     }
     var actual_request = {
         table_names: table_names,
+        table_types: table_types,
         options: (options !== undefined && options !== null) ? options : {}
     };
 
@@ -4212,6 +4222,11 @@ GPUdb.prototype.aggregate_histogram_request = function(request, callback) {
  *                                  use when calculating the bin values (values
  *                                  are summed).  The column must be a
  *                                  numerical type (int, double, long, float).
+ *                              <li>'start': The start parameter for char
+ *                                  types.
+ *                              <li>'end': The end parameter for char types.
+ *                              <li>'interval': The interval parameter for char
+ *                                  types.
  *                          </ul>
  *                          The default value is an empty object ( {} ).
  * @param {GPUdbCallback} callback  Callback that handles the response.
@@ -5479,8 +5494,11 @@ GPUdb.prototype.aggregate_unpivot = function(table_name, column_names, variable_
 };
 
 /**
- * Alters an existing database backup containing a current snapshot of existing
- * objects.
+ * Alters an existing database <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backup</a>, accessible via the <a
+ * href="../../../concepts/data_sinks/" target="_top">data sink</a> specified
+ * by <code>datasink_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -5515,34 +5533,48 @@ GPUdb.prototype.alter_backup_request = function(request, callback) {
 };
 
 /**
- * Alters an existing database backup containing a current snapshot of existing
- * objects.
+ * Alters an existing database <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backup</a>, accessible via the <a
+ * href="../../../concepts/data_sinks/" target="_top">data sink</a> specified
+ * by <code>datasink_name</code>.
  *
- * @param {String} backup_name  Name of the backup object to be altered
+ * @param {String} backup_name  Name of the backup to be altered.
  * @param {String} action  Operation to be applied.
  *                         Supported values:
  *                         <ul>
- *                             <li>'checksum': Calculate checksum for backup
- *                                 files
- *                             <li>'ddl_only': Only save the DDL, do not backup
- *                                 table data
+ *                             <li>'checksum': Calculate checksum for backed-up
+ *                                 files.
+ *                             <li>'ddl_only': Whether or not to only save DDL
+ *                                 and not back up table data, when taking
+ *                                 future snapshots; set <code>value</code> to
+ *                                 'true' or 'false' for DDL only or DDL and
+ *                                 table data, respectively.
  *                             <li>'max_incremental_backups_to_keep': Maximum
- *                                 number of incremental backups to keep
- *                             <li>'merge': Merges all backup instances and
- *                                 creates a single full backup
- *                             <li>'purge': Purges backup instances
+ *                                 number of incremental snapshots to keep,
+ *                                 when taking future snapshots; set
+ *                                 <code>value</code> to the number of
+ *                                 snapshots to keep.
+ *                             <li>'merge': Merges all snapshots within a
+ *                                 backup and creates a single full snapshot.
+ *                             <li>'purge': Deletes a snapshot from a backup;
+ *                                 set <code>value</code> to the snapshot ID to
+ *                                 purge.
  *                         </ul>
- * @param {String} value  Action specific argument.
- * @param {String} datasink_name  Datasink where backup will be stored.
+ * @param {String} value  Value of the modification, depending on
+ *                        <code>action</code>.
+ * @param {String} datasink_name  Data sink through which the backup is
+ *                                accessible.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'comment': Comments to store with the new
- *                                  backup instance
- *                              <li>'dry_run': Dry run of backup changes.
+ *                              <li>'comment': Comments to store with the
+ *                                  backup.
+ *                              <li>'dry_run': Whether or not to perform a dry
+ *                                  run of a backup alteration.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'false'
  *                                      <li>'true'
+ *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
@@ -7553,6 +7585,8 @@ GPUdb.prototype.alter_table_request = function(request, callback) {
  *                                 Permanently unsubscribe a data source that
  *                                 is loading continuously as a stream. The
  *                                 data source can be Kafka / S3 / Azure.
+ *                             <li>'drop_datasource_subscription': Permanently
+ *                                 delete a cancelled data source subscription.
  *                             <li>'pause_datasource_subscription': Temporarily
  *                                 unsubscribe a data source that is loading
  *                                 continuously as a stream. The data source
@@ -9143,7 +9177,10 @@ GPUdb.prototype.collect_statistics = function(table_name, column_names, options,
 };
 
 /**
- * Creates a database backup containing a current snapshot of existing objects.
+ * Creates a database <a href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backup</a>, containing a snapshot of existing objects, at the
+ * remote file store accessible via the <a href="../../../concepts/data_sinks/"
+ * target="_top">data sink</a> specified by <code>datasink_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -9178,103 +9215,144 @@ GPUdb.prototype.create_backup_request = function(request, callback) {
 };
 
 /**
- * Creates a database backup containing a current snapshot of existing objects.
+ * Creates a database <a href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backup</a>, containing a snapshot of existing objects, at the
+ * remote file store accessible via the <a href="../../../concepts/data_sinks/"
+ * target="_top">data sink</a> specified by <code>datasink_name</code>.
  *
- * @param {String} backup_name  Name for this backup object. If the backup
- *                              object already exists, only an incremental or
- *                              differential backup can be made, unless
- *                              recreate is specified
- * @param {String} backup_type  Type of backup to create.
+ * @param {String} backup_name  Name for this backup. If the backup already
+ *                              exists, only an incremental or differential
+ *                              backup can be made, unless
+ *                              <code>recreate</code> is set to
+ *                              <code>true</code>.
+ * @param {String} backup_type  Type of snapshot to create.
  *                              Supported values:
  *                              <ul>
- *                                  <li>'incremental'
- *                                  <li>'differential'
- *                                  <li>'full'
+ *                                  <li>'incremental': Snapshot of changes in
+ *                                      the database objects & data since the
+ *                                      last snapshot of any kind.
+ *                                  <li>'differential': Snapshot of changes in
+ *                                      the database objects & data since the
+ *                                      last full snapshot.
+ *                                  <li>'full': Snapshot of the given database
+ *                                      objects and data.
  *                              </ul>
  * @param {Object} backup_objects_map  Map of objects to be captured in the
- *                                     backup. Error if empty and creating full
- *                                     backup. Error if non-empty when creating
- *                                     an incremental or differential backup.
+ *                                     backup; must be specified when creating
+ *                                     a full snapshot and left unspecified
+ *                                     when creating an incremental or
+ *                                     differential snapshot.
  *                                     <ul>
- *                                         <li>'all': All object types in a
- *                                             schema (excludes permissions,
- *                                             system configuration, host
- *                                             secret key, KiFS directories and
- *                                             user defined functions)
- *                                         <li>'table': Database Table
- *                                         <li>'credential': Credential
- *                                         <li>'context': Context
- *                                         <li>'datasink': Data Sink
- *                                         <li>'datasource': Data Source
- *                                         <li>'stored_procedure': SQL
- *                                             Procedure
- *                                         <li>'monitor': Table Monitor
- *                                             (Stream)
- *                                         <li>'user': User (internal and
- *                                             external) and associated
- *                                             permissions
- *                                         <li>'role': Role, role members
- *                                             (roles or users, recursively)
- *                                             and associated permissions
+ *                                         <li>'all': All object types and data
+ *                                             contained in the given <a
+ *                                             href="../../../concepts/schemas/"
+ *                                             target="_top">schemas(s)</a>.
+ *                                         <li>'table': <a
+ *                                             href="../../../concepts/tables/"
+ *                                             target="_top">Tables(s)</a> and
+ *                                             <a
+ *                                             href="../../../sql/ddl/#create-view"
+ *                                             target="_top">SQL view(s)</a>.
+ *                                         <li>'credential': <a
+ *                                             href="../../../concepts/credentials/"
+ *                                             target="_top">Credential(s)</a>.
+ *                                         <li>'context': <a
+ *                                             href="../../../sql-gpt/concepts/#sql-gpt-context"
+ *                                             target="_top">Context(s)</a>.
+ *                                         <li>'datasink': <a
+ *                                             href="../../../concepts/data_sinks/"
+ *                                             target="_top">Data sink(s)</a>.
+ *                                         <li>'datasource': <a
+ *                                             href="../../../concepts/data_sources/"
+ *                                             target="_top">Data
+ *                                             source(s)</a>.
+ *                                         <li>'stored_procedure': <a
+ *                                             href="../../../sql/procedure/"
+ *                                             target="_top">SQL
+ *                                             procedure(s)</a>.
+ *                                         <li>'monitor': <a
+ *                                             href="../../../concepts/table_monitors/"
+ *                                             target="_top">Table
+ *                                             monitor(s)</a> / <a
+ *                                             href="../../../sql/ddl/#create-stream"
+ *                                             target="_top">SQL stream(s)</a>.
+ *                                         <li>'user': <a
+ *                                             href="../../../security/sec_concepts/#security-concepts-users"
+ *                                             target="_top">User(s)</a>
+ *                                             (internal and external) and
+ *                                             associated permissions.
+ *                                         <li>'role': <a
+ *                                             href="../../../security/sec_concepts/#roles"
+ *                                             target="_top">Role(s)</a>, role
+ *                                             members (roles or users,
+ *                                             recursively), and associated
+ *                                             permissions.
  *                                         <li>'configuration': If
  *                                             <code>true</code>, backup the
- *                                             database configuration file.
+ *                                             database <a
+ *                                             href="../../../config/"
+ *                                             target="_top">configuration
+ *                                             file</a>.
  *                                             Supported values:
  *                                             <ul>
- *                                                 <li>'false'
  *                                                 <li>'true'
+ *                                                 <li>'false'
  *                                             </ul>
  *                                             The default value is 'false'.
  *                                     </ul>
- * @param {String} datasink_name  Datasink where backup will be stored.
+ * @param {String} datasink_name  Data sink through which the backup will be
+ *                                stored.
  * @param {Object} options  Optional parameters.
  *                          <ul>
  *                              <li>'comment': Comments to store with this
- *                                  backup
- *                              <li>'checksum': Calculate checksum for backup
- *                                  files.
+ *                                  backup.
+ *                              <li>'checksum': Whether or not to calculate
+ *                                  checksums for backup files.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'false'
  *                                      <li>'true'
+ *                                      <li>'false'
  *                                  </ul>
- *                                  The default value is 'true'.
- *                              <li>'ddl_only': Only save the DDL, do not
- *                                  backup table data.
+ *                                  The default value is 'false'.
+ *                              <li>'ddl_only': Whether or not, for tables, to
+ *                                  only backup DDL and not table data.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
+ *                                      <li>'true': For tables, only back up
+ *                                          DDL, not data.
+ *                                      <li>'false': For tables, back up DDL
+ *                                          and data.
  *                                  </ul>
  *                                  The default value is 'false'.
  *                              <li>'max_incremental_backups_to_keep': Maximum
- *                                  number of incremental backups to keep. The
- *                                  default value is '-1'.
- *                              <li>'delete_intermediate_backups': When the
- *                                  backup type is differential, delete any
- *                                  intermediate incremental or differential
- *                                  backups. This overrides
- *                                  <code>max_incremental_backups_to_keep</code>.
+ *                                  number of incremental snapshots to keep.
+ *                                  The default value is '-1'.
+ *                              <li>'delete_intermediate_backups': Whether or
+ *                                  not to delete any intermediate snapshots
+ *                                  when the <code>backup_type</code> is set to
+ *                                  <code>differential</code>.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'false'
  *                                      <li>'true'
+ *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
- *                              <li>'recreate': Replace the existing backup
- *                                  object with a new full backup if it already
+ *                              <li>'recreate': Whether or not to replace an
+ *                                  existing backup object with a new backup
+ *                                  with a full snapshot, if one already
  *                                  exists.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'false'
  *                                      <li>'true'
+ *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
- *                              <li>'dry_run': Dry run of backup.
+ *                              <li>'dry_run': Whether or not to perform a dry
+ *                                  run of a backup operation.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'false'
  *                                      <li>'true'
+ *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
  *                          </ul>
@@ -10599,14 +10677,6 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  non-existent, it will be automatically
  *                                  created. The default value is ''.
  *                              <li>'max_query_dimensions': No longer used.
- *                              <li>'optimize_lookups': Use more memory to
- *                                  speed up the joining of tables.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'true'
- *                                      <li>'false'
- *                                  </ul>
- *                                  The default value is 'false'.
  *                              <li>'strategy_definition': The <a
  *                                  href="../../../rm/concepts/#tier-strategies"
  *                                  target="_top">tier strategy</a> for the
@@ -10639,6 +10709,10 @@ GPUdb.prototype.create_join_table_request = function(request, callback) {
  *                                  enables virtual chunking. Defaults to
  *                                  chunk_size if virtual chunking otherwise
  *                                  enabled.
+ *                              <li>'enable_sparse_virtual_chunking':
+ *                                  materialize virtual chunks with only
+ *                                  non-deleted values. The default value is
+ *                                  'false'.
  *                              <li>'enable_equi_join_lazy_result_store': Allow
  *                                  using the lazy result store to cache
  *                                  computation of one side of a multichunk
@@ -12870,6 +12944,15 @@ GPUdb.prototype.create_table_external_request = function(request, callback) {
  *                                  the 'text_search' property to. Used only
  *                                  when <code>text_search_columns</code> has a
  *                                  value.
+ *                              <li>'trim_space': If set to <code>true</code>,
+ *                                  remove leading or trailing space from
+ *                                  fields.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'truncate_strings': If set to
  *                                  <code>true</code>, truncate string values
  *                                  that are longer than the column's type
@@ -15164,6 +15247,118 @@ GPUdb.prototype.download_files = function(file_names, read_offsets, read_lengths
     this.submit_request("/download/files", actual_request, callback);
 };
 
+/**
+ * Deletes one or more existing database <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backups</a> and contained snapshots, accessible via the <a
+ * href="../../../concepts/data_sinks/" target="_top">data sink</a> specified
+ * by <code>datasink_name</code>.
+ *
+ * @param {Object} request  Request object containing the parameters for the
+ *                          operation.
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.drop_backup_request = function(request, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.drop_backup_request(request, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: request.backup_name,
+        datasink_name: request.datasink_name,
+        options: (request.options !== undefined && request.options !== null) ? request.options : {}
+    };
+
+    this.submit_request("/drop/backup", actual_request, callback);
+};
+
+/**
+ * Deletes one or more existing database <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backups</a> and contained snapshots, accessible via the <a
+ * href="../../../concepts/data_sinks/" target="_top">data sink</a> specified
+ * by <code>datasink_name</code>.
+ *
+ * @param {String} backup_name  Name of the backup to be deleted. An empty
+ *                              string or '*' will delete all existing backups.
+ *                              Any text followed by a '*' will delete backups
+ *                              whose name starts with that text.  When
+ *                              deleting multiple backups,
+ *                              <code>delete_all_backups</code> must be set to
+ *                              <code>true</code>.
+ * @param {String} datasink_name  Data sink through which the backup is
+ *                                accessible.
+ * @param {Object} options  Optional parameters.
+ *                          <ul>
+ *                              <li>'dry_run': Whether or not to perform a dry
+ *                                  run of a backup deletion.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'delete_all_backups': Allow multiple
+ *                                  backups to be deleted if <code>true</code>
+ *                                  and multiple backup names are found
+ *                                  matching <code>backup_name</code>.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'no_error_if_not_exists': Whether or not to
+ *                                  suppress the error if the specified backup
+ *                                  does not exist.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                          </ul>
+ *                          The default value is an empty object ( {} ).
+ * @param {GPUdbCallback} callback  Callback that handles the response.
+ *
+ * @returns {Promise} A promise that will be fulfilled with the response
+ *                    object, if no callback function is provided.
+ */
+GPUdb.prototype.drop_backup = function(backup_name, datasink_name, options, callback) {
+    if (callback === undefined || callback === null) {
+        var self = this;
+
+        return new Promise( function( resolve, reject) {
+            self.drop_backup(backup_name, datasink_name, options, function(err, response) {
+                if (err !== null) {
+                    reject(err);
+                } else {
+                    resolve( response );
+                }
+            });
+        });
+    }
+    var actual_request = {
+        backup_name: backup_name,
+        datasink_name: datasink_name,
+        options: (options !== undefined && options !== null) ? options : {}
+    };
+
+    this.submit_request("/drop/backup", actual_request, callback);
+};
+
 GPUdb.prototype.drop_container_registry_request = function(request, callback) {
     if (callback === undefined || callback === null) {
         var self = this;
@@ -15903,6 +16098,21 @@ GPUdb.prototype.execute_proc = function(proc_name, params, bin_params, input_tab
  * <p>
  * See <a href="../../../sql/" target="_top">SQL Support</a> for the complete
  * set of supported SQL commands.
+ * <p>
+ * When a caller wants all the results from a large query (e.g., more than <a
+ * href="../../../config/#config-main-general"
+ * target="_top">max_get_records_size</a> records), they can make multiple
+ * calls to this endpoint using the <code>offset</code> and <code>limit</code>
+ * parameters to page through the results.  Normally, this will execute the
+ * <code>statement</code> query each time. To avoid re-executing the query each
+ * time and to keep the results in the same order, the caller should specify a
+ * <code>paging_table</code> name to hold the results of the query between
+ * calls and specify the <code>paging_table</code> on subsequent calls. When
+ * this is done, the caller should clear the paging table and any other tables
+ * in the <code>result_table_list</code> (both returned in the response) when
+ * they are done paging through the results.  <code>paging_table</code> (and
+ * <code>result_table_list</code>) will be empty if no paging table was created
+ * (e.g., when all the query results were returned in the first call).
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -15952,6 +16162,21 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  * <p>
  * See <a href="../../../sql/" target="_top">SQL Support</a> for the complete
  * set of supported SQL commands.
+ * <p>
+ * When a caller wants all the results from a large query (e.g., more than <a
+ * href="../../../config/#config-main-general"
+ * target="_top">max_get_records_size</a> records), they can make multiple
+ * calls to this endpoint using the <code>offset</code> and <code>limit</code>
+ * parameters to page through the results.  Normally, this will execute the
+ * <code>statement</code> query each time. To avoid re-executing the query each
+ * time and to keep the results in the same order, the caller should specify a
+ * <code>paging_table</code> name to hold the results of the query between
+ * calls and specify the <code>paging_table</code> on subsequent calls. When
+ * this is done, the caller should clear the paging table and any other tables
+ * in the <code>result_table_list</code> (both returned in the response) when
+ * they are done paging through the results.  <code>paging_table</code> (and
+ * <code>result_table_list</code>) will be empty if no paging table was created
+ * (e.g., when all the query results were returned in the first call).
  *
  * @param {String} statement  SQL statement (query, DML, or DDL) to be executed
  * @param {Number} offset  A positive integer indicating the number of initial
@@ -16061,16 +16286,35 @@ GPUdb.prototype.execute_sql_request = function(request, callback) {
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
- *                              <li>'paging_table': When empty or the specified
- *                                  paging table not exists, the system will
- *                                  create a paging table and return when query
- *                                  output has more records than the user
- *                                  asked. If the paging table exists in the
- *                                  system, the records from the paging table
- *                                  are returned without evaluating the query.
+ *                              <li>'paging_table': When specified (or
+ *                                  <code>paging_table_ttl</code> is set), the
+ *                                  system will create a paging table to hold
+ *                                  the results of the query, when the output
+ *                                  has more records than are in the response
+ *                                  (i.e., when <code>has_more_records</code>
+ *                                  is <code>true</code>). If the specified
+ *                                  paging table exists, the records from the
+ *                                  paging table are returned without
+ *                                  re-evaluating the query.  It is the
+ *                                  caller's responsibility to clear the
+ *                                  <code>paging_table</code> and other tables
+ *                                  in the <code>result_table_list</code> (both
+ *                                  returned in the response) when they are
+ *                                  done with this query.
  *                              <li>'paging_table_ttl': Sets the <a
  *                                  href="../../../concepts/ttl/"
  *                                  target="_top">TTL</a> of the paging table.
+ *                                  -1 indicates no timeout.  Setting this
+ *                                  option will cause a paging table to be
+ *                                  generated when needed. The
+ *                                  <code>paging_table</code> and other tables
+ *                                  in the <code>result_table_list</code> (both
+ *                                  returned in the response) will be
+ *                                  automatically cleared after the TTL
+ *                                  expires, if set to a positive number.
+ *                                  However, it is still recommended that the
+ *                                  caller clear these tables when they are
+ *                                  done with this query.
  *                              <li>'parallel_execution': If
  *                                  <code>false</code>, disables the parallel
  *                                  step execution of the given query.
@@ -19612,6 +19856,7 @@ GPUdb.prototype.grant_permission_request = function(request, callback) {
  *                                 <li>'execute': Ability to Execute the
  *                                     Procedure object.
  *                                 <li>'insert': Insert access to tables.
+ *                                 <li>'monitor': Monitor logs and statistics.
  *                                 <li>'read': Ability to read, list and use
  *                                     the object.
  *                                 <li>'send_alert': Ability to send system
@@ -20340,6 +20585,7 @@ GPUdb.prototype.has_permission_request = function(request, callback) {
  *                                 <li>'execute': Ability to Execute the
  *                                     Procedure object.
  *                                 <li>'insert': Insert access to tables.
+ *                                 <li>'monitor': Monitor logs and statistics.
  *                                 <li>'read': Ability to read, list and use
  *                                     the object.
  *                                 <li>'send_alert': Ability to send system
@@ -21849,6 +22095,15 @@ GPUdb.prototype.insert_records_from_files_request = function(request, callback) 
  *                                  the 'text_search' property to. Used only
  *                                  when <code>text_search_columns</code> has a
  *                                  value.
+ *                              <li>'trim_space': If set to <code>true</code>,
+ *                                  remove leading or trailing space from
+ *                                  fields.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'truncate_strings': If set to
  *                                  <code>true</code>, truncate string values
  *                                  that are longer than the column's type
@@ -22622,6 +22877,15 @@ GPUdb.prototype.insert_records_from_payload_request = function(request, callback
  *                              <li>'text_search_min_column_length': Set
  *                                  minimum column size. Used only when
  *                                  'text_search_columns' has a value.
+ *                              <li>'trim_space': If set to <code>true</code>,
+ *                                  remove leading or trailing space from
+ *                                  fields.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'truncate_strings': If set to
  *                                  <code>true</code>, truncate string values
  *                                  that are longer than the column's type
@@ -24358,6 +24622,18 @@ GPUdb.prototype.match_graph_request = function(request, callback) {
  *                                  this value as the batch size of the number
  *                                  of loops in flushing(inserting) to the
  *                                  output table. The default value is '1000'.
+ *                              <li>'multi_step': For the
+ *                                  <code>match_supply_demand</code> solver
+ *                                  only. Runs multiple supply demand solver
+ *                                  repeatedly in a multi step cycle by
+ *                                  switching supplies to demands until it
+ *                                  reaches the main hub supply.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true'
+ *                                      <li>'false'
+ *                                  </ul>
+ *                                  The default value is 'false'.
  *                              <li>'charging_capacity': For the
  *                                  <code>match_charging_stations</code> solver
  *                                  only. This is the maximum ev-charging
@@ -25221,8 +25497,11 @@ GPUdb.prototype.reserve_resource = function(component, name, action, bytes_reque
 };
 
 /**
- * Restores objects from a backup instance. Response from a backup restoration
- * operation.
+ * Restores database objects from a <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backup</a> accessible via the <a
+ * href="../../../concepts/data_sources/" target="_top">data source</a>
+ * specified by <code>datasource_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -25256,100 +25535,156 @@ GPUdb.prototype.restore_backup_request = function(request, callback) {
 };
 
 /**
- * Restores objects from a backup instance. Response from a backup restoration
- * operation.
+ * Restores database objects from a <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backup</a> accessible via the <a
+ * href="../../../concepts/data_sources/" target="_top">data source</a>
+ * specified by <code>datasource_name</code>.
  *
- * @param {String} backup_name  Name of the backup object, which must refer to
- *                              a currently existing backup. The default value
+ * @param {String} backup_name  Name of the backup to restore from, which must
+ *                              refer to an existing backup. The default value
  *                              is ''.
- * @param {Object} restore_objects_map  Map of objects to be restored from the
- *                                      backup. Error if empty.
+ * @param {Object} restore_objects_map  Map of database objects to be restored
+ *                                      from the backup.
  *                                      <ul>
- *                                          <li>'all': All object types in a
- *                                              schema (excludes permissions,
- *                                              system configuration, host
- *                                              secret key, KiFS directories
- *                                              and user defined functions)
- *                                          <li>'table': Database Table
- *                                          <li>'credential': Credential
- *                                          <li>'context': Context
- *                                          <li>'datasink': Data Sink
- *                                          <li>'datasource': Data Source
- *                                          <li>'stored_procedure': SQL
- *                                              Procedure
- *                                          <li>'monitor': Table Monitor
- *                                              (Stream)
- *                                          <li>'user': User (internal and
- *                                              external) and associated
- *                                              permissions
- *                                          <li>'role': Role, role members
- *                                              (roles or users, recursively)
- *                                              and associated permissions
+ *                                          <li>'all': All object types and
+ *                                              data contained in the given <a
+ *                                              href="../../../concepts/schemas/"
+ *                                              target="_top">schemas(s)</a>.
+ *                                          <li>'table': <a
+ *                                              href="../../../concepts/tables/"
+ *                                              target="_top">Tables(s)</a> and
+ *                                              <a
+ *                                              href="../../../sql/ddl/#create-view"
+ *                                              target="_top">SQL view(s)</a>.
+ *                                          <li>'credential': <a
+ *                                              href="../../../concepts/credentials/"
+ *                                              target="_top">Credential(s)</a>.
+ *                                          <li>'context': <a
+ *                                              href="../../../sql-gpt/concepts/#sql-gpt-context"
+ *                                              target="_top">Context(s)</a>.
+ *                                          <li>'datasink': <a
+ *                                              href="../../../concepts/data_sinks/"
+ *                                              target="_top">Data sink(s)</a>.
+ *                                          <li>'datasource': <a
+ *                                              href="../../../concepts/data_sources/"
+ *                                              target="_top">Data
+ *                                              source(s)</a>.
+ *                                          <li>'stored_procedure': <a
+ *                                              href="../../../sql/procedure/"
+ *                                              target="_top">SQL
+ *                                              procedure(s)</a>.
+ *                                          <li>'monitor': <a
+ *                                              href="../../../concepts/table_monitors/"
+ *                                              target="_top">Table
+ *                                              monitor(s)</a> / <a
+ *                                              href="../../../sql/ddl/#create-stream"
+ *                                              target="_top">SQL
+ *                                              stream(s)</a>.
+ *                                          <li>'user': <a
+ *                                              href="../../../security/sec_concepts/#security-concepts-users"
+ *                                              target="_top">User(s)</a>
+ *                                              (internal and external) and
+ *                                              associated permissions.
+ *                                          <li>'role': <a
+ *                                              href="../../../security/sec_concepts/#roles"
+ *                                              target="_top">Role(s)</a>, role
+ *                                              members (roles or users,
+ *                                              recursively), and associated
+ *                                              permissions.
  *                                          <li>'configuration': If
  *                                              <code>true</code>, restore the
- *                                              database configuration file.
+ *                                              database <a
+ *                                              href="../../../config/"
+ *                                              target="_top">configuration
+ *                                              file</a>.
  *                                              Supported values:
  *                                              <ul>
- *                                                  <li>'false'
  *                                                  <li>'true'
+ *                                                  <li>'false'
  *                                              </ul>
  *                                              The default value is 'false'.
  *                                      </ul>
- * @param {String} datasource_name  Datasource where backup is located.
+ * @param {String} datasource_name  Data source through which the backup will
+ *                                  be restored.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'backup_id': Backup instance ID to restore.
+ *                              <li>'backup_id': ID of the snapshot to restore.
  *                                  Leave empty to restore the most recent
- *                                  backup instance. The default value is ''.
+ *                                  snapshot in the backup. The default value
+ *                                  is ''.
  *                              <li>'restore_policy': Behavior to apply when
- *                                  restoring objects that already exist.
+ *                                  any database object to restore already
+ *                                  exists.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'none': If an object to be restored
- *                                          currently exists with the same
- *                                          name, abort and return error
+ *                                          already exists with the same name,
+ *                                          abort and return error.
  *                                      <li>'replace': If an object to be
- *                                          restored currently exists with the
+ *                                          restored already exists with the
  *                                          same name, replace it with the
- *                                          backup version
+ *                                          backup version.
  *                                      <li>'rename': If an object to be
- *                                          restored currently exists with the
- *                                          same name, rename the original
- *                                          version
+ *                                          restored already exists with the
+ *                                          same name, move that existing one
+ *                                          to the schema specified by
+ *                                          <code>renamed_objects_schema</code>.
  *                                  </ul>
  *                                  The default value is 'none'.
- *                              <li>'renamed_objects_schema': If the restore
- *                                  policy is rename, optionally use this
- *                                  schema for renamed objects instead of a
+ *                              <li>'renamed_objects_schema': If the
+ *                                  <code>restore_policy</code> is
+ *                                  <code>rename</code>, use this schema for
+ *                                  relocated existing objects instead of the
  *                                  default generated one. The default value is
  *                                  ''.
- *                              <li>'create_schema_if_not_exist': Create the
- *                                  schema for an object to be restored if it
- *                                  does not currently exist. Error otherwise.
+ *                              <li>'create_schema_if_not_exist': Behavior to
+ *                                  apply when the schema containing any
+ *                                  database object to restore does not already
+ *                                  exist.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'false'
- *                                      <li>'true'
+ *                                      <li>'true': If the schema containing
+ *                                          any restored object does not exist,
+ *                                          create it automatically.
+ *                                      <li>'false': If the schema containing
+ *                                          any restored object does not exist,
+ *                                          return an error.
  *                                  </ul>
  *                                  The default value is 'true'.
- *                              <li>'ddl_only': Only recreates the objects from
- *                                  their DDL, do not restore table data.
+ *                              <li>'reingest': Behavior to apply when
+ *                                  restoring table data.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true': Restore table data by
+ *                                          re-ingesting it.  This is the
+ *                                          default behavior if the cluster
+ *                                          topology differs from that of the
+ *                                          contained backup.
+ *                                      <li>'false': Restore the persisted data
+ *                                          files directly.
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'ddl_only': Behavior to apply when
+ *                                  restoring tables.
+ *                                  Supported values:
+ *                                  <ul>
+ *                                      <li>'true': Restore table DDL, but do
+ *                                          not restore data.
+ *                                      <li>'false': Restore tables and their
+ *                                          data.
+ *                                  </ul>
+ *                                  The default value is 'false'.
+ *                              <li>'checksum': Whether or not to verify
+ *                                  checksums for backup files when restoring.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
  *                                      <li>'false'
  *                                  </ul>
  *                                  The default value is 'false'.
- *                              <li>'checksum': Verify checksum for backup
- *                                  files.
- *                                  Supported values:
- *                                  <ul>
- *                                      <li>'false'
- *                                      <li>'true'
- *                                  </ul>
- *                                  The default value is 'true'.
- *                              <li>'dry_run': Does a dry-run restoration
- *                                  operation.
+ *                              <li>'dry_run': Whether or not to perform a dry
+ *                                  run of the restoration operation.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'
@@ -25460,6 +25795,7 @@ GPUdb.prototype.revoke_permission_request = function(request, callback) {
  *                                 <li>'execute': Ability to Execute the
  *                                     Procedure object.
  *                                 <li>'insert': Insert access to tables.
+ *                                 <li>'monitor': Monitor logs and statistics.
  *                                 <li>'read': Ability to read, list and use
  *                                     the object.
  *                                 <li>'send_alert': Ability to send system
@@ -26092,8 +26428,11 @@ GPUdb.prototype.revoke_role = function(role, member, options, callback) {
 };
 
 /**
- * Shows information about a backup Returns detailed information about one or
- * more backup instances.
+ * Shows information about one or more <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backups</a> accessible via the <a
+ * href="../../../concepts/data_sources/" target="_top">data source</a>
+ * specified by <code>datasource_name</code>.
  *
  * @param {Object} request  Request object containing the parameters for the
  *                          operation.
@@ -26126,34 +26465,41 @@ GPUdb.prototype.show_backup_request = function(request, callback) {
 };
 
 /**
- * Shows information about a backup Returns detailed information about one or
- * more backup instances.
+ * Shows information about one or more <a
+ * href="../../../admin/backup_restore/#database-backup"
+ * target="_top">backups</a> accessible via the <a
+ * href="../../../concepts/data_sources/" target="_top">data source</a>
+ * specified by <code>datasource_name</code>.
  *
- * @param {String} backup_name  Name of the backup object. An empty string or
- *                              '*' will return all existing backups. The
- *                              default value is ''.
- * @param {String} datasource_name  Datasource where backup is located.
+ * @param {String} backup_name  Name of the backup. An empty string or '*' will
+ *                              show all existing backups. Any text followed by
+ *                              a '*' will show backups whose name starts with
+ *                              that text. The default value is ''.
+ * @param {String} datasource_name  Data source through which the backup is
+ *                                  accessible.
  * @param {Object} options  Optional parameters.
  *                          <ul>
- *                              <li>'backup_id': Backup instance ID to show.
+ *                              <li>'backup_id': ID of the snapshot to show.
  *                                  Leave empty to show information from the
- *                                  most recent backup instance in the
- *                                  container. The default value is ''.
- *                              <li>'show_contents': Shows the contents of the
- *                                  specified backup_id.
+ *                                  most recent snapshot in the backup. The
+ *                                  default value is ''.
+ *                              <li>'show_contents': Show the contents of the
+ *                                  backed-up snapshots.
  *                                  Supported values:
  *                                  <ul>
- *                                      <li>'none': No backup contents
- *                                      <li>'object_names': Object names only
- *                                      <li>'object_files': Object names and
- *                                          files
+ *                                      <li>'none': Don't show snapshot
+ *                                          contents.
+ *                                      <li>'object_names': Show backed-up
+ *                                          object names, and for tables,
+ *                                          sizing detail.
+ *                                      <li>'object_files': Show backed-up
+ *                                          object names, and for tables,
+ *                                          sizing detail and associated files.
  *                                  </ul>
  *                                  The default value is 'none'.
- *                              <li>'no_error_if_not_exists': If
- *                                  <code>false</code> will return an error if
- *                                  the provided <code>backup_name</code> does
- *                                  not exist. If <code>true</code> then it
- *                                  will return an empty result.
+ *                              <li>'no_error_if_not_exists': Whether or not to
+ *                                  suppress the error if the specified backup
+ *                                  does not exist.
  *                                  Supported values:
  *                                  <ul>
  *                                      <li>'true'

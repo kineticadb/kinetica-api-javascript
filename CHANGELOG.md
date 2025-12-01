@@ -2,6 +2,15 @@
 
 ## Version 7.2
 
+### Version 7.2.3.1 - 2025-12-01
+
+#### Added
+-   Support for 12-byte `DECIMAL` data type.
+
+#### Notes
+-   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
+
+
 ### Version 7.2.3.0 - 2025-09-03
 
 #### Notes
@@ -12,7 +21,7 @@
 
 #### Fixed
 -   Issue with `GPUdbSqlIterator` iterating over a batch size that is greater
-    than the configured `max_get_records_size` on the server
+    than the configured `max_get_records_size` on the server.
 
 #### Notes
 -   Check `CHANGELOG-FUNCTIONS.md` for endpoint related changes.
@@ -27,7 +36,7 @@
 ### Version 7.2.1.0 - 2024-09-08
 
 #### Added
--   OAuth2 authentication support
+-   OAuth2 authentication support.
 
 
 ### Version 7.2.0.0 - 2024-02-11
@@ -49,7 +58,7 @@
 
 #### Fixed
 ##### Node.js API
--   Issue with crypto library import
+-   Issue with crypto library import.
 
 
 ### Version 7.1.9.4 - 2023-12-03
