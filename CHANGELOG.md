@@ -2,6 +2,15 @@
 
 ## Version 7.2
 
+### Version 7.2.3.2 - 2026-07-14
+
+#### Added
+-   Passing of API name & version in Node.js HTTP headers.
+
+#### Notes
+-   Check CHANGELOG-FUNCTIONS.md for endpoint related changes
+
+
 ### Version 7.2.3.1 - 2025-12-01
 
 #### Added

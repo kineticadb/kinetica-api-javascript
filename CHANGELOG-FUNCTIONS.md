@@ -1,5 +1,41 @@
 # Kinetica REST API Changelog
 
+## Version 7.2.3.18
+#### Added
+-   Added ``transformations`` option to ``/create/table/external``, ``/insert/records/fromfiles`` and ``/insert/records/frompayload``
+-   Added ``restore_all_permissions`` option to ``/restore/backup`` to override default-on behavior that scopes permissions to restored objects only.
+
+## Version 7.2.3.15
+#### Added
+-   Added new option ``telm_force_metrics_duration`` to ``/alter/system/properties`` request
+-   Added ``update_with_user``, ``default`` and ``default_sql`` column properties to ``/create/type``
+-   Added ``set_default`` and ``delete_default`` to ``action`` in ``/alter/table``
+-   Added ``add_column_expression_sql`` to ``options`` in ``/alter/table``
+-   Added ``request_schema_str`` and ``transformations`` options to ``/insert/records``
+
+## Version 7.2.3.14
+#### Added
+-   Added ``/verify/backup`` endpoint
+
+## Version 7.2.3.13
+#### Added
+-   Added backup and restore support for graph definitions.
+-   Added backup and restore support for datalake catalogs.
+-   Added ``/check/table`` endpoint
+-   Added new option ``azure_use_virtual_addressing`` to ``/alter/datasource``, ``/alter/datasink``, ``/create/datasink``, and ``/create/datasource`` request
+
+## Version 7.2.3.9
+#### Added
+-   Added backup and restore support for resource groups, user defined functions and function environments.
+
+## Version 7.2.3.6
+##### Breaking Changes
+-   Removed ``/update/records/byseries`` endpoint
+
+## Version 7.2.3.5
+#### Added
+-   Added support for sorting of all columns of ``ki_tiered_objects`` table
+
 ## Version 7.2.3.3
 #### Added
 -   Added ``/drop/backup`` endpoint to delete backup objects
