@@ -16,6 +16,19 @@
 
 # Kinetica JavaScript API
 
+> **This repository is deprecated.**  Starting with version 7.2.3.3, the
+> *JavaScript* and *Node.js* APIs are built, together with a *TypeScript* API,
+> from the *Kinetica TypeScript API* at
+> <https://github.com/kineticadb/kinetica-api-typescript>.  Use that repository
+> for new work, and move existing code to it:
+>
+> *   *JavaScript*:  ``dist/standalone/GPUdb.js`` there replaces
+>     ``javascript/GPUdb.js`` here, and is loaded the same way, with a
+>     ``<script>`` tag that defines a global ``GPUdb``.
+> *   *Node.js*:  install ``@kinetica/gpudb-api`` from npm.  Code written for
+>     ``@kinetica/gpudb`` keeps working, as that package is now a compatibility
+>     wrapper around ``@kinetica/gpudb-api``.
+
 -  [Overview](#overview)
 -  [JavaScript](#javascript)
 -  [Node.js](#nodejs)
